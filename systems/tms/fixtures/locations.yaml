@@ -1,0 +1,23 @@
+# Reference locations — REAL UN/LOCODE codes (stable). ~15 locations.
+# Source: UN/LOCODE (code · function · country · coordinates). Synthetic commercial
+# data lives elsewhere; these identifiers are real so route ids are credible.
+locations:
+  # --- Asia origins ---
+  - {id: CNSHA, name: Shanghai,          type: seaport,         country: CN, timezone: Asia/Shanghai,   lat: 31.23, lon: 121.47}
+  - {id: CNNGB, name: Ningbo,            type: seaport,         country: CN, timezone: Asia/Shanghai,   lat: 29.87, lon: 121.55}
+  - {id: CNPVG, name: Shanghai Pudong,   type: airport,         country: CN, timezone: Asia/Shanghai,   lat: 31.14, lon: 121.81}
+  - {id: SGSIN, name: Singapore,         type: seaport,         country: SG, timezone: Asia/Singapore,  lat: 1.26,  lon: 103.83}
+  # --- European gateways ---
+  - {id: DEHAM, name: Hamburg,           type: seaport,         country: DE, timezone: Europe/Berlin,    lat: 53.55, lon: 9.99}
+  - {id: NLRTM, name: Rotterdam,         type: seaport,         country: NL, timezone: Europe/Amsterdam, lat: 51.95, lon: 4.14}
+  - {id: BEANR, name: Antwerp,           type: seaport,         country: BE, timezone: Europe/Brussels,  lat: 51.26, lon: 4.40}
+  - {id: PLGDN, name: Gdansk,            type: seaport,         country: PL, timezone: Europe/Warsaw,    lat: 54.35, lon: 18.65}
+  - {id: GRPIR, name: Piraeus,           type: seaport,         country: GR, timezone: Europe/Athens,    lat: 37.94, lon: 23.65}
+  - {id: ITGOA, name: Genoa,             type: seaport,         country: IT, timezone: Europe/Rome,      lat: 44.41, lon: 8.93}
+  # --- European inland / rail (TEN-T corridors) ---
+  - {id: DEDUI, name: Duisburg,          type: inland_terminal, country: DE, timezone: Europe/Berlin,    lat: 51.43, lon: 6.77}
+  - {id: DENUE, name: Nuremberg,         type: inland_terminal, country: DE, timezone: Europe/Berlin,    lat: 49.45, lon: 11.08}
+  - {id: CZPRG, name: Prague,            type: inland_terminal, country: CZ, timezone: Europe/Prague,    lat: 50.08, lon: 14.44}
+  - {id: DEFRA, name: Frankfurt,         type: airport,         country: DE, timezone: Europe/Berlin,    lat: 50.03, lon: 8.56}
+  # --- Destination ---
+  - {id: DEMUC, name: Munich,            type: inland_terminal, country: DE, timezone: Europe/Berlin,    lat: 48.14, lon: 11.58}

@@ -1,0 +1,33 @@
+{
+  "name": "Solarized Light",
+  "mode": "light",
+  "_source": "Solarized by Ethan Schoonover (open palette; safe to ship).",
+  "brand": {
+    "app_prefix": "RFQ Showcase",
+    "logo": "assets/showcase-logo.svg",
+    "favicon": "assets/favicon.svg"
+  },
+  "banner": { "text": "SHOWCASE", "show": true },
+  "colors": {
+    "primary":   "#268bd2",
+    "secondary": "#6c71c4",
+    "accent":    "#2aa198",
+    "success":   "#859900",
+    "warning":   "#b58900",
+    "danger":    "#dc322f",
+    "bg":        "#fdf6e3",
+    "surface":   "#eee8d5",
+    "text":      "#657b83",
+    "muted":     "#93a1a1"
+  },
+  "systems": {
+    "crm":      "#268bd2",
+    "tms":      "#2aa198",
+    "rate":     "#6c71c4",
+    "cpq":      "#859900",
+    "fx":       "#cb4b16",
+    "workflow": "#d33682"
+  },
+  "typography": { "font": "system-ui, sans-serif", "scale": "comfortable" },
+  "density": "comfortable"
+}

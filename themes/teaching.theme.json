@@ -1,0 +1,32 @@
+{
+  "name": "Teaching",
+  "mode": "light",
+  "brand": {
+    "app_prefix": "RFQ Showcase",
+    "logo": "assets/showcase-logo.svg",
+    "favicon": "assets/favicon.svg"
+  },
+  "banner": { "text": "SHOWCASE — teaching", "show": true },
+  "colors": {
+    "primary":   "#2563eb",
+    "secondary": "#7c3aed",
+    "accent":    "#0891b2",
+    "success":   "#16a34a",
+    "warning":   "#d97706",
+    "danger":    "#dc2626",
+    "bg":        "#ffffff",
+    "surface":   "#f8fafc",
+    "text":      "#0f172a",
+    "muted":     "#64748b"
+  },
+  "systems": {
+    "crm":      "#2563eb",
+    "tms":      "#0891b2",
+    "rate":     "#7c3aed",
+    "cpq":      "#16a34a",
+    "fx":       "#d97706",
+    "workflow": "#db2777"
+  },
+  "typography": { "font": "Inter, system-ui, sans-serif", "scale": "comfortable" },
+  "density": "comfortable"
+}

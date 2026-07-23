@@ -1,0 +1,133 @@
+# Logistics RFQ — Agentic Showcase
+
+A self-contained **architecture-decision package** for an agentic slice of the
+logistics RFQ process. It proves one chain end-to-end:
+
+```text
+business event → agent discovers impacted quotes → agents enrich business state
+→ policy evaluates business consequences → human decision (if required)
+→ systems of record updated
+```
+
+The featured first spike is **Cross-Currency Lane Repricing and Approval** (business
+title: *RFQ Route Cost Normalization and Exception Approval*) — the process wakes
+because the *business world changed* (an FX rate moved, a lane became unavailable),
+not because a workflow reached a step. See
+[`spikes/repricing/`](spikes/repricing/README.md).
+
+Two triggers, one architecture: an **FX change** (financial) and a **route
+becoming unavailable** (operational) drive the *same* agents, policies, systems of
+record, MCP tools, and A2A edges — see scenarios 01 and 02.
+
+> **Status: design/decision package.** This showcase is standalone in GEAP; it
+> **copies** the cpm-eaop control-plane conventions but does not share its code. The
+> policy engine (`cedar-agent` + `src/spike/model`) lives in cpm-eaop; anything that
+> must *run* here is described under `spikes/` as a mock, not implemented in this pass.
+
+## Scope
+
+- **In:** the repricing subprocess — event trigger, three agents, FX normalization,
+  threshold policy, human-in-the-loop approval, durable state write-back.
+- **Out (this pass):** RFQ intake, booking execution, real carrier/CRM/TMS
+  integration, running code.
+
+## The decision-first chain (how the areas connect)
+
+```text
+business/process.md      business event + happy/alt/exception paths
+        ↓
+business/actions.yaml    authored domain actions (Cedar shape)
+        ↓
+identity/actors.yaml     who acts (agents + human), via groups
+        ↓
+systems/*.yaml + data-provenance   authoritative fact sources (fail=deny)
+        ↓
+interfaces/ (mcp · api · a2a)      how facts are fetched / tasks handed off
+        ↓
+agents/catalog.yaml      which agent owns which action
+        ↓
+authorization/policies.cedar       may P do A on R under C?  (+ obligations)
+        ↓
+scenarios/01-fx-flips-lane.*       the exercised decision, given/when/then
+        ↓
+spikes/repricing/        the spike that would verify it (mocks)
+```
+
+## Reuse map — every artifact mirrors a proven cpm-eaop source
+
+The authorization + identity artifacts here **copy** cpm-eaop shapes so the two
+stay consistent. `TARGET` = design intent that does not yet exist in cpm-eaop.
+
+| This showcase | Mirrors (cpm-eaop) | Notes |
+| --- | --- | --- |
+| `business/actions.yaml` | `data/policies/actions.yaml` | dotted names; `principals`/`resources`/`context` typing. Authored, never generated. |
+| `authorization/authz-projection.yaml` | `data/policies/authz-projection.yaml` | coupling firewall; only `member_of`→`Group` is a parent; everything else a typed attribute; `namespace: Agentic`. |
+| `authorization/agentic.cedarschema` | `data/policies/agentic.cedarschema` | **GENERATED** from projection+actions — not authored here (see note in file). |
+| `authorization/policies.cedar` | `data/policies/policies.cedar` | `@id/@version/@owner/@description` + `@obligations("csv")`; `forbid`>`permit`; conditions read resolved attrs; uids `Agentic::Type::"id"`. |
+| `authorization/obligations.yaml` | `data/policies/obligations.yaml` | `version:` + id→**flat** payload; Cedar never sees obligations. |
+| `business/decisions.md` | `docs/policies/decisions.md` | table `# \| Question \| action \| principal \| resource \| context \| status \| policy id(s)`; `proposed→modeled→enforced`. |
+| method | `docs/policies/domain-to-cedar-runbook.md` | decision-question first, Cedar last, never hand-edit the schema. |
+| `agents/catalog.yaml` | `data/agents/hello-agent-*.yaml` | `caller_identity.keycloak_client` is load-bearing (drives `kind=agent`). |
+| `identity/actors.yaml` | `data/identity/{groups,users,group_memberships}` | department/BU from group path→cost_center, not inline. |
+| `identity/claims-contract.md` | `src/spike/model/identity.py` | claim keys: scope/scp · roles · groups→member_of · tid→trust_domain · active. |
+| Entra adapter note | `src/spike/entra/principal.py` | `normalize_claims` layer (scp→scope, app-only, MSA tenant). |
+| `identity/terraform/` `TARGET` | `infra/entra/main.tf` | client-secret pattern + real fixes. WIF federated creds + YAML→tfvars generator = `TARGET`. |
+| `interfaces/a2a/` | `src/spike/a2a/hello_a2a/agent-card.json` | a2a-sdk 1.1 card shape. |
+| `interfaces/mcp/`, `interfaces/api/` `TARGET` | — none in cpm-eaop — | no MCP server / no committed OpenAPI exist; green-field. |
+| `scenarios/*` + spike gating | `tests/test_model.py`, `tests/spike/fixtures/entra/` | `_sidecar_up()` skip-gate, `mock_pdp` vs `pdp`, `test_int_*`; frozen fixtures, patterned GUIDs. |
+
+## Status
+
+| Area | Design | Mock | Spike | Verified |
+| --- | :--: | :--: | :--: | :--: |
+| Business process (repricing) | ✓ | — | — | — |
+| Domain actions + decisions (D1–D9, all 7 thresholds) | ✓ | — | — | — |
+| Cedar authorization | ✓ | — | — | — |
+| Systems of record + provenance | ✓ | — | — | — |
+| Mock system architecture (capability matrix + enterprise frontend) | ✓ | — | — | — |
+| Tech stack (ADR-006) | ✓ proposed | — | — | — |
+| Deploy → GCP mapping + container strategy (plan) | ✓ `TARGET` | — | — | — |
+| Identity (actors/groups) | ✓ | — | — | — |
+| Agents (3) | ✓ | — | — | — |
+| FX API | ✓ `TARGET` | — | — | — |
+| MCP servers/tools | ✓ `TARGET` | — | — | — |
+| A2A handoff | ✓ | — | — | — |
+| Reference data (real UN/LOCODE + synthetic ops) | ✓ | — | — | — |
+| Scenario 01 (FX flips lane) | ✓ | — | — | — |
+| Scenario 02 (route unavailable) | ✓ | — | — | — |
+| Scenario 03 (approval loop / HITL) | ✓ | — | — | — |
+| Scenario 04 (combined route + FX shock — flagship) | ✓ | — | — | — |
+| Scenario packs (5, reproducible) | ✓ | — | — | — |
+| Fixtures (given-state) | ✓ | — | — | — |
+| Determinism / running (RUNNING.md) | ✓ | — | — | — |
+| API contracts (OpenAPI 3.1 per API) | ✓ | — | — | — |
+| Theming (ADR-007 · passable colorscheme) | ✓ | — | — | — |
+| Build plan (phased) | ✓ | — | — | — |
+| Environments (dev·test·prod) + agent identity + persistence | ✓ decided | — | — | — |
+
+## Layout
+
+```text
+RfQ/
+├── README.md                  ← you are here
+├── RUNNING.md    deterministic demo runs (pin clock · seed · idempotent apply)
+├── build-plan.md  phased build → run → demo (0 decide … 8 demo+CI)
+├── TODO.md       design-stage gaps
+├── decisions/    ADRs (006 tech stack · 007 theming · 001–005 domain planned)
+├── business/     process · actions · decisions · domain-model · domain-reference
+├── systems/      systems-of-record · data-provenance · mock-architecture · reference-data · theming
+│   └── crm/ tms/ rate/ cpq/ fx/ workflow/   ← per system (openapi.yaml · fixtures · mock spec)
+│                 tms/fixtures: locations (UN/LOCODE) · routes · route-availability
+│                 rate/fixtures: cost-model · rates
+├── identity/     actors · claims-contract · entra-objects (TARGET terraform)
+├── authorization/ authz-projection · policies.cedar · obligations · governance
+├── agents/       catalog (the 3 repricing agents)
+├── interfaces/   mcp/ (TARGET) · api/ (openapi.yaml per API) · a2a/
+├── scenarios/    01-fx-flips-lane · 02-route-unavailable · 03-approval-loop · 04-combined-route-fx-shock
+├── fixtures/     rfqs/ · fx/ · normalized-options · tokens/ · scenario-packs/ (5 reproducible worlds)
+├── themes/       teaching · solarized-light · corporate-sample (passable colorscheme)
+├── deploy/       the PLAN — GCP mapping · container strategy · environments
+├── infra/        the ARTIFACTS — compose · caddy · terraform · cloudbuild · keycloak · entra (TARGET)
+├── spikes/       repricing/ (the first spike definition — mocks, no code yet)
+└── traceability.yaml   proves the chain resolves end-to-end
+```

@@ -1,0 +1,47 @@
+# Traceability — the coherence proof for the repricing subprocess.
+#
+# The most valuable artifact: it proves the architecture is coherent end to end.
+# Every id below must exist in its source file. A dangling id = an incoherent slice.
+#   business_step -> domain_action -> actor/agent -> system_of_record
+#   -> interface -> authorization_decision -> scenario
+
+traceability:
+  - business_step: fetch_authoritative_fx
+    domain_action: fx-rate.read
+    actor: commercial-normalization-agent
+    system_of_record: {reads: [fx_service]}
+    interface: [fx-api.GET_exchange-rates]
+    authorization_decision: [commercial-may-read-fresh-fx]     # D1
+    scenarios: [fx-flips-lane]
+
+  - business_step: normalize_route_costs
+    domain_action: route-cost.normalize
+    actor: commercial-normalization-agent
+    system_of_record: {reads: [rate_management], writes: [cpq]}
+    interface: [commercial-mcp.store_cost_normalization, rate-mcp.get_carrier_rate]
+    authorization_decision: [commercial-may-normalize]         # D2
+    scenarios: [fx-flips-lane]
+
+  - business_step: recommend_route
+    domain_action: route.recommend
+    actor: route-decision-agent
+    system_of_record: {reads: [tms, crm], writes: [agent_state]}
+    interface: [tms-mcp.get_feasible_lanes]
+    authorization_decision: [recommend-noncontracted-lane]     # D3b (+ oblig-lane-deviation)
+    scenarios: [fx-flips-lane]
+
+  - business_step: attempt_auto_submit
+    domain_action: quote.submit-for-approval
+    actor: commercial-normalization-agent
+    system_of_record: {writes: [cpq]}
+    interface: [commercial-mcp.get_previous_quote]
+    authorization_decision: [forbid-auto-replace-on-fx, propose-below-floor]  # D4b deny wins; D5 would oblige
+    scenarios: [fx-flips-lane]
+
+  - business_step: human_approves_deviation
+    domain_action: route-deviation.approve
+    actor: mona.commercial
+    system_of_record: {reads: [workflow], writes: [cpq, agent_state]}
+    interface: [approval-mcp.create_approval_task]
+    authorization_decision: [manager-may-approve-within-limit] # D6
+    scenarios: [fx-flips-lane]

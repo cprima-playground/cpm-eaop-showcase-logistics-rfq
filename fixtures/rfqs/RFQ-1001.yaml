@@ -1,0 +1,25 @@
+# Fixture RFQ for the repricing scenarios. Shanghai -> Munich, EUR quote currency.
+rfq_id: RFQ-1001
+customer: ACME
+region: EMEA
+origin: Shanghai
+destination: Munich
+quote_currency: EUR
+contracted_lane: CN-SHA-DE-HAM-DE-MUC
+prior_quote:
+  quote_id: Q-1001
+  version: 1
+  fx_used: {pair: CNY/EUR, rate: 0.1226}          # "yesterday" rate
+  margin_pct_x10: 80
+
+lane_options:
+  - option_id: route-a
+    lane_id: CN-SHA-DE-HAM-DE-MUC        # contracted
+    carrier_rate: {amount: 42000, currency: CNY}
+    transit_days: 31
+    capacity_status: available            # scenario 02 flips this to unavailable
+  - option_id: route-b
+    lane_id: CN-SHA-NL-RTM-DE-MUC        # non-contracted
+    carrier_rate: {amount: 5650, currency: EUR}
+    transit_days: 27
+    capacity_status: limited

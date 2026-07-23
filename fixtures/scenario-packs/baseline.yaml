@@ -1,0 +1,19 @@
+# Baseline — no disruption. Contracted lane is cheapest; no human decision needed.
+pack:
+  id: baseline
+  rfq: RFQ-1001
+  reference: {locations: tms, routes: tms, rates: rate/fixtures/rates.yaml, availability: baseline}
+
+initial_state:
+  fx: {pair: CNY/EUR, rate: 0.1226, fx_age_seconds: 300}     # "yesterday" — quiet
+  overlay_overrides: []                                       # all routes available
+
+triggering_event: null
+
+expected_agent_discoveries:
+  feasible_routes: [SHA-HAM-MUC, SHA-RTM-MUC, SHA-ANR-MUC]
+  cheapest_after_normalization: SHA-HAM-MUC                   # contracted, wins at this FX
+
+permitted_alternatives: [SHA-HAM-MUC]
+policy_thresholds_fired: []                                   # margin ok, FX quiet, contracted lane
+expected_human_decision_points: []                           # auto-permitted within limits

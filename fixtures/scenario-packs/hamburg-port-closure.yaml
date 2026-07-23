@@ -1,0 +1,27 @@
+# Hamburg port closure — operational reroute (route only, FX quiet).
+pack:
+  id: hamburg-port-closure
+  rfq: RFQ-1001
+  drives_scenario: 02-route-unavailable
+
+initial_state:
+  fx: {pair: CNY/EUR, rate: 0.1226, fx_age_seconds: 300}     # quiet, <=2%
+  overlay_overrides:
+    - route_id: SHA-HAM-MUC
+      status: unavailable
+      reason: PORT_CONGESTION                                 # TERMINAL_CLOSURE class
+      effective_from: 2026-07-24T09:00:00Z
+      expected_until: 2026-07-28T18:00:00Z
+      affected_leg: CNSHA-DEHAM
+
+triggering_event: {kind: TERMINAL_CLOSURE, location: DEHAM, route_id: SHA-HAM-MUC}
+
+expected_agent_discoveries:
+  contracted_unavailable: SHA-HAM-MUC
+  feasible_alternatives: [SHA-RTM-MUC, SHA-ANR-MUC]
+  recommended: SHA-RTM-MUC                                    # non-contracted, +transit
+
+permitted_alternatives: [SHA-RTM-MUC, SHA-ANR-MUC]
+policy_thresholds_fired: [NON_CONTRACTED_LANE, TRANSIT_VARIANCE]   # D3b + D9
+expected_human_decision_points:
+  - {quote_status: approval_required, reason: lane_deviation_and_transit}

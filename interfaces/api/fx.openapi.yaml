@@ -1,0 +1,46 @@
+# Example OpenAPI 3.1 for the FX service (the one system without MCP). Shows the
+# operation -> domain-action binding. The real spec is FastAPI-generated at build and
+# committed to systems/fx/openapi.yaml; this is the illustrative contract.
+openapi: 3.1.0
+info:
+  title: Corporate FX Service
+  version: 0.1.0
+  description: Machine FX rate service (APIKEY). Mocked, seeded from a real historical rate.
+servers:
+  - url: https://fx.localhost           # Caddy locally; Cloud Run / Apigee on GCP
+security:
+  - apiKey: []
+paths:
+  /exchange-rates/{base}/{quote}:
+    get:
+      operationId: getExchangeRate
+      summary: Authoritative FX rate for a currency pair at a point in time.
+      x-domain-action: fx-rate.read       # -> business/actions.yaml
+      x-resource-type: ExchangeRate       # -> authz-projection.yaml
+      x-authz-context: [fx_age_seconds, quote_currency]
+      parameters:
+        - {name: base,  in: path,  required: true, schema: {type: string, example: CNY}}
+        - {name: quote, in: path,  required: true, schema: {type: string, example: EUR}}
+        - {name: effectiveAt, in: query, required: false, schema: {type: string, format: date-time}}
+      responses:
+        "200":
+          description: A frozen, auditable rate snapshot.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ExchangeRate"}
+        "404": {description: No rate for the pair/time.}
+components:
+  securitySchemes:
+    apiKey: {type: apiKey, in: header, name: X-API-Key}
+  schemas:
+    ExchangeRate:
+      type: object
+      required: [pair, rate, source, observed_at, valid_until, rate_ref]
+      properties:
+        pair:        {type: string, example: "CNY/EUR"}
+        rate:        {type: number, example: 0.1194}
+        rate_type:   {type: string, example: corporate}
+        source:      {type: string, example: corporate-fx-service}
+        observed_at: {type: string, format: date-time}
+        valid_until: {type: string, format: date-time}
+        rate_ref:    {type: string, example: FX-20260724-CNY-EUR}

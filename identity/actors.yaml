@@ -1,0 +1,52 @@
+# Actors for the repricing subprocess — business actors + their principal identity.
+#
+# MIRRORS cpm-eaop identity conventions:
+#   - department/business_unit are NOT inline on the actor; they derive from group
+#     path -> cost_center (see data/identity/groups.yaml in cpm-eaop). Actors
+#     reference group ids via member_of.
+#   - principal kind vocab: human | service | agent | workload | external
+#     (taxonomy enum spelling; note cpm-eaop Python uses `external_agent`).
+#   - agent actors are classified `kind=agent` because their caller client id is in
+#     the agent registry (agents/catalog.yaml caller_identity.keycloak_client).
+
+actors:
+  # --- Humans ---------------------------------------------------------------
+  - id: mona.commercial
+    kind: human
+    persona: CommercialManager
+    member_of: [rfq-commercial-emea]     # -> department/BU via group path
+    approval_limit:
+      currency: EUR
+      amount_cents: 1000000              # 10,000 EUR delegated commercial limit
+    region: EMEA
+
+  - id: sam.pricing
+    kind: human
+    persona: PricingManager
+    member_of: [rfq-pricing-emea]
+    region: EMEA
+
+  # --- Agents (kind=agent; see agents/catalog.yaml) -------------------------
+  - id: agent.lane-evaluation
+    kind: agent
+    persona: LaneEvaluationAgent
+    trust_domain: internal
+    keycloak_client: lane-evaluation-agent-svc
+
+  - id: agent.commercial-normalization
+    kind: agent
+    persona: CommercialNormalizationAgent
+    trust_domain: internal
+    keycloak_client: commercial-normalization-agent-svc
+
+  - id: agent.route-decision
+    kind: agent
+    persona: RouteDecisionAgent
+    trust_domain: internal
+    keycloak_client: route-decision-agent-svc
+
+# Groups referenced above (mirror data/identity/groups.yaml path->cost_center shape).
+# Full directory would live in identity/groups.yaml; sketched here for the slice.
+groups:
+  - {group_id: rfq-commercial-emea, path: /Front-Office/Commercial/EMEA, cost_center: CC-COMM-EMEA}
+  - {group_id: rfq-pricing-emea,    path: /Back-Office/Pricing/EMEA,     cost_center: CC-PRIC-EMEA}

@@ -1,0 +1,24 @@
+%% Cross-Currency Lane Repricing and Approval — simplified view.
+%% Authoritative narrative: process.md. This is a lightweight render only.
+flowchart TD
+    E([Business event:<br/>FX change or route unavailable]) --> D[Discover impacted quotes]
+    D --> L[Retrieve feasible lane options<br/>TMS]
+    L --> R[Retrieve carrier rates<br/>local currencies · Rate mgmt]
+    R --> FX[Fetch authoritative FX rate<br/>corporate FX service]
+    FX --> FRESH{FX within<br/>freshness window?}
+    FRESH -- No --> FX
+    FRESH -- Yes --> N[Normalize costs to quote currency<br/>+ surcharges + margin]
+    N --> C[Compare cost · transit · capacity · lane · risk]
+    C --> T{Threshold<br/>evaluation}
+
+    T -- within limits --> P[Propose route + price]
+    P --> W[Write back to quote + route records]
+
+    T -- commercial / FX / lane exceeded --> H[Create human review task<br/>with decision evidence]
+    H --> HD{Human decision}
+    HD -- approve --> W
+    HD -- choose other lane / new search --> L
+    HD -- require fresh FX --> FX
+    HD -- reject --> X([Escalate / close])
+
+    W --> END([Durable business-state transition])

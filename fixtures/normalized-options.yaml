@@ -1,0 +1,33 @@
+# Golden expected output of the Commercial Normalization Agent for scenario 01
+# (today's FX 0.1194). The spike asserts against these numbers.
+# Money shown in EUR for readability; the entity-build layer converts to cents +
+# tenths-of-a-percent before the request reaches Cedar (see business/actions.yaml).
+
+quote_currency: EUR
+fx_snapshot:
+  pair: CNY/EUR
+  rate: 0.1194
+  source: corporate-fx-service
+  observed_at: 2026-07-24T08:00:00Z
+  valid_until: 2026-07-24T16:00:00Z
+  rate_ref: FX-20260724-CNY-EUR
+
+normalized_options:
+  - option_id: route-a                    # contracted, CNY-priced
+    base_cost_original: {amount: 42000, currency: CNY}
+    base_cost_eur: 5014.80
+    surcharges_eur: 610.00
+    total_cost_eur: 5624.80
+    proposed_sell_price_eur: 6048.17
+    margin_pct_x10: 70                     # 7.0%
+  - option_id: route-b                    # non-contracted, EUR-priced
+    base_cost_eur: 5650.00
+    surcharges_eur: 480.00
+    total_cost_eur: 6130.00
+    proposed_sell_price_eur: 6452.63
+    margin_pct_x10: 50                     # 5.0% — below the 6.0% floor
+
+ranking_note: >
+  With today's FX, route-b totals more EUR than route-a, yet route-b is faster.
+  Route-b's margin (5.0%) is below floor -> D5; recommending it deviates from the
+  contracted lane -> D3b; the 2.7% FX move -> D4b forbids auto-submit.

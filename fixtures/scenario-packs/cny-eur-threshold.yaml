@@ -1,0 +1,23 @@
+# CNY/EUR crosses threshold — financial trigger (no route disruption).
+pack:
+  id: cny-eur-threshold
+  rfq: RFQ-1001
+  drives_scenario: 01-fx-flips-lane
+
+initial_state:
+  fx:
+    prior: {pair: CNY/EUR, rate: 0.1226}                     # yesterday
+    current: {pair: CNY/EUR, rate: 0.1194, fx_age_seconds: 720}   # today, 2.7% move
+  overlay_overrides: []                                       # all routes available
+
+triggering_event: {kind: FX_THRESHOLD_CROSSED, pair: CNY/EUR, variance_pct_x10: 27}
+
+expected_agent_discoveries:
+  ranking_before: [SHA-HAM-MUC, SHA-RTM-MUC]                  # contracted cheaper yesterday
+  ranking_after:  [SHA-RTM-MUC, SHA-HAM-MUC]                  # FX flips it today
+  recommended: SHA-RTM-MUC                                    # below margin floor
+
+permitted_alternatives: [SHA-RTM-MUC, SHA-HAM-MUC]
+policy_thresholds_fired: [FX_VARIANCE, MARGIN_FLOOR, NON_CONTRACTED_LANE]  # D4a/D4b + D5 + D3b
+expected_human_decision_points:
+  - {quote_status: approval_required, reason: fx_forbids_auto_submit_plus_margin_floor}

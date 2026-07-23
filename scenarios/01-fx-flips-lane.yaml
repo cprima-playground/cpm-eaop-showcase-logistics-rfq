@@ -1,0 +1,41 @@
+# Machine-readable companion to 01-fx-flips-lane.md.
+# Drives (when the spike exists): policy tests, agent tests, MCP/API mocks, and the
+# end-to-end run. Mirrors the given/when/then style; percents are tenths, money cents.
+
+scenario:
+  id: fx-flips-lane
+  title: FX movement changes the preferred lane
+
+given:
+  rfq: RFQ-1001
+  quote_currency: EUR
+  contracted_lane: CN-SHA-DE-HAM-DE-MUC
+  options:
+    - {option_id: route-a, lane_id: CN-SHA-DE-HAM-DE-MUC, cost: 42000, currency: CNY, transit_days: 31, capacity: available}
+    - {option_id: route-b, lane_id: CN-SHA-NL-RTM-DE-MUC, cost: 5650, currency: EUR, transit_days: 27, capacity: limited}
+  fx:
+    pair: CNY/EUR
+    rate: 0.1194
+    fx_age_seconds: 720
+    prior_quote_fx_variance_pct_x10: 27      # 2.7%
+  margins:
+    route_b_margin_pct_x10: 50               # 5.0%, below 6.0% floor
+
+when:
+  - {action: fx-rate.read,            principal: commercial-normalization-agent, resource: "ExchangeRate::CNY-EUR",        context: {fx_age_seconds: 720, quote_currency: EUR}}
+  - {action: route-cost.normalize,    principal: commercial-normalization-agent, resource: "RouteOption::route-b",         context: {fx_age_seconds: 720, target_currency: EUR}}
+  - {action: route.recommend,         principal: route-decision-agent,           resource: "RFQ::RFQ-1001",                context: {non_contracted_lane: true, cost_variance_pct_x10: 93, margin_pct_x10: 50}}
+  - {action: quote.submit-for-approval, principal: commercial-normalization-agent, resource: "Quote::Q-1001-v2",           context: {fx_variance_pct_x10: 27, margin_pct_x10: 50}}
+  - {action: route-deviation.approve, principal: mona.commercial,                 resource: "RouteRecommendation::REC-1001-v2", context: {quote_value_eur_cents: 645263, fx_variance_pct_x10: 27, margin_pct_x10: 50}}
+
+then:
+  authorization:
+    - {action: fx-rate.read,            effect: allow, determining: [commercial-may-read-fresh-fx]}
+    - {action: route-cost.normalize,    effect: allow, determining: [commercial-may-normalize]}
+    - {action: route.recommend,         effect: allow, determining: [recommend-noncontracted-lane], obligations: [oblig-lane-deviation]}
+    - {action: quote.submit-for-approval, effect: deny, determining: [forbid-auto-replace-on-fx]}   # deny-precedence
+    - {action: route-deviation.approve, effect: allow, determining: [manager-may-approve-within-limit]}
+  records:
+    quote_status: approved
+    recommended_option: route-b
+    fx_snapshot_ref: FX-20260724-CNY-EUR

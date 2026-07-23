@@ -1,0 +1,66 @@
+# Agent catalog — repricing subprocess (three agents).
+#
+# MIRRORS cpm-eaop data/agents/hello-agent-*.yaml. The load-bearing field is
+# `caller_identity.keycloak_client` — identity resolution scans it, and any azp in
+# that set resolves to kind=agent with a populated AgentIdentity (else kind=service).
+# `can_call` declares the allowed A2A edges (governed by agent.delegate).
+#
+# Fields beyond the cpm-eaop card (owned_actions, mcp_access, prohibited_actions,
+# human_escalation) are documented SHOWCASE EXTENSIONS. platform/endpoint are TARGET
+# (no real deployment in this pass).
+
+agents:
+  - id: lane-evaluation-agent
+    name: Lane Evaluation Agent
+    platform: TARGET                     # e.g. gcp-vertex-ai-agent-engine | uipath
+    description: Build and compare valid route alternatives. Does NOT convert currency or approve deviations.
+    endpoint: {TARGET: true}
+    auth: {mechanism: oauth2-client-credentials}
+    caller_identity:
+      keycloak_client: lane-evaluation-agent-svc
+      audience_asserted: repricing-agent-api
+      can_call: [commercial-normalization-agent]     # A2A handoff
+    owned_actions: [lane.evaluate, lane.option.create, capacity.check, carrier-rate.read]
+    mcp_access: [tms-mcp, rate-mcp]
+    prohibited_actions: [route-cost.normalize, route-deviation.approve]
+    human_escalation: [no_feasible_lane]
+    source: {path: spikes/repricing/mock-agents/lane-evaluation}
+    status: design
+
+  - id: commercial-normalization-agent
+    name: Commercial Normalization Agent
+    platform: TARGET
+    description: Turn heterogeneous route costs into commercially comparable options via FX normalization.
+    endpoint: {TARGET: true}
+    auth: {mechanism: oauth2-client-credentials}
+    caller_identity:
+      keycloak_client: commercial-normalization-agent-svc
+      audience_asserted: repricing-agent-api
+      can_call: [route-decision-agent]
+    owned_actions: [fx-rate.read, route-cost.normalize, quote-price.calculate, quote-variance.evaluate]
+    api_access: [fx-api]                 # direct HTTP, not MCP
+    mcp_access: [commercial-mcp]
+    prohibited_actions: [route-deviation.approve, quote.submit-for-approval]  # forbidden auto-submit on FX>2%
+    human_escalation: [fx_snapshot_stale]
+    source: {path: spikes/repricing/mock-agents/commercial-normalization}
+    status: design
+
+  - id: route-decision-agent
+    name: Route Decision Agent
+    platform: TARGET
+    description: Recommend a route (not approve it). Create a human review task when a threshold is crossed.
+    endpoint: {TARGET: true}
+    auth: {mechanism: oauth2-client-credentials}
+    caller_identity:
+      keycloak_client: route-decision-agent-svc
+      audience_asserted: repricing-agent-api
+      can_call: []
+    owned_actions: [route.recommend, route-deviation.propose, quote.submit-for-approval, approval.request]
+    mcp_access: [approval-mcp]
+    prohibited_actions: [route-deviation.approve]   # recommends, never approves
+    human_escalation: [threshold_exceeded]
+    source: {path: spikes/repricing/mock-agents/route-decision}
+    status: design
+
+# Note: no agent "owns" the RFQ or Quote — it owns EXECUTION of an action; the
+# business object stays owned by its system of record (systems/systems-of-record.yaml).

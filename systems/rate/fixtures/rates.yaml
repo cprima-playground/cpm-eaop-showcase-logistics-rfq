@@ -1,0 +1,16 @@
+# Carrier rates — DERIVED via cost-model.md (correlated, seed=42). Per route, in the
+# operating carrier's currency. Surcharges separate. Baseline (all routes available).
+rates:
+  - {route_id: SHA-HAM-MUC, carrier: COSCO,     currency: CNY, base_cost: 42000, surcharges: 5100, capacity_status: available}
+  - {route_id: SHA-RTM-MUC, carrier: MAERSK,    currency: EUR, base_cost: 5650,  surcharges: 480,  capacity_status: limited}
+  - {route_id: SHA-ANR-MUC, carrier: MSC,       currency: EUR, base_cost: 5720,  surcharges: 500,  capacity_status: available}
+  - {route_id: PVG-FRA-MUC, carrier: Lufthansa Cargo, currency: EUR, base_cost: 18400, surcharges: 900, capacity_status: available}
+  - {route_id: SHA-PIR-MUC, carrier: COSCO,     currency: EUR, base_cost: 5300,  surcharges: 620,  capacity_status: available}
+  - {route_id: SHA-GOA-MUC, carrier: MSC,       currency: EUR, base_cost: 5480,  surcharges: 560,  capacity_status: available}
+  - {route_id: NGB-HAM-MUC, carrier: COSCO,     currency: CNY, base_cost: 41500, surcharges: 5000, capacity_status: available}
+  - {route_id: SHA-GDN-MUC, carrier: Hapag-Lloyd, currency: EUR, base_cost: 5900, surcharges: 540, capacity_status: available}
+
+# Cross-currency point: the contracted lane (SHA-HAM-MUC) is CNY; every viable
+# reroute is EUR -> a reroute forces FX normalization to compare in the EUR quote
+# currency. Scenario packs may raise capacity_factor on alternatives when a route
+# goes unavailable (see cost-model.md correlation rules).

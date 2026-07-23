@@ -1,0 +1,60 @@
+# The three environments — one set of images, config per env (12-factor).
+# The claim contract makes Keycloak<->Entra a config swap, not code.
+# Consumed by the scenario runner, compose, and terraform. Narrative: deploy/environments.md.
+# NON-SECRET only. Secrets: .env (dev) / Secret Manager (test, prod).
+
+environments:
+
+  dev:
+    purpose: build + local demo
+    cost: none                       # 100% local, never touches GCP
+    host: docker-compose
+    gcp_project: null
+    sso:
+      idp: keycloak
+      oidc_issuer: http://keycloak:8080/realms/rfq
+    agent_identity_mode: keycloak-client-creds
+    agent_runtime: adk-container     # ADK in a container (compose); LLM stubbed
+    llm: stub                        # deterministic, zero-cost
+    persistence: sqlite              # or memory; no Firestore
+    edge: caddy                      # *.localhost + local HTTPS
+    secrets: dotenv
+    theme: solarized-light           # personal; teaching for classes
+    cedar_agent_url: http://cedar-agent:8180
+    min_instances: null              # n/a (compose)
+
+  test:
+    purpose: validate on real cloud + real IdP
+    cost: personal-gcp               # your spend; keep min_instances=0 except while demoing
+    host: cloud-run
+    gcp_project: rfq-showcase-test   # personal project
+    sso:
+      idp: entra
+      oidc_issuer: https://login.microsoftonline.com/${ENTRA_TENANT_ID}/v2.0
+    agent_identity_mode: wif-entra   # GCP SA federates to Entra; no stored secret
+    agent_runtime: vertex-agent-engine
+    llm: gemini                      # or stub for deterministic runs
+    persistence: firestore           # free tier; or sqlite
+    edge: apigee
+    secrets: secret-manager
+    theme: teaching
+    cedar_agent_url: ${CEDAR_AGENT_PRIVATE_URL}
+    min_instances: 0                 # scale to zero; 1 only during a demo window
+
+  prod:
+    purpose: stakeholder demo
+    cost: corporate-gcp
+    host: cloud-run
+    gcp_project: rfq-showcase-prod   # corporate project
+    sso:
+      idp: entra
+      oidc_issuer: https://login.microsoftonline.com/${ENTRA_TENANT_ID}/v2.0
+    agent_identity_mode: wif-entra
+    agent_runtime: vertex-agent-engine
+    llm: gemini
+    persistence: firestore
+    edge: apigee
+    secrets: secret-manager
+    theme: corporate                 # THEME_PATH -> your work brand (not committed)
+    cedar_agent_url: ${CEDAR_AGENT_PRIVATE_URL}
+    min_instances: 1                 # warm for the demo; scale to zero after

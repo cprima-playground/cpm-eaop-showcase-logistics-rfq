@@ -1,0 +1,35 @@
+# Obligation catalog — repricing subprocess.
+#
+# MIRRORS cpm-eaop data/policies/obligations.yaml. Cedar has NO obligation concept;
+# policies annotate with obligation IDS (@obligations("id1,id2")), and this catalog
+# maps id -> FLAT payload. A Python-side resolver merges the payloads of the
+# determining permit policies; a PEP (enforce.py-style) enforces them. cedar-agent
+# never sees obligations.
+#
+# Flat keys are read directly by the PEP: require_approval, approver_role, notify,
+# require_review, max_fx_age_seconds, max_delegation_depth, ttl.
+
+version: 1
+
+obligations:
+  oblig-commercial-approval:
+    require_approval: true
+    approver_role: commercial-manager
+
+  oblig-notify-pricing-manager:
+    notify: pricing-manager
+
+  oblig-lane-deviation:
+    require_review: customer-service
+
+  oblig-cost-variance-review:
+    require_review: pricing
+
+  oblig-transit-review:
+    require_review: operations
+
+  oblig-fx-freshness:
+    max_fx_age_seconds: 900
+
+  oblig-delegation-depth-1:
+    max_delegation_depth: 1

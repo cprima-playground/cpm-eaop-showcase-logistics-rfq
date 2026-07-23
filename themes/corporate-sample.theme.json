@@ -1,0 +1,33 @@
+{
+  "name": "Corporate (sample placeholder — replace with your brand)",
+  "mode": "auto",
+  "brand": {
+    "app_prefix": "Logistics Platform",
+    "logo": "assets/placeholder-logo.svg",
+    "favicon": "assets/favicon.svg"
+  },
+  "banner": { "text": "", "show": false },
+  "colors": {
+    "primary":   "#334155",
+    "secondary": "#475569",
+    "accent":    "#0ea5e9",
+    "success":   "#15803d",
+    "warning":   "#b45309",
+    "danger":    "#b91c1c",
+    "bg":        "#ffffff",
+    "surface":   "#f1f5f9",
+    "text":      "#0f172a",
+    "muted":     "#64748b"
+  },
+  "systems": {
+    "crm":      "#0ea5e9",
+    "tms":      "#0891b2",
+    "rate":     "#6366f1",
+    "cpq":      "#15803d",
+    "fx":       "#b45309",
+    "workflow": "#9333ea"
+  },
+  "typography": { "font": "system-ui, sans-serif", "scale": "compact" },
+  "density": "compact",
+  "_note": "Neutral placeholder. Do NOT commit a real company's trademarked logo, name, or exact brand colors. Copy this file to make your own work brand and mount it via THEME_PATH."
+}

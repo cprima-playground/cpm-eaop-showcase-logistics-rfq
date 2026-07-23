@@ -1,0 +1,43 @@
+# Machine companion to 04-combined-route-fx-shock.md (flagship).
+# Data pack: ../fixtures/scenario-packs/combined-route-and-fx-shock.yaml
+# One event -> reroute + FX repricing. Deny-precedence forbid + MERGED obligations.
+
+scenario:
+  id: combined-route-fx-shock
+  title: Combined route + FX shock
+  pack: combined-route-and-fx-shock
+
+given:
+  rfq: RFQ-1001
+  quote_currency: EUR
+  contracted_lane: SHA-HAM-MUC
+  event:
+    kind: COMBINED
+    events:
+      - {kind: TERMINAL_CLOSURE, location: DEHAM, route_id: SHA-HAM-MUC}
+      - {kind: FX_THRESHOLD_CROSSED, pair: CNY/EUR, variance_pct_x10: 27}
+  reroute: {route_id: SHA-RTM-MUC, currency: EUR, capacity: limited}
+  fx: {pair: CNY/EUR, rate: 0.1194, fx_age_seconds: 720, prior_quote_fx_variance_pct_x10: 27}
+  margins: {reroute_margin_pct_x10: 50}          # below 6.0% floor
+
+when:
+  - {action: fx-rate.read,            principal: commercial-normalization-agent, resource: "ExchangeRate::CNY-EUR",     context: {fx_age_seconds: 720, quote_currency: EUR}}
+  - {action: route-cost.normalize,    principal: commercial-normalization-agent, resource: "RouteOption::SHA-RTM-MUC",  context: {fx_age_seconds: 720, target_currency: EUR}}
+  - {action: quote-variance.evaluate, principal: commercial-normalization-agent, resource: "Quote::Q-1001-v2",          context: {fx_variance_pct_x10: 27}}
+  - {action: route.recommend,         principal: route-decision-agent,           resource: "RFQ::RFQ-1001",             context: {non_contracted_lane: true, cost_variance_pct_x10: 60, transit_variance_days: 4, margin_pct_x10: 50}}
+  - {action: quote.submit-for-approval, principal: commercial-normalization-agent, resource: "Quote::Q-1001-v2",        context: {fx_variance_pct_x10: 27, margin_pct_x10: 50}}
+  - {action: route-deviation.approve, principal: mona.commercial,                 resource: "RouteRecommendation::REC-1001-v2", context: {quote_value_eur_cents: 665000, fx_variance_pct_x10: 27, margin_pct_x10: 50}}
+
+then:
+  authorization:
+    - {action: fx-rate.read,            effect: allow, determining: [commercial-may-read-fresh-fx]}
+    - {action: route-cost.normalize,    effect: allow, determining: [commercial-may-normalize]}
+    - {action: quote-variance.evaluate, effect: allow, determining: [fx-permit-recalc], obligations: [oblig-notify-pricing-manager]}
+    # obligations MERGE from D3b (lane) + D9 (transit):
+    - {action: route.recommend,         effect: allow, determining: [recommend-noncontracted-lane, recommend-slower-transit], obligations: [oblig-lane-deviation, oblig-transit-review]}
+    - {action: quote.submit-for-approval, effect: deny, determining: [forbid-auto-replace-on-fx]}   # deny-precedence
+    - {action: route-deviation.approve, effect: allow, determining: [manager-may-approve-within-limit]}
+  records:
+    quote_status: approved
+    recommended_option: SHA-RTM-MUC
+    fx_snapshot_ref: FX-20260724-CNY-EUR

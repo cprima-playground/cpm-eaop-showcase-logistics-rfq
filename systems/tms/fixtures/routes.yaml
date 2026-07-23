@@ -1,0 +1,60 @@
+# Route topology — STABLE graph of legs (location ids from locations.yaml).
+# 8 complete routes, ~18 legs. Lane CNSHA->DEMUC has 6 alternatives (routes r1..r6).
+# Durations are plausible (ocean slow, rail medium, air fast). Costs are NOT here —
+# they are derived, correlated + seeded (rate/fixtures/cost-model.md).
+routes:
+  - id: SHA-HAM-MUC            # r1 — the CONTRACTED lane
+    lane: CNSHA-DEMUC
+    contracted: true
+    legs:
+      - {from: CNSHA, to: DEHAM, mode: ocean, duration_days: 27}
+      - {from: DEHAM, to: DEMUC, mode: rail,  duration_days: 2}
+
+  - id: SHA-RTM-MUC            # r2 — Rotterdam alternative (via Duisburg, TEN-T)
+    lane: CNSHA-DEMUC
+    legs:
+      - {from: CNSHA, to: NLRTM, mode: ocean, duration_days: 26}
+      - {from: NLRTM, to: DEDUI, mode: rail,  duration_days: 1}
+      - {from: DEDUI, to: DEMUC, mode: rail,  duration_days: 1}
+
+  - id: SHA-ANR-MUC            # r3 — Antwerp alternative
+    lane: CNSHA-DEMUC
+    legs:
+      - {from: CNSHA, to: BEANR, mode: ocean, duration_days: 28}
+      - {from: BEANR, to: DEMUC, mode: rail,  duration_days: 2}
+
+  - id: PVG-FRA-MUC            # r4 — air (fast, expensive)
+    lane: CNSHA-DEMUC
+    legs:
+      - {from: CNPVG, to: DEFRA, mode: air,  duration_days: 2}
+      - {from: DEFRA, to: DEMUC, mode: road, duration_days: 1}
+
+  - id: SHA-PIR-MUC            # r5 — Med gateway (TEN-T Orient/East-Med)
+    lane: CNSHA-DEMUC
+    legs:
+      - {from: CNSHA, to: GRPIR, mode: ocean, duration_days: 22}
+      - {from: GRPIR, to: DEMUC, mode: rail,  duration_days: 5}
+
+  - id: SHA-GOA-MUC            # r6 — Genoa gateway
+    lane: CNSHA-DEMUC
+    legs:
+      - {from: CNSHA, to: ITGOA, mode: ocean, duration_days: 24}
+      - {from: ITGOA, to: DEMUC, mode: rail,  duration_days: 3}
+
+  - id: NGB-HAM-MUC            # r7 — alternative origin (Ningbo)
+    lane: CNNGB-DEMUC
+    legs:
+      - {from: CNNGB, to: DEHAM, mode: ocean, duration_days: 27}
+      - {from: DEHAM, to: DEMUC, mode: rail,  duration_days: 2}
+
+  - id: SHA-GDN-MUC            # r8 — Baltic gateway
+    lane: CNSHA-DEMUC
+    legs:
+      - {from: CNSHA, to: PLGDN, mode: ocean, duration_days: 30}
+      - {from: PLGDN, to: DEMUC, mode: rail,  duration_days: 3}
+
+# Alternatives for the important lane CNSHA->DEMUC: r1 (contracted, Hamburg),
+# r2 (Rotterdam), r3 (Antwerp) are the primary three; r4 (air), r5/r6 (Med) are
+# escalation options when the North-Sea gateways are disrupted.
+lane_alternatives:
+  CNSHA-DEMUC: [SHA-HAM-MUC, SHA-RTM-MUC, SHA-ANR-MUC, PVG-FRA-MUC, SHA-PIR-MUC, SHA-GOA-MUC]

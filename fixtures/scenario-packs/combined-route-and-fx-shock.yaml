@@ -1,0 +1,47 @@
+# FLAGSHIP — Hamburg closed forces reroute via Rotterdam; the replacement carrier
+# rate is EUR-denominated, so the pricing agent fetches FX, recalculates margin, and
+# requests approval when route + commercial thresholds are exceeded. One realistic
+# event exercises routing, MCP, an external API, Cedar, multiple agents, and human
+# review. Drives ../../scenarios/04-combined-route-fx-shock.*.
+pack:
+  id: combined-route-and-fx-shock
+  rfq: RFQ-1001
+  drives_scenario: 04-combined-route-fx-shock
+
+initial_state:
+  fx:
+    prior:   {pair: CNY/EUR, rate: 0.1226}
+    current: {pair: CNY/EUR, rate: 0.1194, fx_age_seconds: 720}   # 2.7% move
+  overlay_overrides:
+    - route_id: SHA-HAM-MUC
+      status: unavailable
+      reason: PORT_CONGESTION
+      effective_from: 2026-07-24T09:00:00Z
+      expected_until: 2026-07-28T18:00:00Z
+      affected_leg: CNSHA-DEHAM
+    # demand shifts to alternatives -> spot premium (cost-model correlation rule)
+    - {route_id: SHA-RTM-MUC, capacity_status: limited}
+
+triggering_event:
+  kind: COMBINED
+  events:
+    - {kind: TERMINAL_CLOSURE, location: DEHAM, route_id: SHA-HAM-MUC}   # contracted lane gone
+    - {kind: FX_THRESHOLD_CROSSED, pair: CNY/EUR, variance_pct_x10: 27}  # AND FX moved
+
+expected_agent_discoveries:
+  contracted_unavailable: SHA-HAM-MUC
+  reroute: SHA-RTM-MUC                                # EUR-denominated -> forces FX normalization
+  fx_snapshot: FX-20260724-CNY-EUR
+  recommended: SHA-RTM-MUC
+
+permitted_alternatives: [SHA-RTM-MUC, SHA-ANR-MUC]
+policy_thresholds_fired:
+  - NON_CONTRACTED_LANE     # D3b  permit + customer-service review
+  - FX_VARIANCE             # D4a/D4b  notify pricing manager + forbid auto-submit
+  - MARGIN_FLOOR            # D5   permit + commercial approval
+  - TRANSIT_VARIANCE        # D9   (Rotterdam via Duisburg adds days) permit + operations review
+
+expected_human_decision_points:
+  - quote_status: approval_required
+    evidence: [baseline_lane, reroute_lane, fx_source_and_timestamp, converted_costs, margin_impact, triggered_thresholds]
+    resolves_by: quote_status_transition            # approved | rejected | revise (in CPQ)

@@ -1,0 +1,48 @@
+# MCP servers + tools for the repricing subprocess.
+#
+# TARGET — green-field. cpm-eaop has NO MCP server implementation today (MCPServer /
+# MCPTool exist only as Cedar entity types + mcp.connect/tool.call actions). This
+# file DESIGNS the servers the spike would mock; nothing here is implemented.
+#
+# Distinctions to preserve:
+#   - an MCP RESOURCE exposes information; an MCP TOOL performs/requests an operation
+#   - the policy action bound to a tool is a DOMAIN action (carrier-rate.read),
+#     not a generic mcp.call. `mcp.connect`/`tool.call` remain lower-level governance
+#     actions, they do not replace the domain action.
+
+servers:
+  - id: tms-mcp
+    purpose: Expose TMS route/capacity capabilities
+    resources:
+      - {uri_template: "route://lanes/{rfq_id}", description: Feasible lanes for an RFQ}
+    tools:
+      - {name: get_feasible_lanes,   action: lane.evaluate}
+      - {name: get_lane_transit_time, action: lane.evaluate}
+      - {name: check_lane_capacity,   action: capacity.check}
+      - {name: get_route_restrictions, action: lane.evaluate}
+
+  - id: rate-mcp
+    purpose: Expose rate-management capabilities
+    resources:
+      - {uri_template: "rate://contracts/{lane_id}", description: Contract rates for a lane}
+    tools:
+      - {name: get_contract_rate, action: carrier-rate.read}
+      - {name: get_carrier_rate,  action: carrier-rate.read}
+      - {name: get_lane_surcharges, action: carrier-rate.read}
+
+  - id: commercial-mcp
+    purpose: Expose CPQ / commercial capabilities
+    tools:
+      - {name: get_customer_pricing_terms, action: quote-price.calculate}
+      - {name: get_margin_floor,           action: quote-price.calculate}
+      - {name: get_previous_quote,         action: quote-variance.evaluate}
+      - {name: calculate_surcharges,       action: quote-price.calculate}
+      - {name: store_cost_normalization,   action: route-cost.normalize}
+
+  - id: approval-mcp
+    purpose: Expose workflow / approval capabilities
+    tools:
+      - {name: create_approval_task, action: approval.request, side_effects: [creates_human_task]}
+      - {name: get_approval_status,  action: approval.request}
+      - {name: record_recommendation, action: route-deviation.propose}
+      - {name: resume_route_decision, action: route.recommend}

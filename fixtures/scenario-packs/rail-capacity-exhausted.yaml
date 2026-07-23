@@ -1,0 +1,28 @@
+# Rail capacity exhausted on the Hamburg->Munich leg — operational, partial disruption.
+pack:
+  id: rail-capacity-exhausted
+  rfq: RFQ-1001
+
+initial_state:
+  fx: {pair: CNY/EUR, rate: 0.1226, fx_age_seconds: 300}
+  overlay_overrides:
+    - route_id: SHA-HAM-MUC
+      status: degraded
+      reason: CAPACITY_EXHAUSTED
+      effective_from: 2026-07-24T06:00:00Z
+      expected_until: 2026-07-26T06:00:00Z
+      affected_leg: DEHAM-DEMUC          # ocean leg fine; inland rail is the constraint
+
+triggering_event: {kind: CAPACITY_EXHAUSTED, leg: DEHAM-DEMUC, route_id: SHA-HAM-MUC}
+
+expected_agent_discoveries:
+  degraded_leg: DEHAM-DEMUC
+  options:
+    - {route: SHA-HAM-MUC, note: spot premium on the rail leg -> cost variance up}
+    - {route: SHA-RTM-MUC, note: unaffected inland via Duisburg}
+  recommended: SHA-RTM-MUC
+
+permitted_alternatives: [SHA-RTM-MUC, SHA-ANR-MUC]
+policy_thresholds_fired: [COST_VARIANCE, NON_CONTRACTED_LANE]     # D8 + D3b
+expected_human_decision_points:
+  - {quote_status: approval_required, reason: cost_variance_and_lane_deviation}

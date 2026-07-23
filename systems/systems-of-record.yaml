@@ -1,0 +1,49 @@
+# Systems of record for the repricing subprocess.
+#
+# There is rarely ONE system of record for an RFQ — truth is fragmented. For every
+# business object, name exactly one authoritative owner. Agents carry snapshots +
+# identifiers, never become authoritative stores.
+#
+# All systems below are MOCKED in the spike (spikes/repricing/). None is a real
+# integration in this pass.
+
+systems:
+  crm:
+    name: Mock CRM
+    owns: [Customer, RFQ, ContractedLane]
+    interfaces: [MCP]           # crm-mcp (TARGET)
+
+  tms:
+    name: Mock TMS
+    owns: [RouteTopology, FeasibleLane, TransitTime, Capacity]
+    interfaces: [MCP]           # tms-mcp (TARGET)
+
+  rate_management:
+    name: Mock Rate Service
+    owns: [ContractRate, CarrierSpotRate, LaneSurcharge]
+    interfaces: [MCP]           # rate-mcp (TARGET)
+
+  cpq:
+    name: Mock CPQ
+    owns: [CustomerPricingTerms, MarginFloor, QuoteVersion, QuoteStatus]
+    interfaces: [MCP]           # commercial-mcp (TARGET)
+    note: >
+      Also the system of record for the HUMAN DECISION: the approval outcome is a
+      Quote.status transition here (approval_required -> approved|rejected|revise),
+      not a record owned by the workflow system.
+
+  fx_service:
+    name: Corporate FX Service
+    owns: [ExchangeRate]
+    interfaces: [REST]          # fx-api (TARGET) — deliberately a plain HTTP dependency
+    note: >
+      FX is a direct API call, not MCP: deterministic, narrow, centrally managed,
+      easy to mock. Internal FX service fronts the external rate provider.
+
+  workflow:
+    name: Mock Approval/Workflow
+    owns: [ApprovalTask]        # the task MECHANISM only
+    interfaces: [MCP]           # approval-mcp (TARGET)
+    note: >
+      Surfaces the decision to a human and triggers resumption. It does NOT own the
+      decision — the authoritative human decision is Quote.status in CPQ.

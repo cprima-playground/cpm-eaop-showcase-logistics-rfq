@@ -1,0 +1,35 @@
+# Machine companion to 03-approval-loop.md.
+# Long-running HITL. The resume trigger is a Quote.status change in CPQ (not a
+# workflow callback). Two passes; agents hold no authoritative state across the wait.
+
+scenario:
+  id: approval-loop
+  title: Approval loop — human requests a revision
+
+given:
+  rfq: RFQ-1001
+  from_scenario: fx-flips-lane          # starts where 01 left off
+  initial_quote_status: approval_required
+
+when:
+  # --- human decision = a status transition in the quote SoR ---
+  - {event: quote-status-change, resource: "Quote::Q-1001-v2", status: revise,
+     note: "keep contracted Hamburg lane; re-check a cheaper carrier"}
+  # --- process resumes on observing `revise` ---
+  - {action: lane.evaluate,        principal: lane-evaluation-agent,          resource: "RFQ::RFQ-1001", context: {}}
+  - {action: route-cost.normalize, principal: commercial-normalization-agent, resource: "RouteOption::route-a2", context: {fx_age_seconds: 300, target_currency: EUR}}
+  - {action: route.recommend,      principal: route-decision-agent,           resource: "RFQ::RFQ-1001", context: {non_contracted_lane: false, cost_variance_pct_x10: 30, transit_variance_days: 0, margin_pct_x10: 80}}
+  - {event: quote-status-change,   resource: "Quote::Q-1001-v3", status: approval_required}
+  - {action: route-deviation.approve, principal: mona.commercial,             resource: "RouteRecommendation::REC-1001-v3", context: {quote_value_eur_cents: 620000, fx_variance_pct_x10: 5, margin_pct_x10: 80}}
+  - {event: quote-status-change,   resource: "Quote::Q-1001-v3", status: approved}
+
+then:
+  authorization:
+    - {action: lane.evaluate,        effect: allow}
+    - {action: route-cost.normalize, effect: allow, determining: [commercial-may-normalize]}
+    - {action: route.recommend,      effect: allow, determining: [recommend-contracted-lane]}   # D3a, no obligation
+    - {action: route-deviation.approve, effect: allow, determining: [manager-may-approve-within-limit]}
+  status_trail: [approval_required, revise, approval_required, approved]
+  records:
+    recommended_option: route-a2
+    quote_status: approved

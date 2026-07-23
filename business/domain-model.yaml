@@ -1,0 +1,66 @@
+# Business domain model for the repricing subprocess.
+#
+# TWO LAYERS — keep them separate:
+#   - THIS FILE = business objects (RFQ, Quote, RouteOption, ExchangeRate, ...).
+#     What the process manipulates. NOT the authorization model.
+#   - authorization/authz-projection.yaml = the authz ENTITIES (which of these
+#     nouns can act, or be a policy resource) that project into the Cedar schema.
+# Only authorization-relevant nouns cross into Cedar; the rest are business state.
+#
+# The agents carry identifiers + evaluated snapshots; they are NOT authoritative
+# stores. Every object names its system of record (systems/systems-of-record.yaml).
+
+entities:
+  RFQ:
+    identity: rfq_id
+    system_of_record: crm
+    lifecycle: [draft, awaiting_information, sourcing_rates, pricing, approval_required, issued, accepted, rejected, expired]
+    attributes: [origin, destination, quote_currency, contracted_lane, region]
+
+  Quote:
+    identity: [quote_id, version]
+    system_of_record: cpq            # CPQ/CRM — also holds the HUMAN DECISION as status
+    # The human-in-the-loop decision IS a status transition here, not a separate
+    # workflow store: approval_required -> approved | rejected | revise.
+    status: [draft, priced, approval_required, approved, rejected, revise]
+    attributes: [currency, total_cost_eur_cents, proposed_sell_price_eur_cents, margin_pct_x10, valid_until, prior_version, status]
+
+  LaneEvaluation:        # durable RouteOptionSet produced by the Lane Evaluation Agent
+    identity: evaluation_id
+    system_of_record: agent_state   # snapshot, not authoritative
+    attributes: [rfq_id, baseline_lane, options]
+
+  RouteOption:
+    identity: option_id
+    attributes: [lane_id, carrier_rate_amount, carrier_rate_currency, transit_days, capacity_status]
+
+  ExchangeRate:
+    identity: pair            # e.g. "CNY-EUR"
+    system_of_record: fx_service   # Treasury / corporate FX
+    attributes: [rate, rate_type, source, observed_at, valid_until, rate_ref]
+
+  RouteRecommendation:
+    identity: recommendation_id
+    system_of_record: agent_state
+    attributes: [rfq_id, recommended_option, reasoning, decision_status]
+    # Structured evidence: one entry per crossed threshold (id · actual · threshold).
+    triggered_thresholds:
+      - {id: FX_VARIANCE,       actual_pct_x10: 27, threshold_pct_x10: 20}
+      - {id: MARGIN_FLOOR,      actual_pct_x10: 50, threshold_pct_x10: 60}
+      - {id: NON_CONTRACTED_LANE, actual: true,     threshold: false}
+
+  ApprovalTask:
+    identity: task_id
+    system_of_record: workflow          # MECHANISM only — surfaces the decision to a human
+    # NOT the authoritative store of the decision. The durable human decision is the
+    # Quote.status transition in CPQ/CRM (above). This task just carries the evidence
+    # package and triggers resumption on status change.
+    attributes: [recommendation_id, assignee_role, evidence]
+
+relationships:
+  - {source: RFQ, relation: produces, target: Quote}
+  - {source: RFQ, relation: evaluated_by, target: LaneEvaluation}
+  - {source: LaneEvaluation, relation: contains, target: RouteOption}
+  - {source: RouteOption, relation: normalized_with, target: ExchangeRate}
+  - {source: RouteRecommendation, relation: recommends, target: RouteOption}
+  - {source: RouteRecommendation, relation: requires, target: ApprovalTask}

@@ -1,0 +1,22 @@
+# Operational overlay — CHANGING state, separate from topology. This is the BASELINE
+# (everything available). Scenario packs override entries here to inject the trigger
+# event (../../../fixtures/scenario-packs/*). Event kinds:
+#   CAPACITY_EXHAUSTED · VESSEL_CANCELLATION · TERMINAL_CLOSURE · RAIL_STRIKE
+#   · CUSTOMS_RESTRICTION · WEATHER_DELAY · SERVICE_SUSPENDED · DANGEROUS_GOODS_RESTRICTION
+route_availability:
+  - {route_id: SHA-HAM-MUC, status: available}
+  - {route_id: SHA-RTM-MUC, status: available}
+  - {route_id: SHA-ANR-MUC, status: available}
+  - {route_id: PVG-FRA-MUC, status: available}
+  - {route_id: SHA-PIR-MUC, status: available}
+  - {route_id: SHA-GOA-MUC, status: available}
+  - {route_id: NGB-HAM-MUC, status: available}
+  - {route_id: SHA-GDN-MUC, status: available}
+
+# Example of an override (as injected by hamburg-port-closure / combined packs):
+# - route_id: SHA-HAM-MUC
+#   status: unavailable
+#   reason: PORT_CONGESTION            # -> TERMINAL_CLOSURE class
+#   effective_from: 2026-07-24T09:00:00Z
+#   expected_until: 2026-07-28T18:00:00Z
+#   affected_leg: CNSHA-DEHAM

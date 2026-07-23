@@ -1,0 +1,72 @@
+# Authorization projection — the coupling firewall for the repricing subprocess.
+#
+# MIRRORS cpm-eaop data/policies/authz-projection.yaml. The declared view of which
+# entity types + attributes + relations enter authorization. Rules:
+#   - Only `member_of` becomes a Cedar PARENT (-> Group). Every other relationship
+#     (department, trust_domain, region, contracted_lane, ...) is a typed ATTRIBUTE,
+#     never a parent — so authorization never walks a huge parent graph.
+#   - Attributes are sourced from the business model or from identity resolution.
+#   - ACTIONS ARE NOT HERE — they belong to the authorization model (business/actions.yaml).
+#   - This is the SMALLEST stable view needed to answer the decisions in
+#     business/decisions.md. Adding an attribute here is a deliberate act.
+#
+# The Cedar schema (authorization/agentic.cedarschema) is GENERATED from this file +
+# actions.yaml — never hand-edited.
+
+namespace: Agentic
+
+entities:
+  # --- principals -----------------------------------------------------------
+  Principal:                       # humans
+    ontology: principal
+    parents: [Group]               # via member_of
+    attributes:
+      kind: String
+      active: Boolean
+      department: {type: String, required: false}
+      roles: {type: Set<String>, required: false}
+
+  AgentPrincipal:                  # the three repricing agents
+    ontology: agent_principal
+    parents: [Group]
+    attributes:
+      kind: String
+      active: Boolean
+      trust_domain: {type: String, required: false}
+
+  Group:
+    ontology: group
+
+  # --- resources ------------------------------------------------------------
+  RFQ:
+    ontology: null                 # showcase business object, no ontology class
+    attributes:
+      region: {type: String, required: false}
+      contracted_lane: {type: String, required: false}
+
+  RouteOption:
+    ontology: null
+    attributes:
+      lane_id: {type: String, required: false}
+      capacity_status: {type: String, required: false}
+
+  ExchangeRate:
+    ontology: null
+    attributes:
+      pair: {type: String, required: false}
+      source: {type: String, required: false}
+
+  Quote:
+    ontology: null
+    attributes:
+      status: {type: String, required: false}
+
+  RouteRecommendation:
+    ontology: null
+    attributes:
+      non_contracted_lane: {type: Boolean, required: false}
+
+  ApprovalTask:
+    ontology: null
+    attributes:
+      status: {type: String, required: false}

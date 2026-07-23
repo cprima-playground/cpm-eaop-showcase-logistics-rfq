@@ -1,0 +1,89 @@
+# Authored action vocabulary for the repricing subprocess.
+#
+# MIRRORS cpm-eaop data/policies/actions.yaml — SAME shape, SAME rules:
+#   - dotted, namespaced action names (never YAML nesting)
+#   - each action declares: principals (allowed principal entity types),
+#     resources (allowed resource entity types), context (optional typed map)
+#   - context type forms: bare (`Long`) or `{type: Long, required: false}`
+#   - OWNED BY THE AUTHORIZATION MODEL. Authored here, never generated from a domain model.
+#
+# Cedar has no decimal type. Money is integer minor units (EUR cents). Percents are
+# integer tenths-of-a-percent (2.7% -> 27). Documented so policy thresholds compare
+# integers, not floats. This is a modelling choice, resolved at entity-build time.
+
+actions:
+  # --- Lane Evaluation Agent ------------------------------------------------
+  lane.evaluate:
+    principals: [AgentPrincipal]
+    resources: [RFQ]
+
+  lane.option.create:
+    principals: [AgentPrincipal]
+    resources: [RFQ]
+
+  capacity.check:
+    principals: [AgentPrincipal]
+    resources: [RouteOption]
+
+  carrier-rate.read:
+    principals: [AgentPrincipal]
+    resources: [RouteOption]
+
+  # --- Commercial Normalization Agent --------------------------------------
+  fx-rate.read:
+    principals: [AgentPrincipal]
+    resources: [ExchangeRate]
+    context:
+      fx_age_seconds: Long
+      quote_currency: String
+
+  route-cost.normalize:
+    principals: [AgentPrincipal]
+    resources: [RouteOption]
+    context:
+      fx_age_seconds: Long
+      target_currency: String
+
+  quote-price.calculate:
+    principals: [AgentPrincipal]
+    resources: [Quote]
+
+  quote-variance.evaluate:
+    principals: [AgentPrincipal]
+    resources: [Quote]
+    context:
+      fx_variance_pct_x10: Long          # tenths of a percent
+
+  # --- Route Decision Agent -------------------------------------------------
+  route.recommend:
+    principals: [AgentPrincipal]
+    resources: [RFQ]
+    context:
+      cost_variance_pct_x10: Long
+      transit_variance_days: Long
+      margin_pct_x10: Long
+      non_contracted_lane: Boolean
+
+  route-deviation.propose:
+    principals: [AgentPrincipal]
+    resources: [RouteRecommendation]
+
+  quote.submit-for-approval:
+    principals: [AgentPrincipal]
+    resources: [Quote]
+    context:
+      fx_variance_pct_x10: Long
+      margin_pct_x10: Long
+
+  approval.request:
+    principals: [AgentPrincipal]
+    resources: [ApprovalTask]
+
+  # --- Human ----------------------------------------------------------------
+  route-deviation.approve:
+    principals: [Principal]
+    resources: [RouteRecommendation]
+    context:
+      quote_value_eur_cents: Long
+      fx_variance_pct_x10: Long
+      margin_pct_x10: Long

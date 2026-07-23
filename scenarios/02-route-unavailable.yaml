@@ -1,0 +1,36 @@
+# Machine companion to 02-route-unavailable.md.
+# Same agents/policies/SoRs as scenario 01; operational trigger. Obligations MERGE.
+
+scenario:
+  id: route-unavailable
+  title: Route unavailable (operational trigger)
+
+given:
+  rfq: RFQ-1001
+  quote_currency: EUR
+  contracted_lane: CN-SHA-DE-HAM-DE-MUC
+  event: {type: capacity_rejected, lane: CN-SHA-DE-HAM-DE-MUC}
+  options:
+    - {option_id: route-a, lane_id: CN-SHA-DE-HAM-DE-MUC, cost: 42000, currency: CNY, transit_days: 31, capacity: unavailable}
+    - {option_id: route-b, lane_id: CN-SHA-NL-RTM-DE-MUC, cost: 5650, currency: EUR, transit_days: 35, capacity: limited}
+  fx: {pair: CNY/EUR, rate: 0.1194, fx_age_seconds: 300, prior_quote_fx_variance_pct_x10: 5}   # FX quiet: <=2%
+  margins: {route_b_margin_pct_x10: 70}          # 7.0%, ABOVE floor -> no D5
+
+when:
+  - {action: capacity.check,          principal: lane-evaluation-agent,          resource: "RouteOption::route-a", context: {}}
+  - {action: route-cost.normalize,    principal: commercial-normalization-agent, resource: "RouteOption::route-b", context: {fx_age_seconds: 300, target_currency: EUR}}
+  - {action: route.recommend,         principal: route-decision-agent,           resource: "RFQ::RFQ-1001",       context: {non_contracted_lane: true, cost_variance_pct_x10: 20, transit_variance_days: 4, margin_pct_x10: 70}}
+  - {action: quote.submit-for-approval, principal: route-decision-agent,         resource: "Quote::Q-1001-v2",    context: {fx_variance_pct_x10: 5, margin_pct_x10: 70}}
+  - {action: route-deviation.approve, principal: mona.commercial,                resource: "RouteRecommendation::REC-1001-v2", context: {quote_value_eur_cents: 700000, fx_variance_pct_x10: 5, margin_pct_x10: 70}}
+
+then:
+  authorization:
+    - {action: capacity.check,          effect: allow}     # returns unavailable -> replan
+    - {action: route-cost.normalize,    effect: allow, determining: [commercial-may-normalize]}
+    # obligations MERGE from D3b (lane) + D9 (transit +4 > 3):
+    - {action: route.recommend,         effect: allow, determining: [recommend-noncontracted-lane, recommend-slower-transit], obligations: [oblig-lane-deviation, oblig-transit-review]}
+    - {action: quote.submit-for-approval, effect: allow}   # no forbid: FX<=2%, margin>=floor
+    - {action: route-deviation.approve, effect: allow, determining: [manager-may-approve-within-limit]}
+  records:
+    quote_status: approved              # human decision = status transition in CPQ
+    recommended_option: route-b
