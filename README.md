@@ -109,7 +109,7 @@ stay consistent. `TARGET` = design intent that does not yet exist in cpm-eaop.
 | **Phase 2 — mock-masterdata (ADR-010, 9 domains)** | ✓ | ✓ | ✓ **24 tests, verified live** | ✓ |
 | **Phase 2 — mock-tms (topology + availability overlay)** | ✓ | ✓ | ✓ **37 tests, verified live** | ✓ |
 | **Phase 2 — mock-rate (carrier rates, exercises Party)** | ✓ | ✓ | ✓ **25 tests, verified live** | ✓ |
-| **Ops Dashboard (first frontend + human SSO, de-risks CPQ)** | ✓ | ✓ | ✓ **22 tests, verified live incl. real Keycloak login** | ✓ |
+| **Ops Dashboard (first frontend + human SSO, de-risks CPQ)** | ✓ | ✓ | ✓ **25 tests, verified live incl. real Keycloak login** | ✓ |
 | Environments (dev·test·prod) + agent identity + persistence | ✓ decided | — | — | — |
 | Credential inventory + management (ADR-009: Vault-dev/Secret Manager) | ✓ decided | ✓ **live** | ✓ | ✓ |
 
@@ -128,7 +128,7 @@ RfQ/
 ├── src/mock-masterdata/ ★ REAL CODE — masterdata source (ADR-010), verified LIVE (24 tests)
 ├── src/mock-tms/       ★ REAL CODE — route topology + availability overlay, verified LIVE (37 tests)
 ├── src/mock-rate/      ★ REAL CODE — carrier rates, exercises Party, verified LIVE (25 tests)
-├── src/ops-dashboard/  ★ REAL CODE — first frontend + human SSO, verified LIVE (22 tests, real Keycloak login)
+├── src/ops-dashboard/  ★ REAL CODE — first frontend + human SSO, verified LIVE (25 tests, real Keycloak login)
 ├── business/     process · actions · decisions · domain-model · domain-reference
 ├── systems/      systems-of-record · data-provenance · mock-architecture · reference-data · theming
 │   └── crm/ tms/ rate/ cpq/ fx/ workflow/ masterdata/   ← per system (openapi.yaml · fixtures · mock spec)
@@ -184,11 +184,11 @@ Seven real, tested codebases exist today, all green:
   SSO login (dev Keycloak via `infra/keycloak/`, real Auth-Code+PKCE, RP-initiated
   logout), fronted through a real local-HTTPS Caddy edge (`infra/caddy/`).
   Role-gated (`ops-viewer`); zero writes, zero domain state machine — de-risks
-  CPQ's harder approval-UI build. 22 tests, verified live through a full
+  CPQ's harder approval-UI build. 25 tests, verified live through a full
   browser-equivalent login→dashboard→logout→re-login round trip.
-- **209 tests total, all green**, across `rfq_common` (57) · `mock-fx` (37) ·
+- **212 tests total, all green**, across `rfq_common` (57) · `mock-fx` (37) ·
   `mock-masterdata` (24) · `mock-tms` (37) · `mock-rate` (25) ·
-  `policy-evaluation` (7) · `ops-dashboard` (22).
+  `policy-evaluation` (7) · `ops-dashboard` (25).
 
 Building these surfaced and fixed **4 real bugs** pure design review missed: two
 missing baseline policies (D10/D11), one missing "nothing is wrong" permit (D12),

@@ -22,6 +22,7 @@ the masterdata browser).
 | `/fx?base=&quote=` | FX rate lookup by currency pair (default `CNY`/`EUR`) |
 | `/masterdata` | The 9 reference domains |
 | `/masterdata/{domain}` | All rows in one domain (parties/locations/currencies/…) |
+| `/map` | World map (Leaflet + vendored Natural Earth basemap), straight-line per route |
 
 ## Run it
 
@@ -29,7 +30,7 @@ the masterdata browser).
 # infra/vault + infra/keycloak must be up (docker compose up -d + terraform apply
 # in infra/keycloak/terraform), masterdata/tms/rate/fx must be running
 uv run ops-dashboard serve --port 8006
-uv run pytest -v                          # 22 tests
+uv run pytest -v                          # 25 tests
 ```
 
 Via the local Caddy edge (`infra/keycloak`'s redirect URIs cover both) — this
@@ -58,6 +59,10 @@ Login as `alice` / `rfq-dev-user` (has `ops-viewer` — sees the dashboard) or
   `/login` if anonymous.
 - Theming (`/_theme.css`, ADR-007), environment banner, correlation-id
   header/footer, cross-system deep-link (route → its rate), API docs link.
+- Route map (`/map`): Leaflet (CDN) + a vendored Natural Earth 110m countries
+  basemap (`static/vendor/natural-earth/`, public domain, no external tile
+  server) — straight lines only, since `RouteLeg` carries no polyline/waypoint
+  data, just endpoint locodes (looked up via masterdata for lat/lon).
 
 ## Not built here (explicitly out of scope)
 
@@ -66,10 +71,12 @@ concepts tied to actual state changes, which this dashboard has none of.
 
 ## Result
 
-22/22 tests green: 19 offline (stub `TmsClient`/`RateClient`/`FxClient`/
+25/25 tests green: 22 offline (stub `TmsClient`/`RateClient`/`FxClient`/
 `MasterdataClient`, principal injected directly to test view/role-gate logic
 without a real login) + 3 that genuinely hit the live Keycloak realm (ROPC
 grant for `alice`/`bob`, real token verify + `resolve_principal`, real
-403 for the role-less user). All 5 views also verified live through a real
-browser-equivalent flow (login → dashboard → FX lookup → masterdata browser
-→ logout → re-login).
+403 for the role-less user). All 6 views also verified live through a real
+browser-equivalent flow (login → dashboard → map → FX lookup → masterdata
+browser → logout → re-login) — the map correctly shows all 13 routes
+including the geographic-diversity lanes (Transpacific, Middle-East/Suez,
+Intra-Europe), each drawn with real masterdata-sourced coordinates.

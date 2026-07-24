@@ -12,6 +12,7 @@
     .badge-limited, .badge-degraded { background: var(--color-warning, #d97706); color: white; }
     .badge-unavailable { background: var(--color-danger, #dc2626); color: white; }
   </style>
+  {% block head_extra %}{% endblock %}
 </head>
 <body class="min-h-screen">
   <div class="bg-yellow-100 text-yellow-900 text-xs text-center py-1">
@@ -21,6 +22,7 @@
     <nav class="flex items-center gap-4">
       <a href="/" class="text-lg font-semibold accent">Ops Dashboard</a>
       <a href="/" class="text-sm underline">Routes</a>
+      <a href="/map" class="text-sm underline">Map</a>
       <a href="/fx" class="text-sm underline">FX</a>
       <a href="/masterdata" class="text-sm underline">Masterdata</a>
     </nav>

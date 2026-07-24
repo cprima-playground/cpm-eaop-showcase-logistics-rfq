@@ -12,6 +12,7 @@ file whenever a real component surfaces an issue that isn't fixed on the spot.
 | 5 | `src/rfq_common` (`pdp/`) | resources are never loaded into Cedar `/v1/data` — correct today (no policy reads a resource attribute) but the first policy that needs one will silently fail until this is wired | latent | open — also tracked in `TODO.md` |
 | 6 | `src/mock-fx` (`api.py`) | no CORS configured — irrelevant until a browser frontend calls it directly (Phase 5) | low | deferred |
 | 7 | `rfq_common.secrets` consumers (`auth.py` across mock-fx/tms/rate/masterdata) | `_cached_key` is a permanent in-process cache — re-seeding Vault (rotating a value) doesn't propagate to an already-running consumer until it's restarted. Hit twice for real while building TMS/Rate (stale-key 401s). | low (dev-only; expected behavior, just undocumented until now) | open — fine as-is for a demo; would need a TTL/refresh path for a long-lived deployment |
+| 11 | `src/ops-dashboard` (`/map`) | Routes render as straight lines between origin/destination only — `RouteLeg` carries no polyline/waypoint data, so a multi-leg route (e.g. `MEA-CAPE`'s Cape-of-Good-Hope reroute) draws identically to its 1-leg alternative (`MEA-SUEZ`), visually indistinguishable despite being a very different real-world path. Would need a `route.polyline: [[lat,lon],...]` field (hand-authored waypoints) to fix. | low (cosmetic on a dev demo map) | open |
 
 ## Fixed
 

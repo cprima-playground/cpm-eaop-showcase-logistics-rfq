@@ -7,12 +7,14 @@ pressure too. No writes, no domain state machine, no MCP.
 
 from __future__ import annotations
 
+import json
 import os
 import uuid
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -29,6 +31,7 @@ from .sso import router as sso_router
 RFQ_ROOT = Path(__file__).resolve().parents[3]
 INVENTORY_PATH = RFQ_ROOT / "identity" / "credentials-inventory.yaml"
 TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
+STATIC_DIR = Path(__file__).resolve().parent / "static"
 
 # Mirrors mock-masterdata's store.DOMAINS keys (ADR-010, 9 reference domains).
 # Duplicated here rather than importing mock_masterdata -- the dashboard talks
@@ -109,6 +112,7 @@ def build_app(
     app.state.fx = fx
     app.add_middleware(SessionMiddleware, secret_key=config.session_secret())
     app.include_router(sso_router)
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
     templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
@@ -181,6 +185,43 @@ def build_app(
         return templates.TemplateResponse(
             request, "masterdata_domain.html",
             _ctx(request, domain=domain, rows=rows, principal=principal),
+        )
+
+    @app.get("/map", response_class=HTMLResponse)
+    def route_map(request: Request):
+        principal = _require_role(request, "ops-viewer")
+        routes = tms.list_routes()
+
+        location_cache: dict[str, dict | None] = {}
+
+        def _location(code: str) -> dict | None:
+            if code not in location_cache:
+                location_cache[code] = masterdata.get("locations", code)
+            return location_cache[code]
+
+        map_routes = []
+        for r in routes:
+            legs = r.get("legs") or []
+            if not legs:
+                continue
+            origin = _location(legs[0]["from"])
+            destination = _location(legs[-1]["to"])
+            if origin is None or destination is None:
+                continue  # masterdata has no coordinates for this endpoint -- skip, don't fabricate a line
+            avail = tms.get_availability(r["id"]) or {}
+            map_routes.append({
+                "id": r["id"],
+                "lane": r["lane"],
+                "status": avail.get("status", "unknown"),
+                # Leaflet wants [lat, lon] -- straight lines only (see KNOWN-ISSUES.md:
+                # RouteLeg carries no polyline/waypoint data, only endpoints).
+                "from": [origin["lat"], origin["lon"]],
+                "to": [destination["lat"], destination["lon"]],
+            })
+
+        return templates.TemplateResponse(
+            request, "map.html",
+            _ctx(request, routes_json=json.dumps(map_routes), principal=principal),
         )
 
     @app.exception_handler(HTTPException)

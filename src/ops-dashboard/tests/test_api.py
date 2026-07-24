@@ -94,6 +94,26 @@ def test_masterdata_unknown_domain_404(app, monkeypatch):
     assert r.status_code == 404
 
 
+def test_map_shows_both_routes_with_coordinates(app, monkeypatch):
+    monkeypatch.setattr(api_module, "_current_principal", lambda request: VIEWER)
+    r = TestClient(app).get("/map")
+    assert r.status_code == 200
+    assert "SHA-HAM-MUC" in r.text
+    assert "31.23" in r.text  # Shanghai lat, from the stub location
+    assert "leaflet" in r.text.lower()
+
+
+def test_map_requires_role(app):
+    r = TestClient(app).get("/map", follow_redirects=False)
+    assert r.status_code in (302, 303, 307)
+
+
+def test_map_static_geojson_served(app):
+    r = TestClient(app).get("/static/vendor/natural-earth/ne_110m_admin_0_countries.geojson")
+    assert r.status_code == 200
+    assert r.json()["type"] == "FeatureCollection"
+
+
 def test_correlation_id_header_present(app, monkeypatch):
     monkeypatch.setattr(api_module, "_current_principal", lambda request: VIEWER)
     r = TestClient(app).get("/")

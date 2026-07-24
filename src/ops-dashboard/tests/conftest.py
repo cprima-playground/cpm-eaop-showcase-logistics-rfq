@@ -48,8 +48,17 @@ class StubRateClient:
         return []
 
 
+_LOCATIONS = {
+    "CNSHA": {"locode": "CNSHA", "name": "Shanghai", "lat": 31.23, "lon": 121.47},
+    "DEHAM": {"locode": "DEHAM", "name": "Hamburg", "lat": 53.55, "lon": 9.99},
+    "NLRTM": {"locode": "NLRTM", "name": "Rotterdam", "lat": 51.95, "lon": 4.14},
+}
+
+
 class StubMasterdataClient:
     def get(self, domain, code):
+        if domain == "locations":
+            return _LOCATIONS.get(code)
         return {"locode": code}
 
     def list(self, domain):
