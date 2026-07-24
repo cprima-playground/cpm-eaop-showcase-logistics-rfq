@@ -55,6 +55,10 @@ def build_app(*, fixtures_dir_override: Path | None = None) -> FastAPI:
         store.reload()
         return ResetResponse(status="reset", domains=list(DOMAINS))
 
+    @app.get("/admin/stats", dependencies=[Depends(require_api_key)])
+    def stats() -> dict:
+        return store.stats()
+
     return app
 
 

@@ -11,6 +11,7 @@ from pathlib import Path
 
 from rfq_common.masterdata_client import MasterdataClient
 from rfq_common.models import CarrierRate
+from rfq_common.store_stats import collection_stats
 
 
 class UnknownCarrierError(ValueError):
@@ -63,3 +64,6 @@ class RateStore:
     def surcharges(self, route_id: str) -> int | None:
         rate = self.get_rate(route_id)
         return rate.surcharges if rate else None
+
+    def stats(self) -> dict:
+        return collection_stats(self._rates)

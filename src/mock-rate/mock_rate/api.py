@@ -74,6 +74,10 @@ def build_app(*, fixtures_dir: Path | None = None, masterdata_client: Masterdata
             raise HTTPException(status_code=400, detail=str(exc))
         return {"status": "reset"}
 
+    @app.get("/admin/stats", dependencies=[Depends(require_api_key)])
+    def stats() -> dict:
+        return store.stats()
+
     return app
 
 

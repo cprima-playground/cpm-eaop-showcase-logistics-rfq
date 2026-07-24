@@ -523,8 +523,16 @@ def build_app(
             _check_qms_frontend("qms", qms.base_url),
             _check_vault("vault", os.environ.get("VAULT_ADDR", "http://127.0.0.1:8200")),
         ]
+        stats_clients = {"masterdata": masterdata, "tms": tms, "rate": rate, "fx": fx}
         for s in services:
             s["mcp_server"] = MCP_SERVER_BY_SERVICE.get(s["name"])
+            s["stats"] = None
+            client = stats_clients.get(s["name"])
+            if client is not None and s["authenticated"]:
+                try:
+                    s["stats"] = client.stats()
+                except Exception:
+                    pass  # stats is metadata, not a health signal -- never fail the page over it
         overall = "pass" if all(s["status"] == "pass" for s in services) else (
             "fail" if any(s["status"] == "fail" for s in services) else "warn"
         )

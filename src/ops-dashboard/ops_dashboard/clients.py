@@ -60,6 +60,9 @@ class TmsClient:
     def get_availability(self, route_id: str) -> dict | None:
         return self._get(f"/routes/{route_id}/availability")
 
+    def stats(self) -> dict:
+        return self._get("/admin/stats") or {}
+
 
 class RateClient:
     def __init__(self, base_url: str | None = None, api_key: str | None = None, timeout: float = 5.0):
@@ -90,6 +93,9 @@ class RateClient:
 
     def get_rate(self, route_id: str) -> dict | None:
         return self._get(f"/rates/{route_id}")
+
+    def stats(self) -> dict:
+        return self._get("/admin/stats") or {}
 
 
 class FxClient:
@@ -130,6 +136,9 @@ class FxClient:
 
     def get_rate_history(self, base: str, quote: str, days: int = 30) -> list[dict]:
         return self._get(f"/exchange-rates/{base}/{quote}/history?days={days}") or []
+
+    def stats(self) -> dict:
+        return self._get("/admin/stats") or {}
 
 
 class QmsClient:

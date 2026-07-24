@@ -22,6 +22,7 @@ from pathlib import Path
 from rfq_common.clock import seeded_rng
 from rfq_common.masterdata_client import MasterdataClient, MasterdataUnavailableError
 from rfq_common.models import ExchangeRate
+from rfq_common.store_stats import collection_stats
 
 from . import ecb_client
 from .generator import generate_history
@@ -173,3 +174,6 @@ class FxStore:
         if not eligible:
             return None
         return max(eligible, key=lambda r: _parse(r.observed_at))
+
+    def stats(self) -> dict:
+        return collection_stats(self._rates)

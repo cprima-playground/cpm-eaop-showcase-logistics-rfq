@@ -18,6 +18,7 @@ from rfq_common.models import (
     PaymentTerm,
     UnitOfMeasure,
 )
+from rfq_common.store_stats import combine_stats
 
 RFQ_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_FIXTURES_DIR = RFQ_ROOT / "systems" / "masterdata" / "fixtures"
@@ -56,3 +57,8 @@ class MasterdataStore:
 
     def get(self, domain: str, code: str):
         return self.stores[domain].get(code)
+
+    def stats(self) -> dict:
+        """Per-domain breakdown plus a combined total (9 CodeListStore instances)."""
+        per_domain = {domain: store.stats() for domain, store in self.stores.items()}
+        return {"total": combine_stats(*per_domain.values()), "by_domain": per_domain}

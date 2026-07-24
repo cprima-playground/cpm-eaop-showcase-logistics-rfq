@@ -172,6 +172,10 @@ def build_app(*, fixtures_dir: Path | None = None, masterdata_client: Masterdata
         store.reload()
         return ResetResponse(status="reset")
 
+    @app.get("/admin/stats", dependencies=[Depends(require_api_key)])
+    def stats() -> dict:
+        return store.stats()
+
     return app
 
 

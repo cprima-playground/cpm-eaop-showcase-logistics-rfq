@@ -10,6 +10,7 @@ from typing import Generic, TypeVar
 from pydantic import BaseModel
 
 from .jsonl import load_jsonl
+from .store_stats import collection_stats
 
 M = TypeVar("M", bound=BaseModel)
 
@@ -38,3 +39,6 @@ class CodeListStore(Generic[M]):
 
     def __len__(self) -> int:
         return len(self._rows)
+
+    def stats(self) -> dict:
+        return collection_stats(self._rows)

@@ -5,6 +5,19 @@ schema generator · theme model/renderer · clock/seed helpers · base FastAPI/T
 app factories. See ../../build-plan.md Phase 1 and ../../TODO.md.
 """
 
-from . import app, cli, clock, codelist, jsonl, masterdata_client, models, pdp, secrets, theme, verify
+from . import app, cli, clock, codelist, jsonl, masterdata_client, models, pdp, secrets, store_stats, theme, verify
 
-__all__ = ["models", "jsonl", "verify", "pdp", "theme", "clock", "app", "cli", "secrets", "codelist", "masterdata_client"]
+__all__ = [
+    "models",
+    "jsonl",
+    "verify",
+    "pdp",
+    "theme",
+    "clock",
+    "app",
+    "cli",
+    "secrets",
+    "codelist",
+    "masterdata_client",
+    "store_stats",
+]

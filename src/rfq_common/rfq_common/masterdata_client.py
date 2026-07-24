@@ -53,3 +53,15 @@ class MasterdataClient:
 
     def exists(self, domain: str, code: str) -> bool:
         return self.get(domain, code) is not None
+
+    def stats(self) -> dict:
+        try:
+            r = httpx.get(
+                f"{self._base_url}/admin/stats",
+                headers={"X-API-Key": self._api_key or ""},
+                timeout=self._timeout,
+            )
+        except httpx.HTTPError as exc:
+            raise MasterdataUnavailableError(f"masterdata unreachable at {self._base_url}: {exc}") from exc
+        r.raise_for_status()
+        return r.json()

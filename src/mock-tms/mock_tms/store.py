@@ -11,6 +11,7 @@ from pathlib import Path
 
 from rfq_common.masterdata_client import MasterdataClient
 from rfq_common.models import Route, RouteAvailability
+from rfq_common.store_stats import collection_stats, combine_stats
 
 
 class UnknownLocationError(ValueError):
@@ -76,3 +77,9 @@ class TmsStore:
     def capacity(self, route_id: str) -> str | None:
         avail = self.availability(route_id)
         return avail.status if avail else None
+
+    def stats(self) -> dict:
+        return combine_stats(
+            collection_stats(self._routes),
+            collection_stats(list(self._availability.values())),
+        )
