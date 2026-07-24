@@ -24,41 +24,82 @@ const statusColor = {
 
 const map = L.map("route-map", { worldCopyJump: true }).setView([20, 30], 2);
 
+// A vector GeoJSON layer renders exactly once -- unlike a raster tile layer,
+// it does NOT repeat every 360deg of longitude, so dragging the map past its
+// edge shows blank space instead of the expected continuously-wrapping
+// landmasses. Render three shifted copies (-360/0/+360) so panning behaves
+// like a normal web map. (This is a separate concern from how route LINES
+// are drawn -- see splitAtAntimeridian below -- both are needed.)
+function shiftLongitude(coords, delta) {
+  if (typeof coords[0] === "number") return [coords[0] + delta, coords[1]];
+  return coords.map((c) => shiftLongitude(c, delta));
+}
+
+function shiftGeoJSON(geojson, delta) {
+  return {
+    type: "FeatureCollection",
+    features: geojson.features.map((f) => ({
+      ...f,
+      geometry: { type: f.geometry.type, coordinates: shiftLongitude(f.geometry.coordinates, delta) },
+    })),
+  };
+}
+
 fetch("/static/vendor/natural-earth/ne_110m_admin_0_countries.geojson")
   .then((r) => r.json())
   .then((geojson) => {
-    L.geoJSON(geojson, {
-      style: { color: "#94a3b8", weight: 1, fillColor: "#e2e8f0", fillOpacity: 0.5 },
-    }).addTo(map);
+    const style = { color: "#94a3b8", weight: 1, fillColor: "#e2e8f0", fillOpacity: 0.5 };
+    for (const delta of [-360, 0, 360]) {
+      L.geoJSON(shiftGeoJSON(geojson, delta), { style }).addTo(map);
+    }
   });
 
-// Straight-line lon interpolation breaks at the +-180 seam: a naive line from
-// Shanghai (lon ~121E) to LA (lon ~118W) draws the LONG way, through Europe/
-// Africa, instead of the short Pacific crossing. Fix: if the endpoints are
-// more than 180 degrees apart, shift one so the interpolation takes the
-// shorter path across the antimeridian instead.
-function unwrapLongitude(from, to) {
+// A route crossing the antimeridian the short way (e.g. Shanghai lon ~121E
+// -> LA lon ~-118W, short way is eastward across the Pacific) still can't be
+// drawn as one straight segment in the DEFAULT (fitBounds-centered) view --
+// it has to be split: exit at the +180 edge, re-enter at the -180 edge (or
+// vice versa), same convention flight-path maps use. The tripled basemap
+// above fixes panning; this fixes line rendering in the view the page opens
+// with. Returns an array of [[lat,lon],[lat,lon]] segments -- one if no
+// crossing, two if there is one.
+function splitAtAntimeridian(from, to) {
   const [lat1, lon1] = from;
-  let [lat2, lon2] = to;
-  if (lon2 - lon1 > 180) lon2 -= 360;
-  else if (lon1 - lon2 > 180) lon2 += 360;
-  return [[lat1, lon1], [lat2, lon2]];
+  const [lat2, lon2] = to;
+
+  let lon2u = lon2;
+  if (lon2 - lon1 > 180) lon2u -= 360;
+  else if (lon1 - lon2 > 180) lon2u += 360;
+
+  if (lon2u === lon2) {
+    return [[[lat1, lon1], [lat2, lon2]]]; // no crossing -- one segment, unchanged
+  }
+
+  const boundary = lon2u > lon1 ? 180 : -180; // which edge the line exits through
+  const t = (boundary - lon1) / (lon2u - lon1);
+  const latAtBoundary = lat1 + t * (lat2 - lat1);
+
+  return [
+    [[lat1, lon1], [latAtBoundary, boundary]],
+    [[latAtBoundary, -boundary], [lat2, lon2]],
+  ];
 }
 
+// Routes must appear in the shifted basemap copies too, or panning to one
+// shows landmasses with no route lines on them -- draw each segment three
+// times (-360/0/+360), same as the basemap, not just once in the original frame.
 const allPoints = [];
 for (const r of routes) {
   const color = statusColor[r.status] || statusColor.unknown;
-  const [p1, p2] = unwrapLongitude(r.from, r.to);
-  const line = L.polyline([p1, p2], { color, weight: 2, opacity: 0.85 }).addTo(map);
-  line.bindPopup(`<a href="/routes/${r.id}">${r.id}</a><br>${r.lane}<br>${r.status}`);
-  allPoints.push(p1, p2);
+  for (const segment of splitAtAntimeridian(r.from, r.to)) {
+    for (const delta of [-360, 0, 360]) {
+      const shifted = segment.map(([lat, lon]) => [lat, lon + delta]);
+      const line = L.polyline(shifted, { color, weight: 2, opacity: 0.85 }).addTo(map);
+      line.bindPopup(`<a href="/routes/${r.id}">${r.id}</a><br>${r.lane}<br>${r.status}`);
+    }
+  }
+  allPoints.push(r.from, r.to);
 }
 
-// Fixed setView([20,30], 2) hid where unwrapped (>180deg) longitudes actually
-// land -- e.g. the Transpacific line's LA/Oakland end, off past the eastern
-// edge of that fixed frame. fitBounds over every (unwrapped) endpoint instead,
-// so every route -- including ones crossing the antimeridian -- is visible
-// without the viewer needing to pan.
 if (allPoints.length) {
   map.fitBounds(L.latLngBounds(allPoints), { padding: [20, 20] });
 }

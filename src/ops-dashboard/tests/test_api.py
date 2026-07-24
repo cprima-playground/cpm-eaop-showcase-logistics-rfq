@@ -103,14 +103,16 @@ def test_map_shows_both_routes_with_coordinates(app, monkeypatch):
     assert "leaflet" in r.text.lower()
 
 
-def test_map_unwraps_antimeridian_crossing_routes(app, monkeypatch):
+def test_map_splits_antimeridian_crossing_routes(app, monkeypatch):
     """CNSHA (lon ~121E) -> USLAX (lon ~-118W) must NOT draw the long way
     through Europe/Africa -- regression for the bug the user's screenshot
-    caught live."""
+    caught live. Split into two segments (flight-path convention), not a
+    single unwrapped line past +-180 -- a vector basemap doesn't repeat past
+    that range the way a raster tile layer would."""
     monkeypatch.setattr(api_module, "_current_principal", lambda request: VIEWER)
     r = TestClient(app).get("/map")
     assert r.status_code == 200
-    assert "unwrapLongitude" in r.text
+    assert "splitAtAntimeridian" in r.text
 
 
 def test_map_requires_role(app):
