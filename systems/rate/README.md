@@ -1,11 +1,12 @@
-# Rate Service (mock)
+# Rate Service (built)
 
-**Owns:** ContractRate · CarrierSpotRate · LaneSurcharge. **Interface:** `rate-mcp` (TARGET).
+**Owns:** ContractRate · CarrierSpotRate · LaneSurcharge. **Interface:** REST,
+APIKEY — `src/mock-rate/` (MCP `rate-mcp` still `TARGET`, Phase 3).
 
-Put here: interface contract, fixtures (carrier rates in local currencies — CNY for
-route-a, EUR for route-b — plus surcharges), and the mock spec. See
-`../systems-of-record.yaml` and `../../interfaces/mcp/tools.yaml`.
+Carrier identity (`carrier_id`) and currency are referenced via **masterdata**,
+never embedded (ADR-010) — first system to exercise the Party domain, including
+correctly rejecting a customer id used as a carrier.
 
-- `contract.yaml` — get_contract_rate · get_carrier_rate · get_lane_surcharges
-- `fixtures/` — route-a 42000 CNY, route-b 5650 EUR, lane surcharges
-- `mock-spec.md`
+- `fixtures/rates.yaml` — 8 carrier rates (cross-currency: CNY contracted lane, EUR alternatives)
+- `cost-model.md` — the correlated, seeded derivation of these rates
+- Service: `../../src/mock-rate/README.md` — `uv run mock-rate serve`

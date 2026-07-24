@@ -56,10 +56,19 @@ schema-gen + entity assembly) — without it the authz model can't be exercised.
   real data (UN/LOCODE, ISO 4217, Incoterms 2020, IMDG classes). Closes the
   "no customer/carrier reference at all" gap found while scoping CPQ. See
   `src/mock-masterdata/README.md`.
-- ⬜ **CPQ** next (the `Quote.status` SoR — the mandatory approval frontend), then
-  CRM/TMS/Rate/Workflow.
+- ✅ **TMS** — `src/mock-tms/` built, 25 tests green, verified live: route
+  topology + volatile availability overlay (two systems of record, deliberately
+  separate), every leg's location validated via masterdata. Removed the
+  now-redundant `systems/tms/fixtures/locations.yaml` — masterdata is sole
+  owner. See `src/mock-tms/README.md`.
+- ✅ **Rate** — `src/mock-rate/` built, 24 tests green, verified live: carrier
+  rates per route, `carrier_id` validated as a real masterdata Party with
+  `kind=carrier` (first system to exercise Party, not just Currency/Location).
+  See `src/mock-rate/README.md`.
+- ⬜ **CPQ** next (the `Quote.status` SoR — the mandatory approval frontend,
+  first to need SSO + a real frontend), then CRM/Workflow.
 - 6 transactional systems + 1 masterdata layer total over `rfq_common`,
-  jsonl/fixture-baked, admin `reset`.
+  jsonl/fixture-baked, admin `reset`. 4 of 7 built (FX, masterdata, TMS, Rate).
 - **Exit:** each system serves REST + Typer CLI; loads its fixtures; `reset` restores baseline.
 
 ## Phase 3 — Governed edges (MCP + PDP)

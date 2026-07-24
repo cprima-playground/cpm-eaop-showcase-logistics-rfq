@@ -105,8 +105,10 @@ stay consistent. `TARGET` = design intent that does not yet exist in cpm-eaop.
 | Build plan (phased) | ✓ | — | — | — |
 | **Phase 1 — `rfq_common` foundation** | ✓ | — | ✓ **49 tests green** | ✓ |
 | **Policy-evaluation spike (scenarios 01–04 + failures)** | ✓ | — | ✓ **7 tests green** | ✓ |
-| **Phase 2 — mock-fx (first mock system, now consumes masterdata via API)** | ✓ | ✓ | ✓ **37 tests, verified live** | ✓ |
+| **Phase 2 — mock-fx (consumes masterdata via API)** | ✓ | ✓ | ✓ **37 tests, verified live** | ✓ |
 | **Phase 2 — mock-masterdata (ADR-010, 9 domains)** | ✓ | ✓ | ✓ **24 tests, verified live** | ✓ |
+| **Phase 2 — mock-tms (topology + availability overlay)** | ✓ | ✓ | ✓ **33 tests, verified live** | ✓ |
+| **Phase 2 — mock-rate (carrier rates, exercises Party)** | ✓ | ✓ | ✓ **24 tests, verified live** | ✓ |
 | Environments (dev·test·prod) + agent identity + persistence | ✓ decided | — | — | — |
 | Credential inventory + management (ADR-009: Vault-dev/Secret Manager) | ✓ decided | ✓ **live** | ✓ | ✓ |
 
@@ -120,13 +122,15 @@ RfQ/
 ├── TODO.md       design-stage gaps
 ├── KNOWN-ISSUES.md  bugs/limitations in already-built code (distinct from TODO/build-plan)
 ├── decisions/    10 ADRs, all accepted (001–005 domain · 006 stack · 007 theming · 008 agent runtime · 009 credentials · 010 masterdata)
-├── src/rfq_common/  ★ REAL CODE — the Phase 1 foundation (46 tests green, see below)
-├── src/mock-fx/     ★ REAL CODE — first Phase 2 system, verified LIVE (37 tests, consumes masterdata via API)
+├── src/rfq_common/     ★ REAL CODE — the Phase 1 foundation (52 tests green, see below)
+├── src/mock-fx/        ★ REAL CODE — Phase 2, verified LIVE (37 tests, consumes masterdata via API)
 ├── src/mock-masterdata/ ★ REAL CODE — masterdata source (ADR-010), verified LIVE (24 tests)
+├── src/mock-tms/       ★ REAL CODE — route topology + availability overlay, verified LIVE (33 tests)
+├── src/mock-rate/      ★ REAL CODE — carrier rates, exercises Party, verified LIVE (24 tests)
 ├── business/     process · actions · decisions · domain-model · domain-reference
 ├── systems/      systems-of-record · data-provenance · mock-architecture · reference-data · theming
-│   └── crm/ tms/ rate/ cpq/ fx/ workflow/   ← per system (openapi.yaml · fixtures · mock spec)
-│                 tms/fixtures: locations (UN/LOCODE) · routes · route-availability
+│   └── crm/ tms/ rate/ cpq/ fx/ workflow/ masterdata/   ← per system (openapi.yaml · fixtures · mock spec)
+│                 tms/fixtures: routes · route-availability (locations now owned by masterdata)
 │                 rate/fixtures: cost-model · rates
 ├── identity/     actors · claims-contract · entra-objects (TARGET terraform)
 ├── authorization/ authz-projection · policies.cedar · obligations · governance
@@ -143,30 +147,38 @@ RfQ/
 
 ## What's actually running (not just designed)
 
-Three real, tested codebases exist today, all green:
+Six real, tested codebases exist today, all green:
 
 - **`src/rfq_common/`** — the Phase 1 foundation library (models, jsonl, JWT/JWKS
   verify, PDP client + schema generator, theme renderer, clock/seed, base
-  FastAPI/Typer apps · masterdata client). 49 tests, `uv run pytest`.
+  FastAPI/Typer apps · masterdata client). 52 tests, `uv run pytest`.
 - **`spikes/repricing/policy-evaluation/`** — drives scenarios 01–04 + 3 failure
   injections through a live, isolated `cedar-agent` (port `:8280`, container
   `rfq-showcase-cedar-agent` — never the `:8180` instance cpm-eaop runs for its own
   work). 7 tests, `uv run pytest` (after `docker compose up -d`).
-- **`src/mock-fx/`** — the first Phase 2 mock system, verified **actually running**:
-  `uv run mock-fx serve` and hit it — real Swagger UI at `/docs`, APIKEY-gated
-  `/exchange-rates/{base}/{quote}`, `/convert` (currency rounding, JPY-aware), `/admin/reset`.
-  Now consumes masterdata via its real API (ADR-010) to validate currencies. 37 tests.
+- **`src/mock-fx/`** — verified **actually running**: `uv run mock-fx serve` and
+  hit it — real Swagger UI at `/docs`, APIKEY-gated `/exchange-rates/{base}/{quote}`,
+  `/convert` (currency rounding, JPY-aware), `/admin/reset`. Consumes masterdata
+  via its real API (ADR-010) to validate currencies. 37 tests.
 - **`infra/vault/` + `rfq_common.secrets`** — ADR-009's Vault-dev credential store,
-  standing and seeded (`rfq-showcase-vault`, :8200); `mock-fx`'s API key comes
-  from Vault, no hardcoded fallback.
+  standing and seeded (`rfq-showcase-vault`, :8200); every mock system's API key
+  comes from Vault, no hardcoded fallback.
 - **`src/mock-masterdata/`** (ADR-010) — the masterdata source: 9 reference
   domains (Party/Location/Currency/Incoterm/Commodity/Equipment/UoM/DG-class/
   Payment-term), real data (UN/LOCODE, ISO 4217, Incoterms 2020, IMDG classes),
   verified live. Closes the original "no customer/carrier reference" gap —
   `RFQ`/`Quote`/`RouteOption` now carry `customer_id`/`carrier_id` referencing
   Party instead of embedding bare strings. 24 tests.
-- **117 tests total, all green**, across `rfq_common` (49) · `mock-fx` (37) ·
-  `mock-masterdata` (24) · `policy-evaluation` (7).
+- **`src/mock-tms/`** — route topology + volatile availability overlay, two
+  systems of record deliberately kept separate. Every leg's location validated
+  via masterdata; the now-redundant `systems/tms/fixtures/locations.yaml`
+  removed (masterdata is sole owner). 33 tests, incl. live PATCH availability round-trip.
+- **`src/mock-rate/`** — carrier rates per route; first system to exercise the
+  **Party** domain (not just Currency/Location) — correctly rejects a customer
+  id used as a carrier. 24 tests.
+- **177 tests total, all green**, across `rfq_common` (52) · `mock-fx` (37) ·
+  `mock-masterdata` (24) · `mock-tms` (33) · `mock-rate` (24) ·
+  `policy-evaluation` (7).
 
 Building these surfaced and fixed **4 real bugs** pure design review missed: two
 missing baseline policies (D10/D11), one missing "nothing is wrong" permit (D12),

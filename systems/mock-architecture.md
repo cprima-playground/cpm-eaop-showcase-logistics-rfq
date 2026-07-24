@@ -38,8 +38,8 @@ This is the second of the two correlated boundaries (agent→tool, then tool→A
 | --- | :--: | :--: | :--: | --- | :--: | :--: |
 | **Masterdata** | ✓ **built** | ✓ **built** | — (TARGET, later) | **APIKEY** (machine) — **built** | — | ✓ **built** |
 | **CRM** | ✓ | ✓ | ✓ `crm-mcp` | human **SSO** + agent client-creds | maybe (RFQ view) | ✓ |
-| **TMS** | ✓ | ✓ | ✓ `tms-mcp` | agent client-creds / APIKEY | — | ✓ |
-| **Rate** | ✓ | ✓ | ✓ `rate-mcp` | agent client-creds / APIKEY | — | ✓ |
+| **TMS** | ✓ **built** | ✓ **built** | `tms-mcp` (TARGET) | **APIKEY** — **built** | — | ✓ **built** |
+| **Rate** | ✓ **built** | ✓ **built** | `rate-mcp` (TARGET) | **APIKEY** — **built** | — | ✓ **built** |
 | **CPQ** | ✓ | ✓ | ✓ `commercial-mcp` | human **SSO** (approval UI) + agent client-creds | ✓ **approval UI** | ✓ |
 | **FX** | ✓ **built** | ✓ **built** (REST — the point) | ✗ (deliberately none) | **APIKEY** (machine) — **built** | — | ✓ **built** |
 | **Workflow** | ✓ | ✓ | ✓ `approval-mcp` | human **SSO** | maybe (task inbox) | ✓ |

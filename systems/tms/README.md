@@ -1,11 +1,12 @@
-# TMS (mock)
+# TMS (built)
 
-**Owns:** RouteTopology · FeasibleLane · TransitTime · Capacity. **Interface:** `tms-mcp` (TARGET).
+**Owns:** RouteTopology · FeasibleLane · TransitTime · Capacity. **Interface:**
+REST, APIKEY — `src/mock-tms/` (MCP `tms-mcp` still `TARGET`, Phase 3).
 
-Put here: interface contract, fixtures (feasible lanes + transit + capacity for
-`RFQ-1001`, incl. the capacity-rejection state for scenario 02), and the mock spec.
-See `../systems-of-record.yaml` and `../../interfaces/mcp/tools.yaml`.
+Route topology + operational availability, two systems of record (stable vs
+volatile). Locations referenced via **masterdata**, never embedded (ADR-010) —
+`fixtures/locations.yaml` was removed here; masterdata is the sole owner.
 
-- `contract.yaml` — get_feasible_lanes · get_lane_transit_time · check_lane_capacity · get_route_restrictions
-- `fixtures/` — route-a / route-b topology, transit, capacity (available | unavailable)
-- `mock-spec.md`
+- `fixtures/routes.yaml` — topology (8 routes, ~18 legs)
+- `fixtures/route-availability.yaml` — the volatile overlay (the repricing trigger)
+- Service: `../../src/mock-tms/README.md` — `uv run mock-tms serve`
