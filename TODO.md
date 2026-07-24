@@ -43,6 +43,10 @@ packs + determinism (`RUNNING.md`).
       agent→PEP→PDP→SoR; the audit sink; what each hop logs.
 - [ ] **Scenario-runner interface** — the concrete CLI surface (`rfq scenario apply
       <pack>`) implementing `RUNNING.md` behavior (reset · apply · pin clock · re-PUT PDP · run_id).
+- [ ] **`rfq_common.secrets` client + `infra/vault/seed.py`** — ADR-009 designed
+      (inventory `identity/credentials-inventory.yaml` + Vault-dev compose written),
+      not yet built: the thin client (dev→Vault, test/prod→Secret Manager) and the
+      seed script that populates Vault from the inventory.
 - [ ] **Kill-switch runtime design** — where switch state lives + the check before each
       governed edge (accept A2A · run tool · issue grant · commit side effect).
 

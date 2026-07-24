@@ -107,6 +107,7 @@ stay consistent. `TARGET` = design intent that does not yet exist in cpm-eaop.
 | **Policy-evaluation spike (scenarios 01–04 + failures)** | ✓ | — | ✓ **7 tests green** | ✓ |
 | **Phase 2 — mock-fx (first mock system)** | ✓ | ✓ | ✓ **21 tests, verified live** | ✓ |
 | Environments (dev·test·prod) + agent identity + persistence | ✓ decided | — | — | — |
+| Credential inventory + management (ADR-009: Vault-dev/Secret Manager) | ✓ decided | ✓ (Vault compose) | — | — |
 
 ## Layout
 

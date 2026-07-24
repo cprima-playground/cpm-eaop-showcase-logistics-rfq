@@ -6,7 +6,7 @@ file whenever a real component surfaces an issue that isn't fixed on the spot.
 
 | # | Component | Issue | Severity | Status |
 | - | --- | --- | --- | --- |
-| 1 | `src/mock-fx` (`auth.py`) | hardcoded dev API key (`dev-fx-key`) as the default; nothing stops deploying test/prod with it | low (dev-only per design) | open — must set `FX_API_KEY` from Secret Manager outside dev |
+| 1 | `src/mock-fx` (`auth.py`) | hardcoded dev API key (`dev-fx-key`) as the default; nothing stops deploying test/prod with it | low (dev-only per design) | open — real fix is ADR-009 (Vault-dev/Secret Manager + `rfq_common.secrets`, not yet built) |
 | 2 | `src/mock-fx` (`store.py`) | no case-normalization on currency pair — `/exchange-rates/cny/eur` 404s (fixtures are exact-case `"CNY/EUR"`) | low | open |
 | 3 | `src/rfq_common` (`verify.py`) | `verify_with_jwks` tolerates a kid mismatch when the JWKS has exactly one key (test-fixture convenience) — weakens kid-pinning if reused unmodified against a real single-key dev IdP | medium | open — tighten before real IdP wiring |
 | 4 | `src/mock-fx` (`cli.py`, tests) | reaches into `store._rates` (private) instead of a public accessor | cosmetic | open |

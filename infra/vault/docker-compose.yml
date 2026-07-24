@@ -1,0 +1,15 @@
+# Dev-only secrets store (ADR-009). Dev-server mode: in-memory, auto-unsealed,
+# a fixed root token for local convenience -- NEVER use dev mode outside dev.
+name: rfq-showcase
+services:
+  vault:
+    image: hashicorp/vault:latest
+    container_name: rfq-showcase-vault
+    ports:
+      - "8200:8200"
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: rfq-dev-root
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+    cap_add:
+      - IPC_LOCK
+    restart: unless-stopped

@@ -16,6 +16,7 @@ infra/
 ├── compose.sketch.yaml    # local whole-showcase topology (documentation)
 ├── caddy/                 # Caddyfile — local edge (*.localhost + local HTTPS)
 ├── cedar-agent/           # docker-compose for the Cedar PDP sidecar (reuse cpm-eaop)
+├── vault/                 # ★ built — dev-only secrets store (ADR-009)
 ├── keycloak/              # realm import (rfq realm: users · groups · clients)
 ├── entra/                 # azuread Terraform (client-secret now → WIF target) — reuse infra/entra
 ├── dockerfiles/           # base.Dockerfile (rfq/base) + per-service Dockerfiles
