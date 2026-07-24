@@ -1,7 +1,11 @@
 {% extends "base.html" %}
 {% block title %}FX{% endblock %}
+{% block head_extra %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>#fx-chart-wrap { max-width: 700px; height: 300px; }</style>
+{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-bold mb-4">FX rate lookup</h1>
+<h1 class="text-2xl font-bold mb-4">FX rate</h1>
 
 <form method="get" action="/fx" class="flex items-end gap-3 mb-6">
   <label class="text-sm">
@@ -16,7 +20,7 @@
 </form>
 
 {% if rate %}
-<dl class="grid grid-cols-2 gap-2 max-w-md">
+<dl class="grid grid-cols-2 gap-2 max-w-md mb-6">
   <dt class="font-semibold">Pair</dt><dd>{{ rate.pair }}</dd>
   <dt class="font-semibold">Rate</dt><dd>{{ rate.rate }}</dd>
   <dt class="font-semibold">Source</dt><dd>{{ rate.source }}</dd>
@@ -25,7 +29,62 @@
   <dt class="font-semibold">Reference</dt><dd>{{ rate.rate_ref }}</dd>
 </dl>
 {% else %}
-<p class="text-gray-500">No rate on file for {{ base }}/{{ quote }}. Mock FX is seeded with real historical
+<p class="text-gray-500 mb-6">No rate on file for {{ base }}/{{ quote }}. Mock FX is seeded with real historical
   CNY/EUR snapshots only (see <code>src/mock-fx/README.md</code>) — try <code>CNY</code>/<code>EUR</code>.</p>
+{% endif %}
+
+{% if history_json and history_json != "[]" %}
+<h2 class="text-lg font-semibold mb-2">Last 30 days</h2>
+<p class="text-sm text-gray-500 mb-3">
+  28 days are generated (deterministic, seeded -- <code>mock-fx/generator.py</code>);
+  the last 2 points are the real, documented breakout (a 2.7% move against the
+  2.0% D4 threshold in <code>policies.cedar</code>) that scenario 01 exercises.
+</p>
+<div id="fx-chart-wrap"><canvas id="fx-chart"></canvas></div>
+<script>
+const history = {{ history_json|safe }};
+const labels = history.map((p) => p.observed_at.slice(0, 10));
+const rates = history.map((p) => p.rate);
+const anchor = history.length > 1 ? history[history.length - 2].rate : rates[0];
+const thresholdUpper = anchor * 1.02;
+const thresholdLower = anchor * 0.98;
+
+new Chart(document.getElementById("fx-chart"), {
+  type: "line",
+  data: {
+    labels,
+    datasets: [
+      {
+        label: "{{ base }}/{{ quote }}",
+        data: rates,
+        borderColor: "#2563eb",
+        pointBackgroundColor: rates.map((r, i) =>
+          Math.abs(r / anchor - 1) > 0.02 ? "#dc2626" : "#2563eb"
+        ),
+        pointRadius: rates.map((r, i) => (i === rates.length - 1 ? 5 : 2)),
+        tension: 0.2,
+      },
+      {
+        label: "+2.0% threshold",
+        data: labels.map(() => thresholdUpper),
+        borderColor: "#94a3b8",
+        borderDash: [4, 4],
+        pointRadius: 0,
+      },
+      {
+        label: "-2.0% threshold",
+        data: labels.map(() => thresholdLower),
+        borderColor: "#94a3b8",
+        borderDash: [4, 4],
+        pointRadius: 0,
+      },
+    ],
+  },
+  options: {
+    maintainAspectRatio: false,
+    scales: { y: { title: { display: true, text: "rate" } } },
+  },
+});
+</script>
 {% endif %}
 {% endblock %}

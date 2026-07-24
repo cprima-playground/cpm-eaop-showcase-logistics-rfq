@@ -1,10 +1,13 @@
 # mock-fx — the Corporate FX Service, actually running
 
 First Phase 2 system (build-plan.md). Built on `rfq_common`; realizes
-`interfaces/api/fx-api.md` / `fx.openapi.yaml`. Deterministic, seeded from real
-historical CNY/EUR snapshots (`fixtures/fx/*.json`) — not a live provider (see
-"Mock vs live" in `fx-api.md`). No SSO, no MCP: **APIKEY only**
-(`systems/mock-architecture.md`).
+`interfaces/api/fx-api.md` / `fx.openapi.yaml`. Deterministic: the "today"/
+"yesterday" rates are real historical CNY/EUR snapshots (`fixtures/fx/*.json`
+— the project's one documented breakout, a 2.7% move against the 2.0% D4
+threshold), plus a **generated** 28-day run-up (`generator.py`, seeded via
+`rfq_common.clock` — never committed as fixture files) for history/charting —
+not a live provider (see "Mock vs live" in `fx-api.md`). No SSO, no MCP:
+**APIKEY only** (`systems/mock-architecture.md`).
 
 **Depends on the masterdata source being up** (ADR-010): every currency in every
 FX fixture is validated against masterdata's real API at load time (fail closed
@@ -20,7 +23,7 @@ uv run mock-fx get-rate CNY EUR                              # CLI, no HTTP
 uv run mock-fx get-rate CNY EUR --effective-at 2026-07-23T12:00:00Z
 uv run mock-fx convert 42000 CNY EUR                          # -> 5014.80 EUR
 uv run mock-fx reset                                          # reload fixtures
-uv run pytest -v                                              # 37 tests
+uv run pytest -v                                              # 46 tests
 ```
 
 The API key comes from **`FX_API_KEY`** if set, else **Vault** (ADR-009) — there is
@@ -42,10 +45,11 @@ curl -H "X-API-Key: $KEY" "http://localhost:8001/convert?amount=42000&from_curre
 
 | File | Role |
 | --- | --- |
-| `store.py` | in-memory FX store; point-in-time lookup; validates every currency via a **real masterdata API call** at load (ADR-010 — never a duplicated file) |
+| `store.py` | in-memory FX store; point-in-time lookup; validates every currency via a **real masterdata API call** at load (ADR-010 — never a duplicated file); appends generated history per pair on `reload()` |
+| `generator.py` | deterministic 28-day history (`generate_history`, seeded via `rfq_common.clock`) + a standalone cumulative-step-breakout capability (`generate_staircase`, unit-tested, not yet wired to a scenario pack — blocked on the not-yet-built scenario runner, `KNOWN-ISSUES.md`) |
 | `convert.py` | currency-conversion rounding — the caveat: **JPY has `minor_unit=0`** (a whole-yen amount, not yen-cents); hardcoding 2 decimals would silently corrupt it |
 | `auth.py` | APIKEY dependency — authenticates the caller→backend hop (not Cedar authz) |
-| `api.py` | `GET /exchange-rates/{base}/{quote}`, **`GET /convert`**, `POST /admin/reset`, on `rfq_common.create_app` |
+| `api.py` | `GET /exchange-rates/{base}/{quote}`, **`GET /exchange-rates/{base}/{quote}/history?days=`**, **`GET /convert`**, `POST /admin/reset`, on `rfq_common.create_app` |
 | `cli.py` | `reset` / `get-rate` / `convert` / `serve`, on `rfq_common.create_cli` |
 
 Free from `rfq_common.app.create_app`: `/healthz`, `/_theme.css`, Swagger UI at
@@ -61,9 +65,12 @@ display formatting (thousands separators, `,` vs `.`) is a frontend concern
 Verified live (not just tested): `uv run mock-fx serve` + `curl` proved `/healthz`,
 `/docs` (200, real Swagger UI), 401 without an API key, the correct rate
 (`0.1194`, ref `FX-20260724-CNY-EUR`), and `/convert` (42000 CNY → 5014.80 EUR,
-matching the documented golden fixture, both directions). 37/37 tests green,
+matching the documented golden fixture, both directions). 46/46 tests green,
 including 3 that genuinely hit a live masterdata service (not a stub) and prove
-fail-closed behavior when it's unreachable or a currency is unknown.
+fail-closed behavior when it's unreachable or a currency is unknown, plus new
+generator tests: same seed → byte-identical history, every generated point
+stays within the 2.0% D4 band, and `generate_staircase` proves a cumulative
+breakout the naive yesterday-vs-today check alone would miss.
 
 ## Phase 2 exit criterion (for this system)
 

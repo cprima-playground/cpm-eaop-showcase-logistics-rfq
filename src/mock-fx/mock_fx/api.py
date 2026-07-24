@@ -1,9 +1,11 @@
 """Mock Corporate FX Service -- realizes interfaces/api/fx-api.md /
 interfaces/api/fx.openapi.yaml on top of rfq_common's base FastAPI app.
 
-Mocked, deterministic: rates are seeded from real historical CNY/EUR snapshots
-(fixtures/fx/*.json), not a live provider (see fx-api.md "Mock vs live"). No SSO,
-no MCP -- APIKEY only (systems/mock-architecture.md).
+Mocked, deterministic: the "today"/"yesterday" rates are real historical
+CNY/EUR snapshots (fixtures/fx/*.json, the project's documented breakout),
+plus a generated 28-day run-up (store.py/generator.py, seeded via
+rfq_common.clock) for history/charting -- not a live provider (see fx-api.md
+"Mock vs live"). No SSO, no MCP -- APIKEY only (systems/mock-architecture.md).
 
 FX is also the currency-conversion authority (/convert): it holds both the rate
 and, via a REAL masterdata API call (ADR-010 -- never a duplicated file), each
@@ -69,6 +71,13 @@ def build_app(*, fixtures_dir: Path | None = None, masterdata_client: Masterdata
         if rate is None:
             raise HTTPException(status_code=404, detail=f"no rate for {base}/{quote}")
         return rate.model_dump(mode="json")
+
+    @app.get("/exchange-rates/{base}/{quote}/history", dependencies=[Depends(require_api_key)])
+    def get_exchange_rate_history(base: str, quote: str, days: int | None = None) -> list[dict]:
+        points = store.history(base, quote)
+        if days is not None:
+            points = points[-days:]
+        return [p.model_dump(mode="json") for p in points]
 
     @app.get("/convert", dependencies=[Depends(require_api_key)])
     def convert(amount: str, from_currency: str, to_currency: str, effectiveAt: str | None = None) -> dict:

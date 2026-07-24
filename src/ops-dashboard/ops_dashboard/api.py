@@ -241,9 +241,11 @@ def build_app(
     def fx_lookup(request: Request, base: str = "CNY", quote: str = "EUR"):
         principal = _require_role(request, "ops-viewer")
         rate = fx.get_rate(base, quote)
+        history = fx.get_rate_history(base, quote, days=30)
         return templates.TemplateResponse(
             request, "fx.html",
-            _ctx(request, base=base, quote=quote, rate=rate, principal=principal),
+            _ctx(request, base=base, quote=quote, rate=rate,
+                 history_json=json.dumps(history), principal=principal),
         )
 
     @app.get("/masterdata", response_class=HTMLResponse)

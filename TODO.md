@@ -74,6 +74,13 @@ packs + determinism (`RUNNING.md`).
 - [x] `business/glossary.md` — **built**: RFQ · lane · route · contracted/baseline
       lane · route deviation · Incoterm · margin floor · freshness window ·
       route availability · obligation · masterdata · principal.
+- [ ] `src/ops-dashboard` — `/roles` view (Keycloak realm roles/groups —
+      currently just `ops-viewer`, defined in `infra/keycloak/terraform/keycloak-sso.tf`)
+      and `/policies` view (parse + render `authorization/policies.cedar`'s
+      `@id`/`@description`/`@obligations` annotations — no cedar-agent call
+      needed, same static-file read `rfq_common.pdp`'s schema generator
+      already does). Read-only, same role-gated pattern as the rest of the
+      dashboard.
 
 ## Nice-to-have
 

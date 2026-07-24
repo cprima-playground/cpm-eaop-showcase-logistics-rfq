@@ -69,6 +69,36 @@ def test_get_rate_unknown_pair_404():
     assert r.status_code == 404
 
 
+def test_get_rate_history_requires_api_key():
+    r = client().get("/exchange-rates/CNY/EUR/history")
+    assert r.status_code == 401
+
+
+def test_get_rate_history_full_series():
+    r = client().get("/exchange-rates/CNY/EUR/history", headers={"X-API-Key": API_KEY})
+    assert r.status_code == 200
+    body = r.json()
+    assert len(body) == 30  # 28 generated + 2 real fixtures
+    assert body[-1]["rate"] == 0.1194  # today, the real breakout, last/latest
+    assert body[-2]["rate"] == 0.1226  # yesterday
+
+
+def test_get_rate_history_days_param_slices():
+    r = client().get(
+        "/exchange-rates/CNY/EUR/history", params={"days": 5}, headers={"X-API-Key": API_KEY},
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert len(body) == 5
+    assert body[-1]["rate"] == 0.1194
+
+
+def test_get_rate_history_unknown_pair_returns_empty_list():
+    r = client().get("/exchange-rates/USD/JPY/history", headers={"X-API-Key": API_KEY})
+    assert r.status_code == 200
+    assert r.json() == []
+
+
 def test_admin_reset():
     r = client().post("/admin/reset", headers={"X-API-Key": API_KEY})
     assert r.status_code == 200

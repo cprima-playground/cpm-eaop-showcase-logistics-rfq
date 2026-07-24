@@ -69,6 +69,23 @@ def test_fx_lookup_default_pair_found(app, monkeypatch):
     assert "0.1194" in r.text
 
 
+def test_fx_lookup_shows_chart_with_history(app, monkeypatch):
+    monkeypatch.setattr(api_module, "_current_principal", lambda request: VIEWER)
+    r = TestClient(app).get("/fx")
+    assert r.status_code == 200
+    assert "chart.js" in r.text.lower() or "chart.umd" in r.text.lower()
+    assert "fx-chart" in r.text
+    assert "0.121" in r.text  # oldest generated point from the stub history
+    assert "0.1226" in r.text  # yesterday, the real breakout anchor
+
+
+def test_fx_lookup_unknown_pair_shows_no_chart(app, monkeypatch):
+    monkeypatch.setattr(api_module, "_current_principal", lambda request: VIEWER)
+    r = TestClient(app).get("/fx", params={"base": "USD", "quote": "JPY"})
+    assert r.status_code == 200
+    assert '<div id="fx-chart-wrap">' not in r.text
+
+
 def test_fx_lookup_unknown_pair(app, monkeypatch):
     monkeypatch.setattr(api_module, "_current_principal", lambda request: VIEWER)
     r = TestClient(app).get("/fx", params={"base": "USD", "quote": "JPY"})

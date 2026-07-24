@@ -19,10 +19,11 @@ the masterdata browser).
 | --- | --- |
 | `/` | Route list + availability KPI strip |
 | `/routes/{id}` | Route detail, legs, its carrier rate |
-| `/fx?base=&quote=` | FX rate lookup by currency pair (default `CNY`/`EUR`) |
+| `/fx?base=&quote=` | FX rate lookup + a 30-day rate chart (Chart.js) with a ±2.0% threshold band |
 | `/masterdata` | The 9 reference domains |
 | `/masterdata/{domain}` | All rows in one domain (parties/locations/currencies/…) |
 | `/map` | World map (Leaflet + vendored Natural Earth basemap), straight-line per route |
+| `/status` | Two-check health page per backend (`/healthz` + a real authenticated call) |
 
 ## Run it
 
@@ -30,7 +31,7 @@ the masterdata browser).
 # infra/vault + infra/keycloak must be up (docker compose up -d + terraform apply
 # in infra/keycloak/terraform), masterdata/tms/rate/fx must be running
 uv run ops-dashboard serve --port 8006
-uv run pytest -v                          # 26 tests
+uv run pytest -v                          # 35 tests
 ```
 
 Via the local Caddy edge (`infra/keycloak`'s redirect URIs cover both) — this
@@ -65,6 +66,10 @@ Login as `alice` / `rfq-dev-user` (has `ops-viewer` — sees the dashboard) or
   data, just endpoint locodes (looked up via masterdata for lat/lon).
   Longitude is unwrapped across the antimeridian so a Transpacific route
   draws the short way, not through Europe/Africa (`KNOWN-ISSUES.md` F12).
+- FX chart (`/fx`): a real 30-day series (28 generated + the 2 real anchor
+  points), Chart.js via CDN (the first chart in the repo) — the last point is
+  the project's documented breakout (2.7% move vs. the 2.0% D4 threshold),
+  visually distinct from the generated "normal" band.
 
 **Perf note** (`KNOWN-ISSUES.md` F11): every client defaults to `127.0.0.1`,
 not `localhost` — on this dev machine, connecting via `localhost` costs ~2s
@@ -79,12 +84,14 @@ concepts tied to actual state changes, which this dashboard has none of.
 
 ## Result
 
-26/26 tests green: 23 offline (stub `TmsClient`/`RateClient`/`FxClient`/
+35/35 tests green: 32 offline (stub `TmsClient`/`RateClient`/`FxClient`/
 `MasterdataClient`, principal injected directly to test view/role-gate logic
 without a real login) + 3 that genuinely hit the live Keycloak realm (ROPC
 grant for `alice`/`bob`, real token verify + `resolve_principal`, real
-403 for the role-less user). All 6 views also verified live through a real
-browser-equivalent flow (login → dashboard → map → FX lookup → masterdata
-browser → logout → re-login) — the map correctly shows all 13 routes
-including the geographic-diversity lanes (Transpacific, Middle-East/Suez,
-Intra-Europe), each drawn with real masterdata-sourced coordinates.
+403 for the role-less user). All 7 views also verified live through a real
+browser-equivalent flow (login → dashboard → map → FX chart → masterdata
+browser → status → logout → re-login) — the map correctly shows all 16
+routes including the geographic-diversity lanes (Transpacific, Middle-East/
+Suez, Intra-Europe, Transatlantic), each drawn with real masterdata-sourced
+coordinates; the FX chart shows a real 30-day series ending in the
+documented 2.7% breakout.

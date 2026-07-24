@@ -8,7 +8,7 @@ runner = CliRunner()
 def test_reset_command():
     result = runner.invoke(app, ["reset"])
     assert result.exit_code == 0
-    assert "loaded 2 rate snapshot(s)" in result.output
+    assert "loaded 30 rate snapshot(s)" in result.output
 
 
 def test_get_rate_command():

@@ -89,8 +89,9 @@ class RateClient:
 
 
 class FxClient:
-    """No bulk list endpoint on mock-fx (by design -- see its README) --
-    only point lookups by currency pair."""
+    """Point lookups by currency pair, plus a generated 30-day history for
+    charting (mock-fx's generator.py -- deterministic, seeded, never static
+    fixture files beyond the 2 real anchor snapshots)."""
 
     def __init__(self, base_url: str | None = None, api_key: str | None = None, timeout: float = 5.0):
         self._base_url = base_url or os.environ.get("FX_URL", "http://127.0.0.1:8001")
@@ -117,3 +118,6 @@ class FxClient:
 
     def get_rate(self, base: str, quote: str) -> dict | None:
         return self._get(f"/exchange-rates/{base}/{quote}")
+
+    def get_rate_history(self, base: str, quote: str, days: int = 30) -> list[dict]:
+        return self._get(f"/exchange-rates/{base}/{quote}/history?days={days}") or []

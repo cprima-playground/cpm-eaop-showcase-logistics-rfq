@@ -89,6 +89,15 @@ class StubFxClient:
                      "observed_at": "2026-07-24T00:00:00Z", "valid_until": None, "rate_ref": "fx-test-1"}
         return None
 
+    def get_rate_history(self, base, quote, days=30):
+        if (base, quote) != ("CNY", "EUR"):
+            return []
+        return [
+            {"pair": "CNY/EUR", "rate": 0.1210, "observed_at": "2026-07-22T08:00:00Z", "rate_ref": "fx-test-0"},
+            {"pair": "CNY/EUR", "rate": 0.1226, "observed_at": "2026-07-23T08:00:00Z", "rate_ref": "fx-test-1226"},
+            {"pair": "CNY/EUR", "rate": 0.1194, "observed_at": "2026-07-24T08:00:00Z", "rate_ref": "fx-test-1194"},
+        ]
+
 
 @pytest.fixture(autouse=True)
 def _session_secret(monkeypatch):
