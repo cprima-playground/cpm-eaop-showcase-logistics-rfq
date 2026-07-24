@@ -19,29 +19,56 @@
   <thead>
     <tr class="text-left border-b">
       <th class="py-2">Service</th>
-      <th class="py-2">Base URL</th>
-      <th class="py-2">Reachable</th>
+      <th class="py-2">Kind</th>
+      <th class="py-2">Frontend Up</th>
+      <th class="py-2">Backend Up</th>
       <th class="py-2">Auth OK</th>
       <th class="py-2">Latency</th>
+      <th class="py-2">API Docs</th>
       <th class="py-2">Detail</th>
     </tr>
   </thead>
   <tbody>
     {% for s in services %}
     <tr class="border-b hover:bg-gray-50">
-      <td class="py-2 font-semibold">{{ s.name }}</td>
-      <td class="py-2">{{ s.base_url }}</td>
+      <td class="py-2 font-semibold">
+        {% if s.frontend_url %}
+        <a href="{{ s.frontend_url }}" target="_blank" rel="noopener noreferrer" class="underline accent">{{ s.name }}</a>
+        {% else %}
+        {{ s.name }}
+        {% endif %}
+      </td>
+      <td class="py-2 text-gray-600">{{ s.kind }}</td>
       <td class="py-2">
-        <span class="px-2 py-0.5 rounded text-xs {{ 'badge-available' if s.reachable else 'badge-unavailable' }}">
-          {{ "yes" if s.reachable else "no" }}
-        </span>
+        {% if s.kind == "frontend" %}
+        <span class="inline-block w-2.5 h-2.5 rounded-full {{ 'bg-green-600' if s.reachable else 'bg-red-600' }}" title="{{ 'up' if s.reachable else 'down' }}"></span>
+        {{ "up" if s.reachable else "down" }}
+        {% else %}
+        —
+        {% endif %}
       </td>
       <td class="py-2">
-        <span class="px-2 py-0.5 rounded text-xs {{ 'badge-available' if s.authenticated else 'badge-unavailable' }}">
-          {{ "yes" if s.authenticated else "no" }}
-        </span>
+        {% if s.kind in ("api", "identity") %}
+        <span class="inline-block w-2.5 h-2.5 rounded-full {{ 'bg-green-600' if s.reachable else 'bg-red-600' }}" title="{{ 'up' if s.reachable else 'down' }}"></span>
+        {{ "up" if s.reachable else "down" }}
+        {% else %}
+        —
+        {% endif %}
+      </td>
+      <td class="py-2">
+        <span class="inline-block w-2.5 h-2.5 rounded-full {{ 'bg-green-600' if s.authenticated else 'bg-red-600' }}" title="{{ 'ok' if s.authenticated else 'failed' }}"></span>
+        {{ "ok" if s.authenticated else "failed" }}
       </td>
       <td class="py-2">{{ s.latency_ms ~ " ms" if s.latency_ms is not none else "—" }}</td>
+      <td class="py-2">
+        {% if s.swagger_url %}
+        <a href="{{ s.swagger_url }}" target="_blank" rel="noopener noreferrer" class="underline accent">Swagger</a>
+        <a href="{{ s.redoc_url }}" target="_blank" rel="noopener noreferrer" class="underline accent ml-2">ReDoc</a>
+        <a href="{{ s.openapi_url }}" target="_blank" rel="noopener noreferrer" class="underline accent ml-2">OpenAPI</a>
+        {% else %}
+        —
+        {% endif %}
+      </td>
       <td class="py-2 text-gray-600">{{ s.detail or "" }}</td>
     </tr>
     {% endfor %}

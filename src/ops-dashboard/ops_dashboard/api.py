@@ -15,7 +15,7 @@ from pathlib import Path
 
 import httpx
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
@@ -25,6 +25,7 @@ from rfq_common.identity import Principal
 from rfq_common.masterdata_client import MasterdataClient
 from rfq_common.secrets import SecretsClient
 from rfq_common.theme import load_theme
+from rfq_common.webapp import SHARED_STATIC_DIR, SHARED_TEMPLATES_DIR, install_error_handlers
 
 from . import config
 from .clients import FxClient, RateClient, TmsClient
@@ -42,6 +43,19 @@ MASTERDATA_DOMAINS = [
     "parties", "locations", "currencies", "incoterms", "commodities",
     "equipment", "units-of-measure", "dg-classes", "payment-terms",
 ]
+
+SYSTEM_TITLE = "Ops Dashboard"
+BANNER_TEXT = "SHOWCASE — dev environment, read-only ops dashboard"
+NAV_LINKS = [
+    ("Routes", "/"), ("Map", "/map"), ("FX", "/fx"),
+    ("Masterdata", "/masterdata"), ("Status", "/status"),
+]
+
+# Mirrors mock-fx's LIVE_CURRENCIES -- every pair mock-fx holds is
+# CURRENCY/EUR, so the detail page only offers a base selector; quote is a
+# fixed "EUR" (no cross-currency triangulation -- mock-fx is a neutral feed
+# of what it actually has, not a derived-rate calculator).
+FX_BASE_CURRENCIES = ["USD", "GBP", "JPY", "CNY"]
 
 
 def _masterdata_client() -> MasterdataClient:
@@ -81,8 +95,10 @@ def _check_service(name: str, base_url: str, auth_probe) -> dict:
     (KNOWN-ISSUES.md #7: a running consumer's cached key going stale after a
     Vault reseed is a real, previously-unsurfaced failure mode)."""
     result = {
-        "name": name, "base_url": base_url, "status": "fail",
-        "reachable": False, "authenticated": False, "latency_ms": None, "detail": None,
+        "name": name, "kind": "api", "base_url": base_url, "frontend_url": None,
+        "swagger_url": f"{base_url}/swagger", "redoc_url": f"{base_url}/redoc", "openapi_url": f"{base_url}/openapi.json",
+        "status": "fail", "reachable": False, "authenticated": False,
+        "latency_ms": None, "detail": None,
     }
     t0 = time.monotonic()
     try:
@@ -108,6 +124,75 @@ def _check_service(name: str, base_url: str, auth_probe) -> dict:
         result["status"] = "warn"
     except Exception as exc:
         result["detail"] = f"authenticated call failed: {exc}"
+        result["status"] = "warn"
+    return result
+
+
+def _check_frontend(name: str, public_base_url: str, *, authenticated: bool) -> dict:
+    """Is THIS frontend up -- a real HTTP GET against its own known public
+    URL's /healthz, not an assumption ("if this handler is running, it must
+    be up" is true but doesn't prove the public-facing URL/edge -- Caddy,
+    hostname, TLS -- actually works end-to-end)."""
+    result = {
+        "name": name, "kind": "frontend", "base_url": public_base_url, "frontend_url": public_base_url,
+        "swagger_url": f"{public_base_url}/swagger", "redoc_url": f"{public_base_url}/redoc", "openapi_url": f"{public_base_url}/openapi.json",
+        "status": "fail", "reachable": False, "authenticated": authenticated,
+        "latency_ms": None, "detail": None,
+    }
+    t0 = time.monotonic()
+    try:
+        r = httpx.get(f"{public_base_url}/healthz", timeout=3, verify=config.caddy_ssl_context())
+    except httpx.HTTPError as exc:
+        result["detail"] = f"unreachable: {exc}"
+        return result
+    result["latency_ms"] = round((time.monotonic() - t0) * 1000)
+    result["reachable"] = r.status_code == 200
+    result["status"] = "pass" if result["reachable"] else "fail"
+    if not result["reachable"]:
+        result["detail"] = f"/healthz returned {r.status_code}"
+    return result
+
+
+def _check_identity_provider(name: str, issuer_url: str) -> dict:
+    """The identity server (Keycloak dev / Entra ID test-prod, TODO.md) --
+    shaped like _check_service, but the two checks differ: reachability is
+    the OIDC discovery document loading at all; the auth-equivalent is its
+    `issuer` matching what this app is configured to trust (config.py's
+    keycloak_issuer_url: a hostname mismatch here breaks every login
+    silently, since Keycloak derives `iss` from whatever Host header reached
+    it)."""
+    result = {
+        "name": name, "kind": "identity", "base_url": issuer_url, "frontend_url": issuer_url,
+        "swagger_url": None, "redoc_url": None, "openapi_url": None,
+        "status": "fail", "reachable": False, "authenticated": False,
+        "latency_ms": None, "detail": None,
+    }
+    t0 = time.monotonic()
+    try:
+        r = httpx.get(
+            f"{issuer_url}/.well-known/openid-configuration",
+            timeout=3, verify=config.caddy_ssl_context(),
+        )
+    except httpx.HTTPError as exc:
+        result["detail"] = f"unreachable: {exc}"
+        return result
+    result["latency_ms"] = round((time.monotonic() - t0) * 1000)
+    result["reachable"] = r.status_code == 200
+    if not result["reachable"]:
+        result["detail"] = f"discovery doc returned {r.status_code}"
+        return result
+
+    try:
+        doc_issuer = r.json().get("issuer")
+    except ValueError:
+        result["detail"] = "discovery doc was not valid JSON"
+        result["status"] = "warn"
+        return result
+    if doc_issuer == issuer_url:
+        result["authenticated"] = True
+        result["status"] = "pass"
+    else:
+        result["detail"] = f"issuer mismatch: configured {issuer_url!r}, discovery doc says {doc_issuer!r}"
         result["status"] = "warn"
     return result
 
@@ -172,8 +257,9 @@ def build_app(
     app.add_middleware(SessionMiddleware, secret_key=config.session_secret())
     app.include_router(sso_router)
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+    app.mount("/static-shared", StaticFiles(directory=str(SHARED_STATIC_DIR)), name="static_shared")
 
-    templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
+    templates = Jinja2Templates(directory=[str(TEMPLATES_DIR), str(SHARED_TEMPLATES_DIR)])
 
     @app.middleware("http")
     async def _correlation_id(request: Request, call_next):
@@ -187,8 +273,13 @@ def build_app(
             "request": request,
             "principal": _current_principal(request),
             "correlation_id": request.state.correlation_id,
+            "system_title": SYSTEM_TITLE,
+            "banner_text": BANNER_TEXT,
+            "nav_links": NAV_LINKS,
             **extra,
         }
+
+    install_error_handlers(app, templates, _ctx)
 
     @app.get("/", response_class=HTMLResponse)
     def dashboard(request: Request):
@@ -238,13 +329,30 @@ def build_app(
         )
 
     @app.get("/fx", response_class=HTMLResponse)
-    def fx_lookup(request: Request, base: str = "CNY", quote: str = "EUR"):
+    def fx_overview(request: Request):
+        principal = _require_role(request, "ops-viewer")
+        rows = []
+        for r in fx.list_rates():
+            base, quote = r["pair"].split("/")
+            history = fx.get_rate_history(base, quote, days=30)
+            rows.append({
+                **r, "base": base, "quote": quote,
+                "sparkline_json": json.dumps([p["rate"] for p in history]),
+            })
+        return templates.TemplateResponse(
+            request, "fx.html",
+            _ctx(request, rates=rows, principal=principal),
+        )
+
+    @app.get("/fx/{base}/{quote}", response_class=HTMLResponse)
+    def fx_detail(request: Request, base: str, quote: str):
         principal = _require_role(request, "ops-viewer")
         rate = fx.get_rate(base, quote)
         history = fx.get_rate_history(base, quote, days=30)
         return templates.TemplateResponse(
-            request, "fx.html",
+            request, "fx_detail.html",
             _ctx(request, base=base, quote=quote, rate=rate,
+                 base_currencies=FX_BASE_CURRENCIES,
                  history_json=json.dumps(history), principal=principal),
         )
 
@@ -301,6 +409,8 @@ def build_app(
     def status_page(request: Request):
         principal = _require_role(request, "ops-viewer")
         services = [
+            _check_frontend("ops-dashboard", config.public_base_url(), authenticated=principal is not None),
+            _check_identity_provider("keycloak", config.keycloak_issuer_url()),
             _check_service("masterdata", masterdata.base_url, lambda: masterdata.list("currencies")),
             _check_service("tms", tms.base_url, lambda: tms.list_routes()),
             _check_service("rate", rate.base_url, lambda: rate.list_rates()),
@@ -313,12 +423,6 @@ def build_app(
             request, "status.html",
             _ctx(request, services=services, overall=overall, principal=principal),
         )
-
-    @app.exception_handler(HTTPException)
-    async def _http_exception_handler(request: Request, exc: HTTPException):
-        if exc.status_code == 303:
-            return RedirectResponse(exc.headers["Location"])
-        return HTMLResponse(f"<h1>{exc.status_code}</h1><p>{exc.detail}</p>", status_code=exc.status_code)
 
     return app
 

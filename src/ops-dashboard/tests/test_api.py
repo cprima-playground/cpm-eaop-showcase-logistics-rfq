@@ -12,6 +12,17 @@ def test_healthz(app):
     assert TestClient(app).get("/healthz").status_code == 200
 
 
+def test_unmatched_route_gets_themed_404_not_raw_json(app, monkeypatch):
+    """A genuinely unmatched route (no view, no HTTPException we raised)
+    is a Starlette-internal 404 -- must still render the shared error.html,
+    not fall through to FastAPI's default `{"detail": "Not Found"}` JSON."""
+    monkeypatch.setattr(api_module, "_current_principal", lambda request: VIEWER)
+    r = TestClient(app).get("/no-such-route")
+    assert r.status_code == 404
+    assert "application/json" not in r.headers.get("content-type", "")
+    assert "404" in r.text
+
+
 def test_dashboard_redirects_anonymous_to_login(app):
     r = TestClient(app).get("/", follow_redirects=False)
     assert r.status_code in (302, 303, 307)
@@ -61,40 +72,54 @@ def test_route_detail_unknown_route_404(app, monkeypatch):
     assert r.status_code == 404
 
 
-def test_fx_lookup_default_pair_found(app, monkeypatch):
+def test_fx_overview_lists_pairs(app, monkeypatch):
     monkeypatch.setattr(api_module, "_current_principal", lambda request: VIEWER)
     r = TestClient(app).get("/fx")
+    assert r.status_code == 200
+    assert "CNY/EUR" in r.text
+    assert "0.1194" in r.text
+    assert 'href="/fx/CNY/EUR"' in r.text
+
+
+def test_fx_detail_pair_found(app, monkeypatch):
+    monkeypatch.setattr(api_module, "_current_principal", lambda request: VIEWER)
+    r = TestClient(app).get("/fx/CNY/EUR")
     assert r.status_code == 200
     assert "CNY-EUR" in r.text
     assert "0.1194" in r.text
 
 
-def test_fx_lookup_shows_chart_with_history(app, monkeypatch):
+def test_fx_detail_shows_chart_with_history(app, monkeypatch):
     monkeypatch.setattr(api_module, "_current_principal", lambda request: VIEWER)
-    r = TestClient(app).get("/fx")
+    r = TestClient(app).get("/fx/CNY/EUR")
     assert r.status_code == 200
     assert "chart.js" in r.text.lower() or "chart.umd" in r.text.lower()
     assert "fx-chart" in r.text
     assert "0.121" in r.text  # oldest generated point from the stub history
-    assert "0.1226" in r.text  # yesterday, the real breakout anchor
+    assert "0.1226" in r.text  # a historical stub point
 
 
-def test_fx_lookup_unknown_pair_shows_no_chart(app, monkeypatch):
+def test_fx_detail_unknown_pair_shows_no_chart(app, monkeypatch):
     monkeypatch.setattr(api_module, "_current_principal", lambda request: VIEWER)
-    r = TestClient(app).get("/fx", params={"base": "USD", "quote": "JPY"})
+    r = TestClient(app).get("/fx/USD/JPY")
     assert r.status_code == 200
     assert '<div id="fx-chart-wrap">' not in r.text
 
 
-def test_fx_lookup_unknown_pair(app, monkeypatch):
+def test_fx_detail_unknown_pair(app, monkeypatch):
     monkeypatch.setattr(api_module, "_current_principal", lambda request: VIEWER)
-    r = TestClient(app).get("/fx", params={"base": "USD", "quote": "JPY"})
+    r = TestClient(app).get("/fx/USD/JPY")
     assert r.status_code == 200
     assert "No rate on file" in r.text
 
 
 def test_fx_requires_role(app):
     r = TestClient(app).get("/fx", follow_redirects=False)
+    assert r.status_code in (302, 303, 307)
+
+
+def test_fx_detail_requires_role(app):
+    r = TestClient(app).get("/fx/CNY/EUR", follow_redirects=False)
     assert r.status_code in (302, 303, 307)
 
 
@@ -139,8 +164,8 @@ def test_map_splits_antimeridian_crossing_routes(app, monkeypatch):
     client = TestClient(app)
     r = client.get("/map")
     assert r.status_code == 200
-    assert "/static/js/route-map.js" in r.text
-    js = client.get("/static/js/route-map.js")
+    assert "/static-shared/js/route-map.js" in r.text
+    js = client.get("/static-shared/js/route-map.js")
     assert js.status_code == 200
     assert "splitAtAntimeridian" in js.text
 
@@ -209,13 +234,90 @@ def test_check_service_warn_on_stale_credential_401(monkeypatch):
     assert "KNOWN-ISSUES.md" in result["detail"]
 
 
+def test_check_frontend_pass_when_healthz_ok(monkeypatch):
+    monkeypatch.setattr(api_module.httpx, "get", lambda *a, **k: _fake_healthz_response(200))
+    result = api_module._check_frontend("ops-dashboard", "https://stub", authenticated=True)
+    assert result["status"] == "pass"
+    assert result["kind"] == "frontend"
+    assert result["reachable"] is True
+    assert result["authenticated"] is True
+
+
+def test_check_frontend_fail_when_unreachable(monkeypatch):
+    def _raise(*a, **k):
+        raise httpx.ConnectError("refused")
+
+    monkeypatch.setattr(api_module.httpx, "get", _raise)
+    result = api_module._check_frontend("ops-dashboard", "https://stub", authenticated=False)
+    assert result["status"] == "fail"
+    assert result["reachable"] is False
+    assert "unreachable" in result["detail"]
+
+
+def test_check_frontend_fail_when_healthz_non_200(monkeypatch):
+    monkeypatch.setattr(api_module.httpx, "get", lambda *a, **k: _fake_healthz_response(503))
+    result = api_module._check_frontend("ops-dashboard", "https://stub", authenticated=False)
+    assert result["status"] == "fail"
+    assert result["reachable"] is False
+    assert "503" in result["detail"]
+
+
+def test_check_identity_provider_pass_when_discovery_and_issuer_match(monkeypatch):
+    issuer = "https://keycloak.example/realms/rfq"
+
+    def _fake_get(url, *a, **k):
+        assert url == f"{issuer}/.well-known/openid-configuration"
+        return httpx.Response(200, json={"issuer": issuer}, request=httpx.Request("GET", url))
+
+    monkeypatch.setattr(api_module.httpx, "get", _fake_get)
+    result = api_module._check_identity_provider("keycloak", issuer)
+    assert result["status"] == "pass"
+    assert result["kind"] == "identity"
+    assert result["reachable"] is True
+    assert result["authenticated"] is True
+
+
+def test_check_identity_provider_fail_when_unreachable(monkeypatch):
+    def _raise(*a, **k):
+        raise httpx.ConnectError("refused")
+
+    monkeypatch.setattr(api_module.httpx, "get", _raise)
+    result = api_module._check_identity_provider("keycloak", "https://keycloak.example/realms/rfq")
+    assert result["status"] == "fail"
+    assert result["reachable"] is False
+
+
+def test_check_identity_provider_warn_on_issuer_mismatch(monkeypatch):
+    """A hostname mismatch here breaks every login silently -- Keycloak
+    derives its `iss` claim from whatever Host header reached it."""
+    configured = "https://keycloak.rfq-showcase.localhost/realms/rfq"
+
+    def _fake_get(url, *a, **k):
+        return httpx.Response(200, json={"issuer": "https://wrong-host/realms/rfq"}, request=httpx.Request("GET", url))
+
+    monkeypatch.setattr(api_module.httpx, "get", _fake_get)
+    result = api_module._check_identity_provider("keycloak", configured)
+    assert result["status"] == "warn"
+    assert result["reachable"] is True
+    assert result["authenticated"] is False
+    assert "issuer mismatch" in result["detail"]
+
+
 def test_status_page_shows_overall_pass_when_all_services_ok(app, monkeypatch):
     monkeypatch.setattr(api_module, "_current_principal", lambda request: VIEWER)
-    monkeypatch.setattr(api_module.httpx, "get", lambda *a, **k: _fake_healthz_response(200))
+
+    def _fake_get(url, *a, **k):
+        if "well-known" in url:
+            return httpx.Response(200, json={"issuer": api_module.config.keycloak_issuer_url()},
+                                   request=httpx.Request("GET", url))
+        return _fake_healthz_response(200)
+
+    monkeypatch.setattr(api_module.httpx, "get", _fake_get)
     r = TestClient(app).get("/status")
     assert r.status_code == 200
     assert "Overall: pass" in r.text
     assert "tms" in r.text and "masterdata" in r.text and "rate" in r.text and "fx" in r.text
+    assert "keycloak" in r.text and "ops-dashboard" in r.text
 
 
 def test_status_requires_role(app):
@@ -230,5 +332,5 @@ def test_correlation_id_header_present(app, monkeypatch):
 
 
 def test_swagger_ui_reachable(app):
-    r = TestClient(app).get("/docs")
+    r = TestClient(app).get("/swagger")
     assert r.status_code == 200

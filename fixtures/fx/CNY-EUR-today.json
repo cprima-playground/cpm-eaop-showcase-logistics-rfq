@@ -1,9 +1,10 @@
 {
   "pair": "CNY/EUR",
-  "rate": 0.1194,
+  "rate": 0.129791,
   "rate_type": "corporate",
   "source": "corporate-fx-service",
   "observed_at": "2026-07-24T08:00:00Z",
   "valid_until": "2026-07-24T16:00:00Z",
-  "rate_ref": "FX-20260724-CNY-EUR"
+  "rate_ref": "FX-20260724-CNY-EUR",
+  "_note": "Fallback-tier fixture only -- used when the live ECB anchor (mock_fx/ecb_client.py) is unavailable. Anchored to ECB's real published EUR/CNY reference rate (7.7047 -> CNY/EUR=0.129791, eurofxref-daily.xml) -- see mock-fx/README.md."
 }

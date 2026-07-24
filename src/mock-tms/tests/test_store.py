@@ -24,6 +24,25 @@ def test_contracted_route():
     assert route.legs[0].from_ == "CNSHA"
 
 
+def test_contracted_shape_is_the_deliberate_minority():
+    """Guardrail, not an incidental count: this showcase demonstrates AGENTIC
+    remedies for non-contracted-lane deviations (D3, business/decisions.md) --
+    that only works if most routes genuinely aren't contracted. Realistic
+    freight economics agree: a shipper contracts its highest-volume core lane
+    and leaves the long tail on spot (see KNOWN-ISSUES.md / this test's
+    origin). If a future fixture edit marks more routes `contracted: true`,
+    this fails loudly instead of silently eroding the demo's premise."""
+    routes = store().list_routes()
+    contracted = [r for r in routes if r.contracted]
+    assert len(contracted) == 1, (
+        f"expected exactly 1 contracted route (the deliberate 80/20 shape), "
+        f"got {len(contracted)}: {[r.id for r in contracted]}"
+    )
+    assert contracted[0].id == "SHA-HAM-MUC"
+    non_contracted_share = 1 - (len(contracted) / len(routes))
+    assert non_contracted_share >= 0.75, "non-contracted routes must stay the clear majority"
+
+
 def test_transit_time_sums_legs():
     s = store()
     assert s.transit_time("SHA-HAM-MUC") == 27 + 2

@@ -28,8 +28,8 @@ function rmShiftGeoJSON(geojson, delta) {
   };
 }
 
-function rmAddBasemap(map) {
-  fetch("/static/vendor/natural-earth/ne_110m_admin_0_countries.geojson")
+function rmAddBasemap(map, geojsonUrl) {
+  fetch(geojsonUrl || "/static/vendor/natural-earth/ne_110m_admin_0_countries.geojson")
     .then((r) => r.json())
     .then((geojson) => {
       const style = { color: "#94a3b8", weight: 1, fillColor: "#e2e8f0", fillOpacity: 0.5 };
@@ -92,6 +92,13 @@ function rmDrawRoutes(map, routes, opts) {
   }
   if (allPoints.length) {
     map.fitBounds(L.latLngBounds(allPoints), { padding: opts.padding || [20, 20] });
+    // Mercator distorts badly near the poles, and no route ever goes there --
+    // rather than a hardcoded lat/lon box (which fights the container's own
+    // aspect ratio and can force MORE area into view than intended), just
+    // don't allow zooming/panning out past the view that actually fits the
+    // real data.
+    map.setMinZoom(map.getZoom());
+    map.setMaxBounds(map.getBounds().pad(0.5));
   }
 }
 

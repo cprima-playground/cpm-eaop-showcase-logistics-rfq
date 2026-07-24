@@ -1,0 +1,10 @@
+{
+  "pair": "JPY/EUR",
+  "rate": 0.005365,
+  "rate_type": "corporate",
+  "source": "corporate-fx-service",
+  "observed_at": "2026-07-24T08:00:00Z",
+  "valid_until": "2026-07-24T16:00:00Z",
+  "rate_ref": "FX-20260724-JPY-EUR",
+  "_note": "Fallback-tier fixture only -- used when the live ECB anchor (mock_fx/ecb_client.py) is unavailable. Anchored to ECB's real published EUR/JPY reference rate (186.38 -> JPY/EUR=0.005365, eurofxref-daily.xml) -- see mock-fx/README.md."
+}

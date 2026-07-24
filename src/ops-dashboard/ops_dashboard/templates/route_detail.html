@@ -4,12 +4,12 @@
 {% if route_json %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="/static/js/route-map.js"></script>
+<script src="/static-shared/js/route-map.js"></script>
 <style>#route-detail-map { height: 200px; width: 320px; }</style>
 {% endif %}
 {% endblock %}
 {% block content %}
-<a href="/" class="underline text-sm">&larr; back to dashboard</a>
+<a href="/" class="underline text-sm">&larr; all routes</a>
 <h1 class="text-2xl font-bold my-4">{{ route.id }}</h1>
 
 <div class="flex justify-between items-start gap-4 mb-6">

@@ -13,7 +13,7 @@ def test_healthz():
 
 
 def test_swagger_ui_reachable():
-    r = client().get("/docs")
+    r = client().get("/swagger")
     assert r.status_code == 200
     assert "swagger" in r.text.lower()
 

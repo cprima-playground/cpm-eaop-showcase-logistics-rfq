@@ -8,7 +8,7 @@ Built on `rfq_common` (same shape as `mock-fx`); one generic `CodeListStore`
 ## Run it
 
 ```sh
-uv run mock-masterdata serve --port 8003   # Swagger UI at http://localhost:8003/docs
+uv run mock-masterdata serve --port 8003   # Swagger UI at http://localhost:8003/swagger
 uv run mock-masterdata domains             # list the 9 domains
 uv run mock-masterdata list currencies
 uv run mock-masterdata get locations CNSHA
@@ -44,6 +44,6 @@ from one table (`store.DOMAINS`) — adding a 10th domain needs no new route cod
 ## Result
 
 Verified live: `uv run mock-masterdata serve`, unset `MASTERDATA_API_KEY`, fetched
-the key from Vault, `curl`'d `/docs` (200), `/locations` with no key (401), and
+the key from Vault, `curl`'d `/swagger` (200), `/locations` with no key (401), and
 `/locations/CNSHA`, `/incoterms` (11 entries), `/parties/ACME` with the Vault key
 — all correct. 24/24 tests green.

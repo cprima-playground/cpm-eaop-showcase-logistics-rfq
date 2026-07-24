@@ -1,10 +1,10 @@
 {
   "pair": "CNY/EUR",
-  "rate": 0.1226,
+  "rate": 0.129656,
   "rate_type": "corporate",
   "source": "corporate-fx-service",
   "observed_at": "2026-07-23T08:00:00Z",
   "valid_until": "2026-07-23T16:00:00Z",
   "rate_ref": "FX-20260723-CNY-EUR",
-  "_note": "Prior-quote rate. today 0.1194 vs yesterday 0.1226 = 2.7% move (> 2% threshold)."
+  "_note": "Fallback-tier fixture only. Baseline is nominal by design (today 0.129791 vs yesterday 0.129656 = ~0.10% move, well under the D4 policy threshold) -- a breakout is a SCENARIO concept (fixtures/scenario-packs/cny-eur-threshold.yaml), never baked into the default state."
 }

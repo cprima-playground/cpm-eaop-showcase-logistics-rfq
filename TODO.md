@@ -81,6 +81,18 @@ packs + determinism (`RUNNING.md`).
       needed, same static-file read `rfq_common.pdp`'s schema generator
       already does). Read-only, same role-gated pattern as the rest of the
       dashboard.
+- [ ] **HITL notification-list system** — a standalone system (own subdomain
+      reserved, `hitl.rfq-showcase.localhost`), complementing (not replacing)
+      the planned CPQ. Initially just a notification list: surfaces pending
+      human-decision points as they arise from Cedar `permit+notify`/obligation
+      outcomes (D3b lane-deviation review, D4a FX-move notify, D5 margin-floor
+      approval, D6 monetary/delegated-limit approval, D8 cost-variance review,
+      D9 transit-variance review — expect more as policies grow, e.g. further
+      monetary thresholds), each entry linking out to wherever the actual
+      approval action happens (CPQ's `Quote.status` transition UI once built).
+      Per `business/decisions.md`: "Human-in-the-loop = a status change in the
+      quote system of record" — HITL is the *mechanism that surfaces* the
+      decision, never itself authoritative over it.
 
 ## Nice-to-have
 
@@ -99,6 +111,10 @@ packs + determinism (`RUNNING.md`).
       `scenario apply` + pinned `NOW` + seed + PDP re-PUT + `run_id`); not built. The
       clock-pinning (`NOW` injection) is the load-bearing part — without it D1/D2 flip
       on wall-clock.
+- [ ] **Relocate out of `docs/`** — the whole showcase currently lives under
+      `docs/showcase/logistics/RfQ/` inside a larger repo; at some point it
+      should move to its own top-level location, possibly its own repo.
+      To be determined -- not urgent, just don't be surprised by it later.
 
 ## Suggested sequence
 

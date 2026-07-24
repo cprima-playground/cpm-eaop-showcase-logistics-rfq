@@ -8,19 +8,19 @@ runner = CliRunner()
 def test_reset_command():
     result = runner.invoke(app, ["reset"])
     assert result.exit_code == 0
-    assert "loaded 30 rate snapshot(s)" in result.output
+    assert "loaded 120 rate snapshot(s)" in result.output  # 4 pairs * (2 real + 28 generated)
 
 
 def test_get_rate_command():
     result = runner.invoke(app, ["get-rate", "CNY", "EUR"])
     assert result.exit_code == 0
-    assert "0.1194" in result.output
+    assert "0.129791" in result.output
 
 
 def test_get_rate_command_point_in_time():
     result = runner.invoke(app, ["get-rate", "CNY", "EUR", "--effective-at", "2026-07-23T12:00:00Z"])
     assert result.exit_code == 0
-    assert "0.1226" in result.output
+    assert "0.129656" in result.output
 
 
 def test_get_rate_command_unknown_pair_fails():

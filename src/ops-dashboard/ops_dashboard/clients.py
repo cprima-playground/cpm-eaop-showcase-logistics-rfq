@@ -102,7 +102,7 @@ class FxClient:
     def base_url(self) -> str:
         return self._base_url
 
-    def _get(self, path: str) -> dict | None:
+    def _get(self, path: str) -> dict | list | None:
         try:
             r = httpx.get(
                 f"{self._base_url}{path}",
@@ -115,6 +115,11 @@ class FxClient:
             return None
         r.raise_for_status()
         return r.json()
+
+    def list_rates(self) -> list[dict]:
+        """The latest rate for every known pair -- the overview page (list-then-
+        detail, matches TmsClient.list_routes/RateClient.list_rates)."""
+        return self._get("/exchange-rates") or []
 
     def get_rate(self, base: str, quote: str) -> dict | None:
         return self._get(f"/exchange-rates/{base}/{quote}")

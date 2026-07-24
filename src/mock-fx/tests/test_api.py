@@ -15,7 +15,7 @@ def test_healthz():
 
 def test_swagger_ui_is_reachable():
     """Answers 'is there a Swagger UI' -- yes, and it's actually live here."""
-    r = client().get("/docs")
+    r = client().get("/swagger")
     assert r.status_code == 200
     assert "swagger" in r.text.lower()
 
@@ -24,6 +24,20 @@ def test_openapi_schema_reachable():
     r = client().get("/openapi.json")
     assert r.status_code == 200
     assert r.json()["info"]["title"] == "Mock Corporate FX Service"
+
+
+def test_list_exchange_rates_requires_api_key():
+    r = client().get("/exchange-rates")
+    assert r.status_code == 401
+
+
+def test_list_exchange_rates_returns_latest_per_pair():
+    r = client().get("/exchange-rates", headers={"X-API-Key": API_KEY})
+    assert r.status_code == 200
+    body = r.json()
+    assert len(body) == 4  # USD/GBP/JPY/CNY, all vs EUR
+    by_pair = {row["pair"]: row for row in body}
+    assert by_pair["CNY/EUR"]["rate"] == 0.129791  # latest (today), not the generated history
 
 
 def test_get_rate_requires_api_key():
@@ -41,7 +55,7 @@ def test_get_rate_with_valid_key():
     assert r.status_code == 200
     body = r.json()
     assert body["pair"] == "CNY/EUR"
-    assert body["rate"] == 0.1194
+    assert body["rate"] == 0.129791
     assert body["rate_ref"] == "FX-20260724-CNY-EUR"
 
 
@@ -52,7 +66,7 @@ def test_get_rate_point_in_time():
         headers={"X-API-Key": API_KEY},
     )
     assert r.status_code == 200
-    assert r.json()["rate"] == 0.1226
+    assert r.json()["rate"] == 0.129656
 
 
 def test_get_rate_malformed_effective_at_returns_400_not_500():
@@ -79,8 +93,8 @@ def test_get_rate_history_full_series():
     assert r.status_code == 200
     body = r.json()
     assert len(body) == 30  # 28 generated + 2 real fixtures
-    assert body[-1]["rate"] == 0.1194  # today, the real breakout, last/latest
-    assert body[-2]["rate"] == 0.1226  # yesterday
+    assert body[-1]["rate"] == 0.129791  # today, last/latest
+    assert body[-2]["rate"] == 0.129656  # yesterday
 
 
 def test_get_rate_history_days_param_slices():
@@ -90,7 +104,7 @@ def test_get_rate_history_days_param_slices():
     assert r.status_code == 200
     body = r.json()
     assert len(body) == 5
-    assert body[-1]["rate"] == 0.1194
+    assert body[-1]["rate"] == 0.129791
 
 
 def test_get_rate_history_unknown_pair_returns_empty_list():
@@ -120,7 +134,7 @@ def test_convert_cny_to_eur():
     )
     assert r.status_code == 200
     body = r.json()
-    assert body["converted_amount"] == "5014.80"  # 42000 * 0.1194, 2 decimals
+    assert body["converted_amount"] == "5451.22"  # 42000 * 0.129791, 2 decimals
     assert body["minor_unit"] == 2
 
 
@@ -131,7 +145,7 @@ def test_convert_inverse_direction_eur_to_cny():
         headers={"X-API-Key": API_KEY},
     )
     assert r.status_code == 200
-    # inverse of CNY/EUR=0.1194 -> 100 / 0.1194 ~= 837.52, rounded to CNY's 2 decimals
+    # inverse of CNY/EUR=0.129791 -> 100 / 0.129791 ~= 770.63, rounded to CNY's 2 decimals
     assert r.json()["minor_unit"] == 2
 
 

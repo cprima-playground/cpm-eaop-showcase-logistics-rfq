@@ -1,0 +1,10 @@
+{
+  "pair": "JPY/EUR",
+  "rate": 0.00537,
+  "rate_type": "corporate",
+  "source": "corporate-fx-service",
+  "observed_at": "2026-07-23T08:00:00Z",
+  "valid_until": "2026-07-23T16:00:00Z",
+  "rate_ref": "FX-20260723-JPY-EUR",
+  "_note": "Fallback-tier fixture only. Baseline is nominal by design (~0.09% day-over-day move) -- never a baked-in breakout."
+}

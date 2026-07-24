@@ -1,0 +1,10 @@
+{
+  "pair": "GBP/EUR",
+  "rate": 1.171125,
+  "rate_type": "corporate",
+  "source": "corporate-fx-service",
+  "observed_at": "2026-07-24T08:00:00Z",
+  "valid_until": "2026-07-24T16:00:00Z",
+  "rate_ref": "FX-20260724-GBP-EUR",
+  "_note": "Fallback-tier fixture only -- used when the live ECB anchor (mock_fx/ecb_client.py) is unavailable. Anchored to ECB's real published EUR/GBP reference rate (0.85388 -> GBP/EUR=1.171125, eurofxref-daily.xml) -- see mock-fx/README.md."
+}

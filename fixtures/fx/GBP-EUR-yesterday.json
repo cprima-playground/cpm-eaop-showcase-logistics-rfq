@@ -1,0 +1,10 @@
+{
+  "pair": "GBP/EUR",
+  "rate": 1.172086,
+  "rate_type": "corporate",
+  "source": "corporate-fx-service",
+  "observed_at": "2026-07-23T08:00:00Z",
+  "valid_until": "2026-07-23T16:00:00Z",
+  "rate_ref": "FX-20260723-GBP-EUR",
+  "_note": "Fallback-tier fixture only. Baseline is nominal by design (~0.08% day-over-day move) -- never a baked-in breakout."
+}

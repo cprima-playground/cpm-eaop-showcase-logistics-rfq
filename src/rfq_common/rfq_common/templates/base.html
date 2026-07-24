@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{% block title %}{{ system_title|default('Dashboard') }}{% endblock %} — RfQ Showcase</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/_theme.css">
+  <link rel="stylesheet" href="/static-shared/base.css">
+  {% block head_extra %}{% endblock %}
+</head>
+<body class="min-h-screen flex flex-col">
+  <div class="bg-yellow-100 text-yellow-900 text-xs text-center py-1">
+    {{ banner_text|default('SHOWCASE — dev environment') }}
+  </div>
+  <header class="flex items-center justify-between px-6 py-3 border-b">
+    <nav class="flex items-center gap-4">
+      <a href="/" class="text-lg font-semibold accent">{{ system_title|default('Dashboard') }}</a>
+      {% for label, href in nav_links|default([]) %}
+      <a href="{{ href }}" class="text-sm underline">{{ label }}</a>
+      {% endfor %}
+    </nav>
+    <div class="flex items-center gap-4 text-sm">
+      {% if principal %}
+        <span>{{ principal.id }} ({{ principal.roles|join(', ') if principal.roles else 'no roles' }})</span>
+        <a href="/logout" class="underline">Logout</a>
+      {% else %}
+        <a href="/login" class="underline">Login</a>
+      {% endif %}
+    </div>
+  </header>
+  <main class="p-6 flex-1">
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="px-6 py-2 text-xs text-gray-500 border-t mt-auto">
+    correlation-id: {{ correlation_id }}
+  </footer>
+</body>
+</html>

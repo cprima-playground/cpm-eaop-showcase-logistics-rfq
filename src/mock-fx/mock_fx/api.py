@@ -1,11 +1,15 @@
 """Mock Corporate FX Service -- realizes interfaces/api/fx-api.md /
 interfaces/api/fx.openapi.yaml on top of rfq_common's base FastAPI app.
 
-Mocked, deterministic: the "today"/"yesterday" rates are real historical
-CNY/EUR snapshots (fixtures/fx/*.json, the project's documented breakout),
-plus a generated 28-day run-up (store.py/generator.py, seeded via
-rfq_common.clock) for history/charting -- not a live provider (see fx-api.md
-"Mock vs live"). No SSO, no MCP -- APIKEY only (systems/mock-architecture.md).
+By default, live: on boot/admin-reset it fetches real ECB reference rates
+(USD/GBP/JPY/CNY vs EUR) for the last 30 days (ecb_client.py) -- the baseline
+carries no breakout by design; a breakout is a scenario-pack concept, never
+baked into default state. Opt-out via FX_LIVE_ANCHOR=0. If the live feed is
+unreachable, falls back to a manually-cached copy of the same feed
+(FX_ECB_HIST_FILE), then to the committed fixtures (fixtures/fx/*.json) plus
+a generated 28-day run-up (store.py/generator.py, seeded via rfq_common.clock)
+-- see fx-api.md "Mock vs live". No SSO, no MCP -- APIKEY only
+(systems/mock-architecture.md).
 
 FX is also the currency-conversion authority (/convert): it holds both the rate
 and, via a REAL masterdata API call (ADR-010 -- never a duplicated file), each
@@ -50,8 +54,20 @@ def _masterdata_client() -> MasterdataClient:
     return MasterdataClient(base_url=base_url, api_key=api_key)
 
 
+def _live_anchor_enabled() -> bool:
+    """Opt-out, not opt-in: the running showcase fetches real ECB reference
+    rates by default. FX_LIVE_ANCHOR=0/false/no disables it (e.g. for a fully
+    offline demo without an ECB cache file configured)."""
+    return os.environ.get("FX_LIVE_ANCHOR", "1").strip().lower() not in ("0", "false", "no")
+
+
 def build_app(*, fixtures_dir: Path | None = None, masterdata_client: MasterdataClient | None = None) -> FastAPI:
-    store = FxStore(fixtures_dir or _fixtures_dir(), masterdata_client or _masterdata_client())
+    store = FxStore(
+        fixtures_dir or _fixtures_dir(),
+        masterdata_client or _masterdata_client(),
+        live_anchor=_live_anchor_enabled(),
+        ecb_cache_file=os.environ.get("FX_ECB_HIST_FILE"),
+    )
 
     theme_pack = None
     try:
@@ -61,6 +77,12 @@ def build_app(*, fixtures_dir: Path | None = None, masterdata_client: Masterdata
 
     app = create_app("Mock Corporate FX Service", system_id="fx", theme_pack=theme_pack)
     app.state.fx_store = store
+
+    @app.get("/exchange-rates", dependencies=[Depends(require_api_key)])
+    def list_exchange_rates() -> list[dict]:
+        """The latest rate for every known pair -- an overview, not a
+        point-in-time lookup (list-then-detail, matches masterdata/TMS/Rate)."""
+        return [r.model_dump(mode="json") for r in store.list_latest()]
 
     @app.get("/exchange-rates/{base}/{quote}", dependencies=[Depends(require_api_key)])
     def get_exchange_rate(base: str, quote: str, effectiveAt: str | None = None) -> dict:
@@ -116,6 +138,9 @@ def build_app(*, fixtures_dir: Path | None = None, masterdata_client: Masterdata
 
     @app.post("/admin/reset", dependencies=[Depends(require_api_key)])
     def reset() -> dict:
+        """Also doubles as the live-anchor refresh trigger: reload() re-fetches
+        ECB rates fresh every call (not just at boot) -- useful if the process
+        has been running long enough that its ECB anchor has gone stale."""
         store.reload()
         return {"status": "reset"}
 

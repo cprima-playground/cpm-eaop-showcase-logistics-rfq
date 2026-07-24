@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}FX -- {{ base }}/{{ quote }}{% endblock %}
+{% block head_extra %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>#fx-chart-wrap { max-width: 700px; height: 300px; }</style>
+{% endblock %}
+{% block content %}
+<p class="mb-2"><a class="underline accent" href="/fx">&larr; all pairs</a></p>
+<h1 class="text-2xl font-bold mb-4">
+  FX rate -- <span id="fx-pair-label">{{ base }}/{{ quote }}</span>
+  {% if rate %}
+  <button id="fx-swap" type="button" title="swap to {{ quote }}/{{ base }}"
+          class="text-sm font-normal underline accent align-middle ml-2">&#8646; swap</button>
+  {% endif %}
+</h1>
+
+<form id="fx-pair-form" class="flex items-end gap-3 mb-6">
+  <label class="text-sm">
+    Base<br>
+    <select id="fx-base" name="base" class="border rounded px-2 py-1">
+      {% for c in base_currencies %}
+      <option value="{{ c }}" {% if c == base %}selected{% endif %}>{{ c }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label class="text-sm">
+    Quote<br>
+    <div class="border rounded px-2 py-1 bg-gray-100 text-gray-600">EUR</div>
+  </label>
+  <button type="submit" class="bg-blue-600 text-white text-sm px-3 py-1.5 rounded">Look up</button>
+</form>
+<p class="text-xs text-gray-500 -mt-4 mb-6">Quote is fixed to EUR -- mock-fx only
+  holds <em>currency</em>/EUR pairs (a neutral feed of what it actually has, not
+  a cross-currency calculator).</p>
+<script>
+document.getElementById("fx-pair-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const base = document.getElementById("fx-base").value;
+  window.location = `/fx/${base}/EUR`;
+});
+</script>
+
+{% if rate %}
+<dl class="grid grid-cols-2 gap-2 max-w-md mb-6">
+  <dt class="font-semibold">Pair</dt><dd id="fx-dl-pair">{{ rate.pair }}</dd>
+  <dt class="font-semibold">Rate</dt><dd id="fx-dl-rate">{{ rate.rate }}</dd>
+  <dt class="font-semibold">Source</dt><dd>{{ rate.source }}</dd>
+  <dt class="font-semibold">Observed</dt><dd>{{ rate.observed_at }}</dd>
+  <dt class="font-semibold">Valid until</dt><dd>{{ rate.valid_until }}</dd>
+  <dt class="font-semibold">Reference</dt><dd>{{ rate.rate_ref }}</dd>
+</dl>
+<p class="text-xs text-gray-500 -mt-4 mb-6">"swap" inverts this same rate for
+  display (1 / rate) -- not a second, independently-quoted cross rate.</p>
+<script>
+const fxOriginal = { pair: "{{ rate.pair }}", rate: {{ rate.rate }}, base: "{{ base }}", quote: "{{ quote }}" };
+let fxInverted = false;
+document.getElementById("fx-swap").addEventListener("click", () => {
+  fxInverted = !fxInverted;
+  const pairEl = document.getElementById("fx-pair-label");
+  const dlPair = document.getElementById("fx-dl-pair");
+  const dlRate = document.getElementById("fx-dl-rate");
+  if (fxInverted) {
+    pairEl.textContent = `${fxOriginal.quote}/${fxOriginal.base}`;
+    dlPair.textContent = `${fxOriginal.quote}/${fxOriginal.base} (inverted)`;
+    dlRate.textContent = (1 / fxOriginal.rate).toFixed(6);
+  } else {
+    pairEl.textContent = `${fxOriginal.base}/${fxOriginal.quote}`;
+    dlPair.textContent = fxOriginal.pair;
+    dlRate.textContent = fxOriginal.rate;
+  }
+  if (typeof fxChart !== "undefined" && typeof fxHistoryRates !== "undefined") {
+    fxChart.data.datasets[0].data = fxInverted ? fxHistoryRates.map((r) => 1 / r) : fxHistoryRates;
+    fxChart.data.datasets[0].label = fxInverted ? `${fxOriginal.quote}/${fxOriginal.base}` : fxOriginal.pair;
+    fxChart.update();
+  }
+});
+</script>
+{% else %}
+<p class="text-gray-500 mb-6">No rate on file for {{ base }}/{{ quote }}. Mock FX holds
+  USD/GBP/JPY/CNY, each vs EUR (see <code>src/mock-fx/README.md</code>) -- try
+  e.g. <code>CNY</code>/<code>EUR</code>.</p>
+{% endif %}
+
+{% if history_json and history_json != "[]" %}
+<h2 class="text-lg font-semibold mb-2">Last 30 days</h2>
+<p class="text-sm text-gray-500 mb-3">
+  28 days generated (deterministic, seeded -- <code>mock-fx/generator.py</code>),
+  last 2 points real fixtures anchored to ECB's published reference rate. Baseline
+  is nominal by design -- no breakout. Threshold checks live in policy
+  (<code>policies.cedar</code>), not here.
+</p>
+<div id="fx-chart-wrap"><canvas id="fx-chart"></canvas></div>
+<script>
+const history = {{ history_json|safe }};
+const labels = history.map((p) => p.observed_at.slice(0, 10));
+const fxHistoryRates = history.map((p) => p.rate);
+
+const fxChart = new Chart(document.getElementById("fx-chart"), {
+  type: "line",
+  data: {
+    labels,
+    datasets: [
+      {
+        label: "{{ base }}/{{ quote }}",
+        data: fxHistoryRates,
+        borderColor: "#2563eb",
+        pointRadius: fxHistoryRates.map((r, i) => (i === fxHistoryRates.length - 1 ? 5 : 2)),
+        tension: 0.2,
+      },
+    ],
+  },
+  options: {
+    maintainAspectRatio: false,
+    animation: false,
+    scales: { y: { title: { display: true, text: "rate" } } },
+  },
+});
+</script>
+{% endif %}
+{% endblock %}

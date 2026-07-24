@@ -15,6 +15,7 @@ duplicated file).
 from __future__ import annotations
 
 import json
+import warnings
 from datetime import datetime
 from pathlib import Path
 
@@ -22,9 +23,12 @@ from rfq_common.clock import seeded_rng
 from rfq_common.masterdata_client import MasterdataClient, MasterdataUnavailableError
 from rfq_common.models import ExchangeRate
 
+from . import ecb_client
 from .generator import generate_history
 
 HISTORY_DAYS = 28
+LIVE_CURRENCIES = ("USD", "GBP", "JPY", "CNY")  # vs EUR, ECB's base
+TOTAL_HISTORY_DAYS = HISTORY_DAYS + 2  # matches the fixture path's 28 generated + 2 real
 
 
 def _parse(ts: str) -> datetime:
@@ -36,30 +40,51 @@ class UnknownCurrencyError(ValueError):
 
 
 class FxStore:
-    def __init__(self, fixtures_dir: str | Path, masterdata_client: MasterdataClient | None = None):
+    def __init__(
+        self,
+        fixtures_dir: str | Path,
+        masterdata_client: MasterdataClient | None = None,
+        *,
+        live_anchor: bool = False,
+        ecb_cache_file: str | Path | None = None,
+    ):
         self._fixtures_dir = Path(fixtures_dir)
         self._masterdata = masterdata_client
+        self._live_anchor = live_anchor
+        self._ecb_cache_file = ecb_cache_file
         self._minor_unit_cache: dict[str, int] = {}
         self._rates: list[ExchangeRate] = []
         self.reload()
 
     def reload(self) -> None:
-        """Reload every *.json fixture in the fixtures dir -- the admin `reset`.
-        Every currency in every fixture is validated against the masterdata API
-        (fail closed: unreachable masterdata or an unknown currency code both
-        raise -- this store never falls back to assuming a currency is valid).
-        Then generates HISTORY_DAYS of synthetic history per real pair, ending
-        the day before that pair's EARLIEST real fixture (the existing
-        today/yesterday snapshots stay the exact, untouched anchor and the
-        project's one real documented breakout -- see generator.py)."""
+        """The admin `reset`. If live_anchor is on, tries to anchor every pair
+        in real ECB reference rates (three tiers -- live fetch, a manually
+        cached copy of the same feed, then the committed fixtures below);
+        otherwise (or on total ECB unavailability) loads the committed
+        fixtures and generates HISTORY_DAYS of synthetic history per pair,
+        ending the day before that pair's EARLIEST real fixture (today/
+        yesterday stay the exact, untouched, nominal anchor -- no breakout
+        by default, see generator.py). Every currency in the resulting set is
+        validated against the masterdata API (fail closed: unreachable
+        masterdata or an unknown currency code both raise)."""
+        rates: list[ExchangeRate] = []
+        if self._live_anchor:
+            rates = self._load_live_rates()
+        if not rates:
+            rates = self._load_fixture_rates()
+
+        if self._masterdata is not None:
+            for rate in rates:
+                for code in rate.pair.split("/"):
+                    self._validate_currency(code)
+
+        self._rates = rates
+
+    def _load_fixture_rates(self) -> list[ExchangeRate]:
         rates = []
         for path in sorted(self._fixtures_dir.glob("*.json")):
             data = json.loads(path.read_text(encoding="utf-8"))
-            rate = ExchangeRate.model_validate(data)
-            if self._masterdata is not None:
-                for code in rate.pair.split("/"):
-                    self._validate_currency(code)
-            rates.append(rate)
+            rates.append(ExchangeRate.model_validate(data))
 
         rng = seeded_rng()
         for pair in sorted({r.pair for r in rates}):
@@ -71,8 +96,42 @@ class FxStore:
                 days=HISTORY_DAYS,
                 rng=rng,
             ))
+        return rates
 
-        self._rates = rates
+    def _load_live_rates(self) -> list[ExchangeRate]:
+        """Tier 1 (live fetch) then tier 2 (local cache file). Returns []
+        (never raises) on total unavailability -- reload() falls back to
+        fixtures in that case."""
+        try:
+            days = ecb_client.fetch_history(LIVE_CURRENCIES)
+        except ecb_client.EcbUnavailableError as exc:
+            if self._ecb_cache_file is not None:
+                try:
+                    days = ecb_client.load_history_from_file(self._ecb_cache_file, LIVE_CURRENCIES)
+                except ecb_client.EcbUnavailableError as cache_exc:
+                    warnings.warn(
+                        f"mock-fx: ECB live fetch failed ({exc}) and cache file "
+                        f"unusable ({cache_exc}); falling back to committed fixtures"
+                    )
+                    return []
+            else:
+                warnings.warn(f"mock-fx: ECB live fetch failed ({exc}); falling back to committed fixtures")
+                return []
+
+        days = days[-TOTAL_HISTORY_DAYS:]
+        rates = []
+        for date, by_currency in days:
+            for currency, ecb_rate in by_currency.items():
+                rates.append(ExchangeRate(
+                    pair=f"{currency}/EUR",
+                    rate=round(1 / ecb_rate, 6),
+                    rate_type="corporate",
+                    source="ecb-eurofxref",
+                    observed_at=f"{date}T08:00:00Z",
+                    valid_until=f"{date}T16:00:00Z",
+                    rate_ref=f"FX-{date.replace('-', '')}-{currency}-EUR",
+                ))
+        return rates
 
     def history(self, base: str, quote: str) -> list[ExchangeRate]:
         """Every point for a pair, oldest first -- the real fixtures plus the
@@ -93,6 +152,14 @@ class FxStore:
         masterdata -- never hardcoded."""
         self._validate_currency(code)
         return self._minor_unit_cache[code]
+
+    def list_latest(self) -> list[ExchangeRate]:
+        """The current (latest) rate for every known pair -- an overview list,
+        not a point-in-time lookup. Mirrors the list-then-detail pattern
+        already used by masterdata/TMS/Rate (`GET /{domain}` before
+        `GET /{domain}/{code}`)."""
+        pairs = sorted({r.pair for r in self._rates})
+        return [max((r for r in self._rates if r.pair == p), key=lambda r: _parse(r.observed_at)) for p in pairs]
 
     def get(self, base: str, quote: str, *, effective_at: str | None = None) -> ExchangeRate | None:
         pair = f"{base}/{quote}"

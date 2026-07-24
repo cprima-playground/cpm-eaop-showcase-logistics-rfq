@@ -83,6 +83,10 @@ class StubMasterdataClient:
 class StubFxClient:
     base_url = "http://stub-fx"
 
+    def list_rates(self):
+        return [{"pair": "CNY/EUR", "rate": 0.1194, "source": "test-fixture",
+                  "observed_at": "2026-07-24T00:00:00Z", "rate_ref": "fx-test-1"}]
+
     def get_rate(self, base, quote):
         if (base, quote) == ("CNY", "EUR"):
             return {"pair": "CNY-EUR", "rate": 0.1194, "source": "test-fixture",
