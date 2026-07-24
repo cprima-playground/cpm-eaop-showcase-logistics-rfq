@@ -1,0 +1,6 @@
+{"code": "20GP", "name": "20ft General Purpose", "type": "container", "capacity": "33.2 cbm / 28,180 kg"}
+{"code": "40GP", "name": "40ft General Purpose", "type": "container", "capacity": "67.7 cbm / 28,750 kg"}
+{"code": "40HC", "name": "40ft High Cube", "type": "container", "capacity": "76.4 cbm / 28,600 kg"}
+{"code": "40RF", "name": "40ft Reefer", "type": "container", "capacity": "59.3 cbm / 27,700 kg"}
+{"code": "40OT", "name": "40ft Open Top", "type": "container", "capacity": "65.9 cbm / 28,180 kg"}
+{"code": "TRUCK", "name": "Road truck (standard)", "type": "vehicle", "capacity": "up to 24,000 kg"}

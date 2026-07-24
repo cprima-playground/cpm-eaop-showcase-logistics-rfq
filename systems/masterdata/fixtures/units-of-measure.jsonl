@@ -1,0 +1,5 @@
+{"code": "KG", "name": "Kilogram", "quantity_kind": "weight"}
+{"code": "LB", "name": "Pound", "quantity_kind": "weight"}
+{"code": "CBM", "name": "Cubic metre", "quantity_kind": "volume"}
+{"code": "CFT", "name": "Cubic foot", "quantity_kind": "volume"}
+{"code": "PCS", "name": "Pieces", "quantity_kind": "count"}

@@ -1,0 +1,8 @@
+{"hs_code": "8517.12", "description": "Mobile phones and smartphones", "dangerous_goods": false}
+{"hs_code": "8471.30", "description": "Portable automatic data processing machines (laptops)", "dangerous_goods": false}
+{"hs_code": "8542.31", "description": "Electronic integrated circuits (semiconductors)", "dangerous_goods": false}
+{"hs_code": "8471.50", "description": "Processing units for automatic data processing machines", "dangerous_goods": false}
+{"hs_code": "6109.10", "description": "T-shirts, cotton, knitted", "dangerous_goods": false}
+{"hs_code": "8708.99", "description": "Motor vehicle parts and accessories", "dangerous_goods": false}
+{"hs_code": "8506.50", "description": "Lithium batteries", "dangerous_goods": true, "dg_class": "9"}
+{"hs_code": "2710.12", "description": "Light petroleum distillates / solvents", "dangerous_goods": true, "dg_class": "3"}

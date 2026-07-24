@@ -7,7 +7,8 @@
 
 | Folder | System | Owns | Interface |
 | --- | --- | --- | --- |
-| `crm/` | Mock CRM | Customer · RFQ · ContractedLane | crm-mcp (TARGET) |
+| `masterdata/` | **Masterdata Source (built)** | Party · Location · Currency · Incoterm · Commodity · Equipment · UnitOfMeasure · DangerousGoodsClass · PaymentTerm | REST, APIKEY — `src/mock-masterdata/` |
+| `crm/` | Mock CRM | RFQ · ContractedLane (Customer identity → masterdata Party) | crm-mcp (TARGET) |
 | `tms/` | Mock TMS | RouteTopology · FeasibleLane · TransitTime · Capacity | tms-mcp (TARGET) |
 | `rate/` | Mock Rate Service | ContractRate · CarrierSpotRate · LaneSurcharge | rate-mcp (TARGET) |
 | `cpq/` | Mock CPQ | PricingTerms · MarginFloor · QuoteVersion · **QuoteStatus (human decision)** | commercial-mcp (TARGET) |
@@ -20,3 +21,8 @@ is implemented in this pass — these are homes to fill.
 
 > The human decision is a `Quote.status` transition in **`cpq/`**, not a record in
 > `workflow/` (see `systems-of-record.yaml`).
+
+> **Masterdata is a different category** (ADR-010) — slow-changing reference data,
+> not a transactional object. Every other system references it by id/code
+> (`customer_id`, `carrier_id`, `locode`, currency code) instead of embedding a
+> copy — the fix for the "no customer/carrier reference at all" gap.

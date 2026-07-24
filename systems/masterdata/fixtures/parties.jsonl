@@ -1,0 +1,6 @@
+{"party_id": "ACME", "name": "ACME Corp", "kind": "customer", "country": "DE", "active": true}
+{"party_id": "COSCO", "name": "COSCO Shipping Lines", "kind": "carrier", "country": "CN", "active": true}
+{"party_id": "MAERSK", "name": "A.P. Moller-Maersk", "kind": "carrier", "country": "DK", "active": true}
+{"party_id": "MSC", "name": "Mediterranean Shipping Company", "kind": "carrier", "country": "CH", "active": true}
+{"party_id": "LUFTHANSA-CARGO", "name": "Lufthansa Cargo", "kind": "carrier", "country": "DE", "active": true}
+{"party_id": "HAPAG-LLOYD", "name": "Hapag-Lloyd", "kind": "carrier", "country": "DE", "active": true}

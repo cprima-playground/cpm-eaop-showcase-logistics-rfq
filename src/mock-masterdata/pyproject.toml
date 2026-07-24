@@ -1,0 +1,28 @@
+[project]
+name = "mock-masterdata"
+version = "0.1.0"
+description = "The masterdata source (ADR-010): 9 reference domains (Party, Location, Currency, Incoterm, Commodity, Equipment, UnitOfMeasure, DangerousGoodsClass, PaymentTerm), served so other systems reference by id/code instead of drifting their own copies."
+requires-python = ">=3.10"
+dependencies = [
+    "rfq-common",
+    "uvicorn>=0.30",
+]
+
+[dependency-groups]
+dev = ["pytest>=8.0"]
+
+[tool.uv.sources]
+rfq-common = { path = "../rfq_common", editable = true }
+
+[tool.uv]
+package = true
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["mock_masterdata"]
+
+[project.scripts]
+mock-masterdata = "mock_masterdata.cli:main"

@@ -1,6 +1,6 @@
 # Fixture RFQ for the repricing scenarios. Shanghai -> Munich, EUR quote currency.
 rfq_id: RFQ-1001
-customer: ACME
+customer_id: ACME          # -> masterdata Party (ADR-010)
 region: EMEA
 origin: Shanghai
 destination: Munich

@@ -36,16 +36,25 @@ This is the second of the two correlated boundaries (agent→tool, then tool→A
 
 | System | Backend (jsonl) | REST API | MCP server | Auth | Frontend | CLI |
 | --- | :--: | :--: | :--: | --- | :--: | :--: |
+| **Masterdata** | ✓ **built** | ✓ **built** | — (TARGET, later) | **APIKEY** (machine) — **built** | — | ✓ **built** |
 | **CRM** | ✓ | ✓ | ✓ `crm-mcp` | human **SSO** + agent client-creds | maybe (RFQ view) | ✓ |
 | **TMS** | ✓ | ✓ | ✓ `tms-mcp` | agent client-creds / APIKEY | — | ✓ |
 | **Rate** | ✓ | ✓ | ✓ `rate-mcp` | agent client-creds / APIKEY | — | ✓ |
 | **CPQ** | ✓ | ✓ | ✓ `commercial-mcp` | human **SSO** (approval UI) + agent client-creds | ✓ **approval UI** | ✓ |
-| **FX** | ✓ | ✓ (REST — the point) | ✗ (deliberately none) | **APIKEY** (machine) | — | ✓ |
+| **FX** | ✓ **built** | ✓ **built** (REST — the point) | ✗ (deliberately none) | **APIKEY** (machine) — **built** | — | ✓ **built** |
 | **Workflow** | ✓ | ✓ | ✓ `approval-mcp` | human **SSO** | maybe (task inbox) | ✓ |
 
 Legend: ✓ = build · — = not needed · ✗ = deliberately excluded.
 
+**Masterdata is not one of the original 6 transactional systems** (ADR-010) — it's
+the reference layer every other system points at by id/code (`customer_id`,
+`carrier_id`, `locode`, currency code, …) instead of embedding a copy. See
+`../decisions/ADR-010-masterdata-source.md`.
+
 ### Why each subset
+- **Masterdata** — no SSO (machine/agent consumers only), no MCP yet (agents call
+  it directly via REST for now; an `masterdata-mcp` is a plausible later addition,
+  not required for v1).
 - **FX** — no MCP, no SSO, no frontend: a narrow deterministic machine API, APIKEY-guarded.
   MCP is reserved for agent access to internal systems of record.
 - **CPQ** — the only mandatory frontend: the human sets `Quote.status`

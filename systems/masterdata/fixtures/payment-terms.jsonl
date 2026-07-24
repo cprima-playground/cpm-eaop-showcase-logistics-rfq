@@ -1,0 +1,5 @@
+{"code": "NET30", "name": "Net 30 days", "description": "Payment due 30 days after invoice date"}
+{"code": "NET60", "name": "Net 60 days", "description": "Payment due 60 days after invoice date"}
+{"code": "PREPAID", "name": "Prepaid", "description": "Payment due in full before service is rendered"}
+{"code": "COD", "name": "Cash on Delivery", "description": "Payment due at the point of delivery"}
+{"code": "LC", "name": "Letter of Credit", "description": "Payment guaranteed by a bank-issued letter of credit"}

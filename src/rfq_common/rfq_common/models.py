@@ -46,6 +46,7 @@ class RFQ(BaseModel):
     rfq_id: str
     system_of_record: Literal["crm"] = "crm"
     status: RfqStatus = "draft"
+    customer_id: str | None = None  # -> masterdata Party (ADR-010) -- reference, never copy
     origin: str | None = None
     destination: str | None = None
     quote_currency: str | None = None
@@ -64,6 +65,7 @@ class Quote(BaseModel):
     version: int
     system_of_record: Literal["cpq"] = "cpq"
     status: QuoteStatus = "draft"
+    customer_id: str | None = None  # -> masterdata Party (ADR-010)
     currency: str | None = None
     total_cost_eur_cents: int | None = None
     proposed_sell_price_eur_cents: int | None = None
@@ -75,6 +77,7 @@ class Quote(BaseModel):
 class RouteOption(BaseModel):
     option_id: str
     lane_id: str | None = None
+    carrier_id: str | None = None  # -> masterdata Party (ADR-010) -- was a bare string
     carrier_rate_amount: int | None = None
     carrier_rate_currency: str | None = None
     transit_days: int | None = None
@@ -119,3 +122,84 @@ class ApprovalTask(BaseModel):
     recommendation_id: str
     assignee_role: str | None = None
     evidence: dict = Field(default_factory=dict)
+
+
+# --- masterdata / reference data (ADR-010) ------------------------------------
+# Slow-changing, enterprise-wide reference data -- a DIFFERENT category from the
+# transactional business objects above (ADR-002 governs those; this doesn't).
+# Every code_field below is what CodeListStore keys on.
+
+PartyKind = Literal["customer", "carrier", "forwarder", "consignee"]
+
+
+class Party(BaseModel):
+    party_id: str
+    name: str
+    kind: PartyKind
+    country: str | None = None
+    active: bool = True
+
+
+class Location(BaseModel):
+    """Real UN/LOCODE reference (systems/tms/fixtures/locations.yaml)."""
+
+    locode: str
+    name: str
+    type: Literal["seaport", "airport", "inland_terminal", "rail_terminal"]
+    country: str
+    timezone: str
+    lat: float | None = None
+    lon: float | None = None
+
+
+class Currency(BaseModel):
+    """ISO 4217."""
+
+    code: str
+    name: str
+    minor_unit: int  # decimal places, e.g. 2 for EUR/USD, 0 for JPY
+    symbol: str | None = None
+    active: bool = True
+
+
+class Incoterm(BaseModel):
+    """Incoterms(R) 2020."""
+
+    code: str
+    name: str
+    responsibility_transfer: str
+    version: str = "2020"
+
+
+class Commodity(BaseModel):
+    hs_code: str
+    description: str
+    dangerous_goods: bool = False
+    dg_class: str | None = None  # -> DangerousGoodsClass.class_code, if applicable
+
+
+class Equipment(BaseModel):
+    code: str
+    name: str
+    type: Literal["container", "vehicle"]
+    capacity: str | None = None
+
+
+class UnitOfMeasure(BaseModel):
+    code: str
+    name: str
+    quantity_kind: Literal["weight", "volume", "count"]
+
+
+class DangerousGoodsClass(BaseModel):
+    """IMDG classes 1-9."""
+
+    class_code: str
+    name: str
+    description: str
+
+
+class PaymentTerm(BaseModel):
+    code: str
+    name: str
+    description: str | None = None

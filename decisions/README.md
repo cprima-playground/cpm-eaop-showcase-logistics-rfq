@@ -14,5 +14,6 @@ Distinct from `../business/decisions.md` (that logs *authorization* decisions D1
 | [ADR-007](ADR-007-theming.md) | Passable theming (design tokens → CSS vars) | accepted |
 | [ADR-008](ADR-008-agent-runtime.md) | Agent runtime: Vertex Agent Engine (ADK); container in dev | accepted |
 | [ADR-009](ADR-009-credential-management.md) | Credential inventory + management: Vault-dev / Secret Manager | accepted |
+| [ADR-010](ADR-010-masterdata-source.md) | Masterdata source (Party/Location/Currency/... — 9 domains), reconciled with ADR-002 | accepted |
 
 All eight accepted. 001–005 formalize the domain decisions; 006–008 the build/run decisions.

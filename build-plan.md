@@ -46,13 +46,20 @@ schema-gen + entity assembly) — without it the authz model can't be exercised.
 
 ## Phase 2 — Mock systems (backend · API · CLI) · IN PROGRESS
 
-- ✅ **FX** — `src/mock-fx/` built, 21 tests green, verified **actually running**
+- ✅ **FX** — `src/mock-fx/` built, 24 tests green, verified **actually running**
   (`uv run mock-fx serve`): `/healthz`, real Swagger UI at `/docs`, APIKEY-gated
-  `/exchange-rates/{base}/{quote}` with point-in-time lookup, `/admin/reset`. See
-  `src/mock-fx/README.md`.
+  `/exchange-rates/{base}/{quote}` with point-in-time lookup, `/admin/reset`.
+  Credential migrated to Vault (ADR-009). See `src/mock-fx/README.md`.
+- ✅ **Masterdata** (added beyond the original 6 — ADR-010) — `src/mock-masterdata/`
+  built, 24 tests green, verified **actually running**: 9 reference domains
+  (Party/Location/Currency/Incoterm/Commodity/Equipment/UoM/DG-class/Payment-term),
+  real data (UN/LOCODE, ISO 4217, Incoterms 2020, IMDG classes). Closes the
+  "no customer/carrier reference at all" gap found while scoping CPQ. See
+  `src/mock-masterdata/README.md`.
 - ⬜ **CPQ** next (the `Quote.status` SoR — the mandatory approval frontend), then
   CRM/TMS/Rate/Workflow.
-- 6 systems total over `rfq_common`, jsonl/fixture-baked, admin `reset`.
+- 6 transactional systems + 1 masterdata layer total over `rfq_common`,
+  jsonl/fixture-baked, admin `reset`.
 - **Exit:** each system serves REST + Typer CLI; loads its fixtures; `reset` restores baseline.
 
 ## Phase 3 — Governed edges (MCP + PDP)

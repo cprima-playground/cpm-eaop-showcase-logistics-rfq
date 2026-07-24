@@ -1,0 +1,11 @@
+{"code": "EXW", "name": "Ex Works", "responsibility_transfer": "Seller's premises; buyer bears all transport risk/cost from there", "version": "2020"}
+{"code": "FCA", "name": "Free Carrier", "responsibility_transfer": "Seller delivers to carrier named by buyer at seller's premises or another named place", "version": "2020"}
+{"code": "CPT", "name": "Carriage Paid To", "responsibility_transfer": "Seller pays carriage to destination; risk transfers on handover to first carrier", "version": "2020"}
+{"code": "CIP", "name": "Carriage and Insurance Paid To", "responsibility_transfer": "As CPT, plus seller arranges insurance to destination", "version": "2020"}
+{"code": "DAP", "name": "Delivered at Place", "responsibility_transfer": "Seller bears risk/cost until goods ready for unloading at named destination", "version": "2020"}
+{"code": "DPU", "name": "Delivered at Place Unloaded", "responsibility_transfer": "As DAP, but seller also unloads at destination", "version": "2020"}
+{"code": "DDP", "name": "Delivered Duty Paid", "responsibility_transfer": "Seller bears all risk/cost including import duty to named destination", "version": "2020"}
+{"code": "FAS", "name": "Free Alongside Ship", "responsibility_transfer": "Seller delivers alongside the vessel at named port; sea/waterway only", "version": "2020"}
+{"code": "FOB", "name": "Free on Board", "responsibility_transfer": "Seller delivers on board the vessel; risk transfers at ship's rail; sea/waterway only", "version": "2020"}
+{"code": "CFR", "name": "Cost and Freight", "responsibility_transfer": "Seller pays freight to destination port; risk transfers on board; sea/waterway only", "version": "2020"}
+{"code": "CIF", "name": "Cost, Insurance and Freight", "responsibility_transfer": "As CFR, plus seller arranges insurance; sea/waterway only", "version": "2020"}

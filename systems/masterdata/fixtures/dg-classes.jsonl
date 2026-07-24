@@ -1,0 +1,9 @@
+{"class_code": "1", "name": "Explosives", "description": "Substances/articles with a mass explosion or projection hazard"}
+{"class_code": "2", "name": "Gases", "description": "Compressed, liquefied, or dissolved gases -- flammable, non-flammable, or toxic"}
+{"class_code": "3", "name": "Flammable liquids", "description": "Liquids with a flash point at or below 60 C"}
+{"class_code": "4", "name": "Flammable solids", "description": "Solids liable to spontaneous combustion or that emit flammable gas on contact with water"}
+{"class_code": "5", "name": "Oxidizing substances and organic peroxides", "description": "Substances that readily yield oxygen, or organic peroxides"}
+{"class_code": "6", "name": "Toxic and infectious substances", "description": "Substances liable to cause death or serious injury if ingested/inhaled/contacted"}
+{"class_code": "7", "name": "Radioactive material", "description": "Material emitting ionizing radiation above defined activity concentration"}
+{"class_code": "8", "name": "Corrosives", "description": "Substances that cause severe damage to living tissue or materials on contact"}
+{"class_code": "9", "name": "Miscellaneous dangerous goods", "description": "Substances/articles presenting a danger not covered by other classes"}

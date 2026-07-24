@@ -8,9 +8,21 @@
 # integration in this pass.
 
 systems:
+  masterdata:
+    name: Masterdata Source
+    owns: [Party, Location, Currency, Incoterm, Commodity, Equipment, UnitOfMeasure, DangerousGoodsClass, PaymentTerm]
+    interfaces: [REST]          # built — src/mock-masterdata/, APIKEY only, no SSO
+    note: >
+      ADR-010. A DIFFERENT category from every other system below: slow-changing,
+      enterprise-wide REFERENCE data, not a transactional object. One owner per
+      domain; every other system references by id/code (customer_id, carrier_id,
+      locode, currency code, ...) instead of embedding a copy. This does not
+      contradict "no single SoR" (that rule governs transactional objects only) —
+      see ADR-010's reconciliation with this file's own rule below.
+
   crm:
     name: Mock CRM
-    owns: [Customer, RFQ, ContractedLane]
+    owns: [RFQ, ContractedLane]   # Customer identity moved to masterdata (Party) — CRM references customer_id
     interfaces: [MCP]           # crm-mcp (TARGET)
 
   tms:
@@ -22,6 +34,9 @@ systems:
     name: Mock Rate Service
     owns: [ContractRate, CarrierSpotRate, LaneSurcharge]
     interfaces: [MCP]           # rate-mcp (TARGET)
+    note: >
+      Carrier IDENTITY (name/country) is masterdata's Party; rates reference
+      carrier_id, they don't embed a carrier name (systems/rate/fixtures/rates.yaml).
 
   cpq:
     name: Mock CPQ
