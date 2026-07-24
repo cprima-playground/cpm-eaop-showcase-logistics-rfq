@@ -2,7 +2,10 @@
 Kept local to mock-qms (not rfq_common.models) -- these are still design-stage
 and several carry deliberate x-gap fields (see the OpenAPI file's comments);
 promoting them to the shared library is a later step, once the business
-rules/Cedar wiring behind them is real, not just route shapes."""
+rules/Cedar wiring behind them is real, not just route shapes. QuoteStatus
+itself is the one exception -- reused as-is from rfq_common.models rather than
+duplicated, since it's also the type derive_rfq_status_from_quote takes
+(business/decisions.md's "SoR boundary: RFQ vs Quote")."""
 
 from __future__ import annotations
 
@@ -10,10 +13,7 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-QuoteVersionStatus = Literal[
-    "draft", "priced", "approval_required", "approved",
-    "published", "accepted", "rejected", "revise", "expired", "withdrawn",
-]
+from rfq_common.models import QuoteStatus as QuoteVersionStatus
 
 
 class RFQ(BaseModel):

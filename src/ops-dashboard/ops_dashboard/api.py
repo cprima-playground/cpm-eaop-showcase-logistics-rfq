@@ -57,6 +57,16 @@ NAV_LINKS = [
 # of what it actually has, not a derived-rate calculator).
 FX_BASE_CURRENCIES = ["USD", "GBP", "JPY", "CNY"]
 
+# systems/mock-architecture.md's capability matrix -- no MCP server actually
+# runs anywhere yet (interfaces/mcp/ is greenfield), so this is a static
+# designation, not a live check: None means "no MCP by design" (masterdata,
+# fx, ops-dashboard, keycloak, vault), a name means "assigned, still TARGET."
+MCP_SERVER_BY_SERVICE = {
+    "tms": "tms-mcp (TARGET)",
+    "rate": "rate-mcp (TARGET)",
+    "qms": "commercial-mcp (TARGET)",
+}
+
 
 def _masterdata_client() -> MasterdataClient:
     api_key = os.environ.get("MASTERDATA_API_KEY")
@@ -513,6 +523,8 @@ def build_app(
             _check_qms_frontend("qms", qms.base_url),
             _check_vault("vault", os.environ.get("VAULT_ADDR", "http://127.0.0.1:8200")),
         ]
+        for s in services:
+            s["mcp_server"] = MCP_SERVER_BY_SERVICE.get(s["name"])
         overall = "pass" if all(s["status"] == "pass" for s in services) else (
             "fail" if any(s["status"] == "fail" for s in services) else "warn"
         )

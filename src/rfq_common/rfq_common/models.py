@@ -43,6 +43,13 @@ RfqStatus = Literal[
 
 
 class RFQ(BaseModel):
+    """RFQ is a CASE (a multi-week engagement -- solicit rates, iterate,
+    negotiate), not a document; `status` tracks the case's own progress.
+    `accepted`/`rejected`/`expired` are DERIVED from the Quote that closed the
+    case (see `derive_rfq_status_from_quote` below) -- never set independently.
+    Quote is the primary fact (business/decisions.md, "SoR boundary: RFQ vs
+    Quote"); this is CRM's projection of it, not a second authority."""
+
     rfq_id: str
     system_of_record: Literal["crm"] = "crm"
     status: RfqStatus = "draft"
@@ -54,12 +61,39 @@ class RFQ(BaseModel):
     region: str | None = None
 
 
-QuoteStatus = Literal["draft", "priced", "approval_required", "approved", "rejected", "revise"]
+QuoteStatus = Literal[
+    "draft", "priced", "approval_required", "approved", "published",
+    "accepted", "rejected", "revise", "expired", "withdrawn",
+]
+
+# Quote.status -> the RfqStatus it implies, for the terminal outcomes only.
+# Every other Quote status (draft/priced/approval_required/approved/published/
+# revise) has no RFQ-level meaning yet -- the case is still in progress, so
+# there is nothing to derive (see derive_rfq_status_from_quote).
+_RFQ_STATUS_FROM_TERMINAL_QUOTE_STATUS: dict[str, RfqStatus] = {
+    "accepted": "accepted",
+    "rejected": "rejected",
+    "withdrawn": "rejected",
+    "expired": "expired",
+}
+
+
+def derive_rfq_status_from_quote(quote_status: QuoteStatus) -> RfqStatus | None:
+    """The code-level resolution of business/decisions.md's "SoR boundary: RFQ
+    vs Quote": Quote.status is the primary fact (QMS-owned); RFQ.status's
+    accepted/rejected/expired are a DERIVED projection of it (CRM-owned),
+    never written independently. Returns None for every non-terminal Quote
+    status -- the case is still open, there is nothing for RFQ to reflect yet.
+    A future CRM would call this on every Quote status change, not accept a
+    direct write to its own accepted/rejected/expired."""
+    return _RFQ_STATUS_FROM_TERMINAL_QUOTE_STATUS.get(quote_status)
 
 
 class Quote(BaseModel):
     """The human-in-the-loop decision IS `status` here — not a separate workflow
-    record (business/decisions.md, ADR-005)."""
+    record (business/decisions.md, ADR-005). `status`'s terminal values feed
+    RFQ.status via `derive_rfq_status_from_quote` -- RFQ never sets its own
+    accepted/rejected/expired independently."""
 
     quote_id: str
     version: int

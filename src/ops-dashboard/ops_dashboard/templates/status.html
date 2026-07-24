@@ -24,6 +24,7 @@
       <th class="py-2">Backend Up</th>
       <th class="py-2">Auth OK</th>
       <th class="py-2">Latency</th>
+      <th class="py-2">MCP Server</th>
       <th class="py-2">API Docs</th>
       <th class="py-2">Detail</th>
     </tr>
@@ -60,6 +61,7 @@
         {{ "ok" if s.authenticated else "failed" }}
       </td>
       <td class="py-2">{{ s.latency_ms ~ " ms" if s.latency_ms is not none else "—" }}</td>
+      <td class="py-2 text-gray-600" title="static designation from systems/mock-architecture.md's capability matrix -- no MCP server actually runs anywhere yet, this is not a live check">{{ s.mcp_server or "—" }}</td>
       <td class="py-2">
         {% if s.swagger_url %}
         <a href="{{ s.swagger_url }}" target="_blank" rel="noopener noreferrer" class="underline accent">Swagger</a>
