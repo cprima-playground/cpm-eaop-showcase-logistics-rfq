@@ -58,7 +58,7 @@ def convert(amount: str, from_currency: str, to_currency: str) -> None:
 
 @app.command()
 def serve(host: str = "127.0.0.1", port: int = 8001) -> None:
-    """Run the REST API (Swagger UI at /docs)."""
+    """Run the REST API (Swagger UI at /swagger)."""
     import uvicorn
 
     uvicorn.run(api.build_app(), host=host, port=port)

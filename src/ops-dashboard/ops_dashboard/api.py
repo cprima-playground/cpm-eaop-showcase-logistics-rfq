@@ -1,7 +1,7 @@
 """Ops dashboard -- read-only views over TMS/Rate/Masterdata. First frontend
 + first human-SSO login in RfQ (see build-plan.md's ops-dashboard entry):
 proves the Jinja2/HTMX/Tailwind + Keycloak plumbing (ADR-006/007) in
-isolation, before CPQ needs the same plumbing under approval-workflow
+isolation, before QMS needs the same plumbing under approval-workflow
 pressure too. No writes, no domain state machine, no MCP.
 """
 
@@ -28,7 +28,7 @@ from rfq_common.theme import load_theme
 from rfq_common.webapp import SHARED_STATIC_DIR, SHARED_TEMPLATES_DIR, install_error_handlers
 
 from . import config
-from .clients import FxClient, RateClient, TmsClient
+from .clients import FxClient, QmsClient, RateClient, TmsClient
 from .sso import router as sso_router
 
 RFQ_ROOT = Path(__file__).resolve().parents[3]
@@ -86,18 +86,28 @@ def _fx_client() -> FxClient:
     return FxClient(base_url=os.environ.get("FX_URL", "http://127.0.0.1:8001"), api_key=api_key)
 
 
-def _check_service(name: str, base_url: str, auth_probe) -> dict:
+def _qms_client() -> QmsClient:
+    return QmsClient(base_url=os.environ.get("QMS_URL", "http://127.0.0.1:8007"))
+
+
+def _check_service(name: str, base_url: str, auth_probe, *, kind: str = "api", auth_basis: str = "an authenticated call") -> dict:
     """One backend's health, loosely shaped like the IETF health-check-response
     draft (status: pass/warn/fail). Two independent checks, not one: `/healthz`
     (unauthenticated, per rfq_common.app.create_app) proves the service is UP;
     `auth_probe()` (a real authenticated call already used elsewhere in this
     app) proves OUR credential still matches -- the two fail independently
     (KNOWN-ISSUES.md #7: a running consumer's cached key going stale after a
-    Vault reseed is a real, previously-unsurfaced failure mode)."""
+    Vault reseed is a real, previously-unsurfaced failure mode).
+
+    `kind` defaults to "api" (masterdata/tms/rate/fx: pure backends other
+    systems consume) but is overridable. `auth_basis` is a human-readable
+    description of what auth_probe actually calls -- every bubble in
+    status.html gets this as its tooltip, so "up"/"ok" is never unexplained."""
     result = {
-        "name": name, "kind": "api", "base_url": base_url, "frontend_url": None,
+        "name": name, "kind": kind, "base_url": base_url, "frontend_url": None,
         "swagger_url": f"{base_url}/swagger", "redoc_url": f"{base_url}/redoc", "openapi_url": f"{base_url}/openapi.json",
         "status": "fail", "reachable": False, "authenticated": False,
+        "reachable_basis": f"GET {base_url}/healthz", "auth_basis": auth_basis,
         "latency_ms": None, "detail": None,
     }
     t0 = time.monotonic()
@@ -128,6 +138,49 @@ def _check_service(name: str, base_url: str, auth_probe) -> dict:
     return result
 
 
+def _check_vault(name: str, vault_addr: str) -> dict:
+    """ADR-009's Vault-dev credential store (infra/vault/) -- every mock
+    system's API key is resolved from here (rfq_common.secrets), so if it's
+    down every OTHER service's "authenticated" column is about to go stale
+    too, not just this row. `/v1/sys/health` needs no token -- reachability
+    is "responds at all"; the auth-equivalent is unsealed+initialized (a
+    sealed vault answers but every real secret read still fails)."""
+    result = {
+        "name": name, "kind": "api", "base_url": vault_addr, "frontend_url": None,
+        "swagger_url": None, "redoc_url": None, "openapi_url": None,
+        "status": "fail", "reachable": False, "authenticated": False,
+        "reachable_basis": f"GET {vault_addr}/v1/sys/health (any response at all, incl. Vault's non-200 status codes)",
+        "auth_basis": "response body has initialized=true and sealed=false",
+        "latency_ms": None, "detail": None,
+    }
+    t0 = time.monotonic()
+    try:
+        r = httpx.get(f"{vault_addr}/v1/sys/health", timeout=3)
+    except httpx.HTTPError as exc:
+        result["detail"] = f"unreachable: {exc}"
+        return result
+    result["latency_ms"] = round((time.monotonic() - t0) * 1000)
+    result["reachable"] = r.status_code in (200, 429, 472, 473, 501, 503)  # Vault uses status codes as signal, not just 200
+    if not result["reachable"]:
+        result["detail"] = f"/v1/sys/health returned {r.status_code}"
+        return result
+
+    try:
+        body = r.json()
+    except ValueError:
+        result["detail"] = "/v1/sys/health did not return valid JSON"
+        result["status"] = "warn"
+        return result
+
+    if body.get("initialized") and not body.get("sealed"):
+        result["authenticated"] = True
+        result["status"] = "pass"
+    else:
+        result["detail"] = f"initialized={body.get('initialized')}, sealed={body.get('sealed')}"
+        result["status"] = "warn"
+    return result
+
+
 def _check_frontend(name: str, public_base_url: str, *, authenticated: bool) -> dict:
     """Is THIS frontend up -- a real HTTP GET against its own known public
     URL's /healthz, not an assumption ("if this handler is running, it must
@@ -137,6 +190,8 @@ def _check_frontend(name: str, public_base_url: str, *, authenticated: bool) -> 
         "name": name, "kind": "frontend", "base_url": public_base_url, "frontend_url": public_base_url,
         "swagger_url": f"{public_base_url}/swagger", "redoc_url": f"{public_base_url}/redoc", "openapi_url": f"{public_base_url}/openapi.json",
         "status": "fail", "reachable": False, "authenticated": authenticated,
+        "reachable_basis": f"GET {public_base_url}/healthz",
+        "auth_basis": "a session cookie with a resolved Principal is present on this request",
         "latency_ms": None, "detail": None,
     }
     t0 = time.monotonic()
@@ -153,6 +208,37 @@ def _check_frontend(name: str, public_base_url: str, *, authenticated: bool) -> 
     return result
 
 
+def _check_qms_frontend(name: str, base_url: str) -> dict:
+    """QMS is destined to be "the mandatory approval frontend" (build-plan.md),
+    but has no actual UI route today -- only a Swagger-documented API (see
+    mock_qms/api.py). Deliberately does NOT reuse _check_service's /healthz
+    probe: /healthz always answers regardless of whether any frontend exists,
+    which would report "up" for a UI that isn't there. This checks `/`
+    itself -- correctly reports down until a real frontend page exists."""
+    result = {
+        "name": name, "kind": "frontend", "base_url": base_url, "frontend_url": None,
+        "swagger_url": f"{base_url}/swagger", "redoc_url": f"{base_url}/redoc", "openapi_url": f"{base_url}/openapi.json",
+        "status": "fail", "reachable": False, "authenticated": False,
+        "reachable_basis": f"GET {base_url}/ (an actual UI page -- NOT /healthz, which would answer even with no frontend at all)",
+        "auth_basis": "not applicable -- no login exists yet",
+        "latency_ms": None, "detail": None,
+    }
+    t0 = time.monotonic()
+    try:
+        r = httpx.get(base_url, timeout=3)
+    except httpx.HTTPError as exc:
+        result["detail"] = f"unreachable: {exc}"
+        return result
+    result["latency_ms"] = round((time.monotonic() - t0) * 1000)
+    result["reachable"] = r.status_code == 200
+    result["status"] = "pass" if result["reachable"] else "fail"
+    if not result["reachable"]:
+        result["detail"] = f"no frontend page yet (got {r.status_code}) -- API/Swagger only"
+    else:
+        result["frontend_url"] = base_url
+    return result
+
+
 def _check_identity_provider(name: str, issuer_url: str) -> dict:
     """The identity server (Keycloak dev / Entra ID test-prod, TODO.md) --
     shaped like _check_service, but the two checks differ: reachability is
@@ -165,6 +251,8 @@ def _check_identity_provider(name: str, issuer_url: str) -> dict:
         "name": name, "kind": "identity", "base_url": issuer_url, "frontend_url": issuer_url,
         "swagger_url": None, "redoc_url": None, "openapi_url": None,
         "status": "fail", "reachable": False, "authenticated": False,
+        "reachable_basis": f"GET {issuer_url}/.well-known/openid-configuration",
+        "auth_basis": f"the discovery doc's 'issuer' field equals the configured issuer ({issuer_url})",
         "latency_ms": None, "detail": None,
     }
     t0 = time.monotonic()
@@ -237,11 +325,13 @@ def build_app(
     rate_client: RateClient | None = None,
     masterdata_client: MasterdataClient | None = None,
     fx_client: FxClient | None = None,
+    qms_client: QmsClient | None = None,
 ) -> FastAPI:
     tms = tms_client or _tms_client()
     rate = rate_client or _rate_client()
     masterdata = masterdata_client or _masterdata_client()
     fx = fx_client or _fx_client()
+    qms = qms_client or _qms_client()
 
     theme_pack = None
     try:
@@ -254,6 +344,7 @@ def build_app(
     app.state.rate = rate
     app.state.masterdata = masterdata
     app.state.fx = fx
+    app.state.qms = qms
     app.add_middleware(SessionMiddleware, secret_key=config.session_secret())
     app.include_router(sso_router)
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
@@ -411,10 +502,16 @@ def build_app(
         services = [
             _check_frontend("ops-dashboard", config.public_base_url(), authenticated=principal is not None),
             _check_identity_provider("keycloak", config.keycloak_issuer_url()),
-            _check_service("masterdata", masterdata.base_url, lambda: masterdata.list("currencies")),
-            _check_service("tms", tms.base_url, lambda: tms.list_routes()),
-            _check_service("rate", rate.base_url, lambda: rate.list_rates()),
-            _check_service("fx", fx.base_url, lambda: fx.get_rate("CNY", "EUR")),
+            _check_service("masterdata", masterdata.base_url, lambda: masterdata.list("currencies"),
+                            auth_basis=f"GET {masterdata.base_url}/currencies with our X-API-Key"),
+            _check_service("tms", tms.base_url, lambda: tms.list_routes(),
+                            auth_basis=f"GET {tms.base_url}/routes with our X-API-Key"),
+            _check_service("rate", rate.base_url, lambda: rate.list_rates(),
+                            auth_basis=f"GET {rate.base_url}/rates with our X-API-Key"),
+            _check_service("fx", fx.base_url, lambda: fx.get_rate("CNY", "EUR"),
+                            auth_basis=f"GET {fx.base_url}/exchange-rates/CNY/EUR with our X-API-Key"),
+            _check_qms_frontend("qms", qms.base_url),
+            _check_vault("vault", os.environ.get("VAULT_ADDR", "http://127.0.0.1:8200")),
         ]
         overall = "pass" if all(s["status"] == "pass" for s in services) else (
             "fail" if any(s["status"] == "fail" for s in services) else "warn"

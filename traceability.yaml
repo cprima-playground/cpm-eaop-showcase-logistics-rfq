@@ -17,7 +17,7 @@ traceability:
   - business_step: normalize_route_costs
     domain_action: route-cost.normalize
     actor: commercial-normalization-agent
-    system_of_record: {reads: [rate_management], writes: [cpq]}
+    system_of_record: {reads: [rate_management], writes: [qms]}
     interface: [commercial-mcp.store_cost_normalization, rate-mcp.get_carrier_rate]
     authorization_decision: [commercial-may-normalize]         # D2
     scenarios: [fx-flips-lane]
@@ -33,7 +33,7 @@ traceability:
   - business_step: attempt_auto_submit
     domain_action: quote.submit-for-approval
     actor: commercial-normalization-agent
-    system_of_record: {writes: [cpq]}
+    system_of_record: {writes: [qms]}
     interface: [commercial-mcp.get_previous_quote]
     authorization_decision: [forbid-auto-replace-on-fx, propose-below-floor]  # D4b deny wins; D5 would oblige
     scenarios: [fx-flips-lane]
@@ -41,7 +41,7 @@ traceability:
   - business_step: human_approves_deviation
     domain_action: route-deviation.approve
     actor: mona.commercial
-    system_of_record: {reads: [workflow], writes: [cpq, agent_state]}
+    system_of_record: {reads: [workflow], writes: [qms, agent_state]}
     interface: [approval-mcp.create_approval_task]
     authorization_decision: [manager-may-approve-within-limit] # D6
     scenarios: [fx-flips-lane]

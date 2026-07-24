@@ -40,7 +40,7 @@ This is the second of the two correlated boundaries (agent→tool, then tool→A
 | **CRM** | ✓ | ✓ | ✓ `crm-mcp` | human **SSO** + agent client-creds | maybe (RFQ view) | ✓ |
 | **TMS** | ✓ **built** | ✓ **built** | `tms-mcp` (TARGET) | **APIKEY** — **built** | — | ✓ **built** |
 | **Rate** | ✓ **built** | ✓ **built** | `rate-mcp` (TARGET) | **APIKEY** — **built** | — | ✓ **built** |
-| **CPQ** | ✓ | ✓ | ✓ `commercial-mcp` | human **SSO** (approval UI) + agent client-creds | ✓ **approval UI** | ✓ |
+| **QMS** | ✓ | ✓ | ✓ `commercial-mcp` | human **SSO** (approval UI) + agent client-creds | ✓ **approval UI** | ✓ |
 | **FX** | ✓ **built** | ✓ **built** (REST — the point) | ✗ (deliberately none) | **APIKEY** (machine) — **built** | — | ✓ **built** |
 | **Workflow** | ✓ | ✓ | ✓ `approval-mcp` | human **SSO** | maybe (task inbox) | ✓ |
 | **Ops Dashboard** | — (reads only) | — (not a backend) | ✗ (deliberately none) | human **SSO** — **built** | ✓ **built, read-only** | — |
@@ -54,7 +54,7 @@ the reference layer every other system points at by id/code (`customer_id`,
 
 **Ops Dashboard is not one of the original 6 either** — a cross-cutting,
 read-only view over TMS/Rate/Masterdata, added to prove the frontend+human-SSO
-plumbing (ADR-006/007, `identity/claims-contract.md`) before CPQ needs the
+plumbing (ADR-006/007, `identity/claims-contract.md`) before QMS needs the
 same plumbing under approval-workflow pressure too. No MCP (not agent-facing),
 no writes, no domain state machine. See `../src/ops-dashboard/README.md`.
 
@@ -64,7 +64,7 @@ no writes, no domain state machine. See `../src/ops-dashboard/README.md`.
   not required for v1).
 - **FX** — no MCP, no SSO, no frontend: a narrow deterministic machine API, APIKEY-guarded.
   MCP is reserved for agent access to internal systems of record.
-- **CPQ** — the only mandatory frontend: the human sets `Quote.status`
+- **QMS** — the only mandatory frontend: the human sets `Quote.status`
   (`approval_required → approved | rejected | revise`) here; that transition **is** the
   human decision (see `systems-of-record.yaml`). It also serves agents via MCP.
 - **TMS / Rate** — no human surface: agents only, via MCP; APIKEY server→backend.
@@ -82,15 +82,15 @@ isn't convincing. Systems with a frontend (see UI-depth table below) implement:
   **mirrors** the Cedar decision; it does not replace it.
 - **List + detail views** — table with search / filter / sort / pagination; record
   detail with a **status/lifecycle badge**.
-- **Actions = domain actions** — buttons map to the *same* domain actions (CPQ
+- **Actions = domain actions** — buttons map to the *same* domain actions (QMS
   "Approve / Reject / Request revision" → `route-deviation.approve` / `Quote.status`).
   **No UI-only actions.**
 - **Audit / history per record** — who did what when (matches the `audit-events`
   vocabulary in `../business/process.md`).
 - **Dashboard / home** — counts + KPIs (e.g. Workflow: approvals pending).
-- **Task inbox + badges** — Workflow / CPQ (approval_required count).
+- **Task inbox + badges** — Workflow / QMS (approval_required count).
 - **User / context indicator** — current user · tenant/org · role.
-- **Cross-system deep-links** — RFQ (CRM) → Quote (CPQ) → Booking (TMS). Demonstrates
+- **Cross-system deep-links** — RFQ (CRM) → Quote (QMS) → Booking (TMS). Demonstrates
   the fragmented-SoR reality: links, not embeds.
 - **Currency / locale formatting** — real here (EUR/CNY); i18n-ready.
 - **Environment banner** — a visible `SHOWCASE` badge; version/build footer.
@@ -105,7 +105,7 @@ isn't convincing. Systems with a frontend (see UI-depth table below) implement:
 
 | System | UI depth | Why |
 | --- | --- | --- |
-| **CPQ** | full | the approval UI — mandatory; humans set `Quote.status` here |
+| **QMS** | full | the approval UI — mandatory; humans set `Quote.status` here |
 | **CRM** | full | RFQ / customer views |
 | **Workflow** | full | task inbox |
 | **TMS / Rate** | minimal read-only console (login + list/detail) | agent-facing; console for demo credibility |
@@ -114,7 +114,7 @@ isn't convincing. Systems with a frontend (see UI-depth table below) implement:
 ## Per-system home
 
 Each system's contract, fixtures, and mock spec live in its folder
-(`crm/`, `tms/`, `rate/`, `cpq/`, `fx/`, `workflow/`). A top-level **scenario
+(`crm/`, `tms/`, `rate/`, `qms/`, `fx/`, `workflow/`). A top-level **scenario
 runner CLI** (in `../spikes/repricing/`) drives a scenario across all backends +
 the PDP, so a coding agent can run `01-fx-flips-lane` deterministically end-to-end.
 

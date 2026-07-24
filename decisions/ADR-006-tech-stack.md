@@ -34,13 +34,13 @@ thin on top.
 
 **Server-rendered: FastAPI + Jinja2 + HTMX + Tailwind** (per-system theme via Tailwind
 config / DaisyUI). Python-only, no JS build toolchain; HTMX gives enough interactivity
-for the CPQ approval UI (status transitions, task inbox) and list/detail views.
+for the QMS approval UI (status transitions, task inbox) and list/detail views.
 
 - **Why not a SPA (React/Vue + Vite):** needs a Node toolchain, heavier, overkill for
   mocks. Escalate to a per-system SPA only if a system later needs rich client state.
 - **Distinct-but-cohesive:** one shared Jinja base + component partials; each system a
   Tailwind theme (name · logo · color).
-- UI depth per system per `../systems/mock-architecture.md` (CPQ/CRM/Workflow full;
+- UI depth per system per `../systems/mock-architecture.md` (QMS/CRM/Workflow full;
   TMS/Rate minimal; FX none).
 
 ## Decision 3 — User SSO (confirmed)

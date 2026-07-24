@@ -38,8 +38,8 @@ systems:
       Carrier IDENTITY (name/country) is masterdata's Party; rates reference
       carrier_id, they don't embed a carrier name (systems/rate/fixtures/rates.yaml).
 
-  cpq:
-    name: Mock CPQ
+  qms:
+    name: Mock QMS
     owns: [CustomerPricingTerms, MarginFloor, QuoteVersion, QuoteStatus]
     interfaces: [MCP]           # commercial-mcp (TARGET)
     note: >
@@ -61,4 +61,4 @@ systems:
     interfaces: [MCP]           # approval-mcp (TARGET)
     note: >
       Surfaces the decision to a human and triggers resumption. It does NOT own the
-      decision — the authoritative human decision is Quote.status in CPQ.
+      decision — the authoritative human decision is Quote.status in QMS.

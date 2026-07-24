@@ -31,7 +31,7 @@ servers:
       - {name: get_lane_surcharges, action: carrier-rate.read}
 
   - id: commercial-mcp
-    purpose: Expose CPQ / commercial capabilities
+    purpose: Expose QMS / commercial capabilities
     tools:
       - {name: get_customer_pricing_terms, action: quote-price.calculate}
       - {name: get_margin_floor,           action: quote-price.calculate}

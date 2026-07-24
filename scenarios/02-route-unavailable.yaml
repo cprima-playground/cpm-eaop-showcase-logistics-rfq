@@ -32,5 +32,5 @@ then:
     - {action: quote.submit-for-approval, effect: allow}   # no forbid: FX<=2%, margin>=floor
     - {action: route-deviation.approve, effect: allow, determining: [manager-may-approve-within-limit]}
   records:
-    quote_status: approved              # human decision = status transition in CPQ
+    quote_status: approved              # human decision = status transition in QMS
     recommended_option: route-b

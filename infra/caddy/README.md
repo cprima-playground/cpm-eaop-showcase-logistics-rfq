@@ -20,11 +20,11 @@ docker compose up -d --build      # rfq-showcase-caddy on :443 (standard HTTPS -
 
 Windows' hosts file has no wildcard support, so each subdomain needs its own
 literal line. **Requires an elevated shell.** Thinking ahead to every planned
-frontend (`systems/mock-architecture.md`'s capability matrix — CPQ/CRM/Workflow
+frontend (`systems/mock-architecture.md`'s capability matrix — QMS/CRM/Workflow
 all get one eventually; TMS/Rate/FX/Masterdata never do, machine-only APIKEY):
 
 ```powershell
-Add-Content -Path "$env:WINDIR\System32\drivers\etc\hosts" -Value "`n127.0.0.1 keycloak.rfq-showcase.localhost`n127.0.0.1 ops-dashboard.rfq-showcase.localhost`n127.0.0.1 cpq.rfq-showcase.localhost`n127.0.0.1 crm.rfq-showcase.localhost`n127.0.0.1 workflow.rfq-showcase.localhost"
+Add-Content -Path "$env:WINDIR\System32\drivers\etc\hosts" -Value "`n127.0.0.1 keycloak.rfq-showcase.localhost`n127.0.0.1 ops-dashboard.rfq-showcase.localhost`n127.0.0.1 qms.rfq-showcase.localhost`n127.0.0.1 crm.rfq-showcase.localhost`n127.0.0.1 workflow.rfq-showcase.localhost"
 ```
 
 Why this is needed at all (not just cosmetic): `curl`/browsers already

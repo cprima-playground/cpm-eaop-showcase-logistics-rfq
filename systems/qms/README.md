@@ -1,4 +1,9 @@
-# CPQ (mock)
+# QMS (mock)
+
+> A Quote Management System is the authoritative system responsible for
+> creating, evolving, approving, publishing, accepting, and transferring
+> commercial quotations into executable bookings, while preserving an
+> immutable history of every commercial commitment.
 
 **Owns:** CustomerPricingTerms · MarginFloor · QuoteVersion · **QuoteStatus**.
 **Interface:** `commercial-mcp` (TARGET).

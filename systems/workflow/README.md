@@ -4,7 +4,7 @@
 
 **Not** the system of record for the human decision. It surfaces the decision to a
 human and triggers resumption; the authoritative decision is `Quote.status` in
-`../cpq/`. See `../systems-of-record.yaml`.
+`../qms/`. See `../systems-of-record.yaml`.
 
 Put here: interface contract, fixtures (an approval task carrying the evidence
 package), and the mock spec.

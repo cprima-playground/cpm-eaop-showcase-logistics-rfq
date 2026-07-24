@@ -1,5 +1,5 @@
 # Machine companion to 03-approval-loop.md.
-# Long-running HITL. The resume trigger is a Quote.status change in CPQ (not a
+# Long-running HITL. The resume trigger is a Quote.status change in QMS (not a
 # workflow callback). Two passes; agents hold no authoritative state across the wait.
 
 scenario:

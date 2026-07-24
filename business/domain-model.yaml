@@ -13,15 +13,30 @@
 entities:
   RFQ:
     identity: rfq_id
-    system_of_record: crm
+    system_of_record: crm   # not yet built -- systems/crm/README.md is a bare stub, no contract.yaml/fixtures/code
+    # RFQ is a CASE (a multi-week engagement: solicit rates, iterate, negotiate),
+    # not a document -- the word names the opening ask, the lifecycle below
+    # belongs to the case it opens. This resolves an otherwise-real duplication:
+    # `accepted`/`rejected`/`expired` appear on BOTH RFQ.lifecycle here and
+    # Quote.status below. Quote.accepted (QMS-owned) is the primary fact -- a
+    # specific priced version was accepted. RFQ.accepted (CRM-owned) is a
+    # DERIVED case-closure signal ("this case concluded because one of its
+    # quotes was accepted"), never written independently. See
+    # business/decisions.md's "SoR boundary: RFQ vs Quote" note.
     lifecycle: [draft, awaiting_information, sourcing_rates, pricing, approval_required, issued, accepted, rejected, expired]
     attributes: [origin, destination, quote_currency, contracted_lane, region]
 
   Quote:
     identity: [quote_id, version]
-    system_of_record: cpq            # CPQ/CRM — also holds the HUMAN DECISION as status
+    system_of_record: qms            # QMS/CRM — also holds the HUMAN DECISION as status
     # The human-in-the-loop decision IS a status transition here, not a separate
     # workflow store: approval_required -> approved | rejected | revise.
+    # NOTE: this entity's identity is already [quote_id, version] with a
+    # prior_version pointer -- it already represents a single, immutable QUOTE
+    # VERSION, not a mutable aggregate. A future pass may split a lightweight
+    # `Quote` aggregate (customer_id, rfq_id) out from this versioned record
+    # (then renaming this one to `QuoteVersion`) -- deferred; not done here to
+    # avoid introducing a duplicate noun before D13-D18 (below) are modeled.
     status: [draft, priced, approval_required, approved, rejected, revise]
     attributes: [currency, total_cost_eur_cents, proposed_sell_price_eur_cents, margin_pct_x10, valid_until, prior_version, status]
 
@@ -39,6 +54,13 @@ entities:
     system_of_record: fx_service   # Treasury / corporate FX
     attributes: [rate, rate_type, source, observed_at, valid_until, rate_ref]
 
+  CarrierRate:
+    identity: rate_id
+    system_of_record: rate_management
+    # Deliberately minimal -- just enough to formulate D14/D15 (rate.read,
+    # buy-rate.read) without prematurely designing the pricing model.
+    attributes: [customer_id, carrier_id, lane_id, currency, confidentiality_class]
+
   RouteRecommendation:
     identity: recommendation_id
     system_of_record: agent_state
@@ -53,7 +75,7 @@ entities:
     identity: task_id
     system_of_record: workflow          # MECHANISM only — surfaces the decision to a human
     # NOT the authoritative store of the decision. The durable human decision is the
-    # Quote.status transition in CPQ/CRM (above). This task just carries the evidence
+    # Quote.status transition in QMS/CRM (above). This task just carries the evidence
     # package and triggers resumption on status change.
     attributes: [recommendation_id, assignee_role, evidence]
 

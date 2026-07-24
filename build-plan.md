@@ -54,7 +54,7 @@ schema-gen + entity assembly) — without it the authz model can't be exercised.
   built, 24 tests green, verified **actually running**: 9 reference domains
   (Party/Location/Currency/Incoterm/Commodity/Equipment/UoM/DG-class/Payment-term),
   real data (UN/LOCODE, ISO 4217, Incoterms 2020, IMDG classes). Closes the
-  "no customer/carrier reference at all" gap found while scoping CPQ. See
+  "no customer/carrier reference at all" gap found while scoping QMS. See
   `src/mock-masterdata/README.md`.
 - ✅ **TMS** — `src/mock-tms/` built, 25 tests green, verified live: route
   topology + volatile availability overlay (two systems of record, deliberately
@@ -66,15 +66,15 @@ schema-gen + entity assembly) — without it the authz model can't be exercised.
   `kind=carrier` (first system to exercise Party, not just Currency/Location).
   See `src/mock-rate/README.md`.
 - ✅ **Ops Dashboard** (added beyond the original 6/7, cross-cutting — de-risks
-  CPQ) — `src/ops-dashboard/` built, 16 tests green, verified live through a
+  QMS) — `src/ops-dashboard/` built, 16 tests green, verified live through a
   real browser: read-only Jinja2/HTMX/Tailwind frontend + the first real human
   SSO login in RfQ (dev Keycloak, `infra/keycloak/`, Auth-Code+PKCE), role-gated
   (`ops-viewer`), reading TMS+Rate+Masterdata live. Proves the ADR-006/007
   frontend+theming plumbing and `identity/claims-contract.md`'s
-  `resolve_principal` for real, before CPQ needs the same plumbing under
+  `resolve_principal` for real, before QMS needs the same plumbing under
   approval-workflow pressure too. Zero writes, zero domain state machine. See
   `src/ops-dashboard/README.md`.
-- ⬜ **CPQ** next (the `Quote.status` SoR — the mandatory approval frontend;
+- ⬜ **QMS** next (the `Quote.status` SoR — the mandatory approval frontend;
   builds on ops-dashboard's proven shell/theme/SSO base), then CRM/Workflow.
 - 6 transactional systems + 1 masterdata layer + 1 cross-cutting dashboard
   total over `rfq_common`, jsonl/fixture-baked, admin `reset`. 4 of 7
@@ -100,8 +100,8 @@ schema-gen + entity assembly) — without it the authz model can't be exercised.
 
 - Jinja2 + HTMX + Tailwind shell; per-system UI depth (`systems/mock-architecture.md`);
   Keycloak + Entra SSO (Auth Code + PKCE); `THEME`/`THEME_PATH` skinning (ADR-007);
-  CPQ approval UI writes `Quote.status`.
-- **Exit:** a human logs in, sees role-gated views, approves in the CPQ UI (status
+  QMS approval UI writes `Quote.status`.
+- **Exit:** a human logs in, sees role-gated views, approves in the QMS UI (status
   transition); `THEME=solarized-light` re-skins the whole showcase with no rebuild.
 
 ## Phase 6 — Scenario runner + determinism
@@ -137,7 +137,7 @@ grants hot-path if adopted (Phase 3). See `TODO.md`.
 ## Sequencing at a glance
 
 ```text
-0 decide → 1 rfq_common+schema+entities → 2 mocks(FX,CPQ first)
+0 decide → 1 rfq_common+schema+entities → 2 mocks(FX,QMS first)
 → 3 MCP+PDP → 4 agents+A2A → 5 frontends+SSO+theme
 → 6 scenario runner → 7 containers(local→GCP) → 8 demo+CI
 ```

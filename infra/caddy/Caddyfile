@@ -14,7 +14,7 @@
 # ops-dashboard: the only frontend built so far. Proxies to the app running
 # on the host (uv run ops-dashboard serve, :8006) -- host.docker.internal is
 # Docker Desktop's route from a container back to the host. When more
-# frontends exist (CPQ etc.) they get their own subdomain block here.
+# frontends exist (QMS etc.) they get their own subdomain block here.
 https://ops-dashboard.rfq-showcase.localhost {
     reverse_proxy host.docker.internal:8006
 }

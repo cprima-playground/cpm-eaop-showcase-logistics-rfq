@@ -24,15 +24,31 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException
+from pydantic import BaseModel
 
 from rfq_common.app import create_app
 from rfq_common.masterdata_client import MasterdataClient, MasterdataUnavailableError
+from rfq_common.models import ExchangeRate
 from rfq_common.secrets import SecretsClient
 from rfq_common.theme import load_theme
 
 from .auth import require_api_key
 from .convert import convert_amount
 from .store import FxStore, UnknownCurrencyError
+
+
+class ConvertResponse(BaseModel):
+    amount: str
+    from_currency: str
+    to_currency: str
+    rate: float
+    rate_ref: str | None = None
+    converted_amount: str
+    minor_unit: int
+
+
+class ResetResponse(BaseModel):
+    status: str
 
 RFQ_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_FIXTURES_DIR = RFQ_ROOT / "fixtures" / "fx"
@@ -78,31 +94,31 @@ def build_app(*, fixtures_dir: Path | None = None, masterdata_client: Masterdata
     app = create_app("Mock Corporate FX Service", system_id="fx", theme_pack=theme_pack)
     app.state.fx_store = store
 
-    @app.get("/exchange-rates", dependencies=[Depends(require_api_key)])
-    def list_exchange_rates() -> list[dict]:
+    @app.get("/exchange-rates", dependencies=[Depends(require_api_key)], response_model=list[ExchangeRate])
+    def list_exchange_rates() -> list[ExchangeRate]:
         """The latest rate for every known pair -- an overview, not a
         point-in-time lookup (list-then-detail, matches masterdata/TMS/Rate)."""
-        return [r.model_dump(mode="json") for r in store.list_latest()]
+        return store.list_latest()
 
-    @app.get("/exchange-rates/{base}/{quote}", dependencies=[Depends(require_api_key)])
-    def get_exchange_rate(base: str, quote: str, effectiveAt: str | None = None) -> dict:
+    @app.get("/exchange-rates/{base}/{quote}", dependencies=[Depends(require_api_key)], response_model=ExchangeRate)
+    def get_exchange_rate(base: str, quote: str, effectiveAt: str | None = None) -> ExchangeRate:
         try:
             rate = store.get(base, quote, effective_at=effectiveAt)
         except ValueError:
             raise HTTPException(status_code=400, detail=f"effectiveAt is not a valid ISO 8601 timestamp: {effectiveAt!r}")
         if rate is None:
             raise HTTPException(status_code=404, detail=f"no rate for {base}/{quote}")
-        return rate.model_dump(mode="json")
+        return rate
 
-    @app.get("/exchange-rates/{base}/{quote}/history", dependencies=[Depends(require_api_key)])
-    def get_exchange_rate_history(base: str, quote: str, days: int | None = None) -> list[dict]:
+    @app.get("/exchange-rates/{base}/{quote}/history", dependencies=[Depends(require_api_key)], response_model=list[ExchangeRate])
+    def get_exchange_rate_history(base: str, quote: str, days: int | None = None) -> list[ExchangeRate]:
         points = store.history(base, quote)
         if days is not None:
             points = points[-days:]
-        return [p.model_dump(mode="json") for p in points]
+        return points
 
-    @app.get("/convert", dependencies=[Depends(require_api_key)])
-    def convert(amount: str, from_currency: str, to_currency: str, effectiveAt: str | None = None) -> dict:
+    @app.get("/convert", dependencies=[Depends(require_api_key)], response_model=ConvertResponse)
+    def convert(amount: str, from_currency: str, to_currency: str, effectiveAt: str | None = None) -> ConvertResponse:
         try:
             amount_dec = Decimal(amount)
         except InvalidOperation:
@@ -126,23 +142,23 @@ def build_app(*, fixtures_dir: Path | None = None, masterdata_client: Masterdata
         effective_rate = (1 / rate.rate) if inverse else rate.rate
         converted = convert_amount(amount_dec, effective_rate, target_minor_unit=target_minor_unit)
 
-        return {
-            "amount": str(amount_dec),
-            "from_currency": from_currency,
-            "to_currency": to_currency,
-            "rate": effective_rate,
-            "rate_ref": rate.rate_ref,
-            "converted_amount": str(converted),
-            "minor_unit": target_minor_unit,
-        }
+        return ConvertResponse(
+            amount=str(amount_dec),
+            from_currency=from_currency,
+            to_currency=to_currency,
+            rate=effective_rate,
+            rate_ref=rate.rate_ref,
+            converted_amount=str(converted),
+            minor_unit=target_minor_unit,
+        )
 
-    @app.post("/admin/reset", dependencies=[Depends(require_api_key)])
-    def reset() -> dict:
+    @app.post("/admin/reset", dependencies=[Depends(require_api_key)], response_model=ResetResponse)
+    def reset() -> ResetResponse:
         """Also doubles as the live-anchor refresh trigger: reload() re-fetches
         ECB rates fresh every call (not just at boot) -- useful if the process
         has been running long enough that its ECB anchor has gone stale."""
         store.reload()
-        return {"status": "reset"}
+        return ResetResponse(status="reset")
 
     return app
 

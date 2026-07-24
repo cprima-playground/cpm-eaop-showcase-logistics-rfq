@@ -71,7 +71,7 @@ FX snapshot · adjust margin · reject the carrier rate · request a new route s
 ## Termination
 
 The human decision **is a status transition on the Quote in the quote system of
-record (CPQ/CRM)** — `approval_required → approved | rejected | revise` — not a
+record (QMS/CRM)** — `approval_required → approved | rejected | revise` — not a
 record owned by a separate workflow store. The approval task only surfaces the
 decision to a human; the process resumes by observing the quote status change.
 

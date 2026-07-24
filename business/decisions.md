@@ -31,15 +31,60 @@ D12 found the same way: the "nothing is wrong" case for `quote.submit-for-approv
 permit for the below-floor case (D5) — so scenario 02's happy path incorrectly
 default-denied until D12 was added.*
 
+## Proposed — the quote-authoring pipeline (not yet modeled)
+
+D1–D12 govern evaluation, normalization, recommendation, and submission --
+but not access to the pipeline's *inputs*, nor creation of the priced
+artifact itself. `Quote`'s identity is already `[quote_id, version]` with a
+`prior_version` pointer, i.e. it already represents a single, immutable quote
+*version* -- D16-D18 use it as-is (see the NOTE on `Quote` in
+`domain-model.yaml`); no new `QuoteVersion` noun is introduced solely to
+satisfy this table.
+
+| #  | Question | action | principal | resource | context | status |
+| -- | -------- | ------ | --------- | -------- | ------- | ------ |
+| D13 | May the lane agent read this RFQ? | `rfq.read` | LaneEvaluationAgent | RFQ | `customer_id`, `region`, `assignment`, `rfq_status` | proposed |
+| D14 | May the lane agent read this carrier or customer-specific rate? | `rate.read` | LaneEvaluationAgent | CarrierRate | `customer_id` (scope), `contract_scope`, `rate_type` | proposed |
+| D15 | May the commercial agent read the underlying buy rate? | `buy-rate.read` | CommercialNormalizationAgent | CarrierRate | `purpose`, `customer_id`, `confidentiality_class` | proposed |
+| D16 | May the commercial agent create a new quote version from this recommendation? | `quote.create-version` | CommercialNormalizationAgent | Quote | `rfq_id`, `recommendation_id`, `fx_rate_ref`, `pricing_terms_ref` | proposed |
+| D17 | May the commercial agent supersede this quote version? | `quote.supersede` | CommercialNormalizationAgent | Quote | `quote_id`, `current_version`, `current_status`, `prior_version`, `trigger_event` | proposed |
+| D18 | May this principal expose underlying buy-cost details? | `buy-rate.disclose` | Agent or Human | Quote | `audience`, `channel`, `disclosure_purpose` | proposed |
+
+The read/disclose split (D15 vs D18) matters: an agent may need the buy rate
+to compute margin while still being forbidden from placing it in
+customer-facing output. `quote.supersede` (D17) is the version-creation gate
+-- the data model should reflect *this* decision, not define supersession
+merely because `prior_version` exists as a field.
+
 ## Human-in-the-loop = a status change in the quote system of record
 
 The human decision is **not** owned by a separate workflow store — it is a **status
-transition on the Quote in the quote SoR (CPQ/CRM)**: `approval_required →
+transition on the Quote in the quote SoR (QMS)**: `approval_required →
 approved | rejected | revise`. The approval task/MCP is only the *mechanism* that
 surfaces the decision to a human; the durable, authoritative truth is the quote
 status. The process resumes when it observes that status change (see
 `scenarios/03-approval-loop`). This keeps agents non-authoritative — they read/write
 via the SoR, they do not own the decision.
+
+## SoR boundary: RFQ vs Quote
+
+`RFQ.lifecycle` (domain-model.yaml, CRM-owned) and `Quote.status` (QMS-owned)
+both include `accepted`/`rejected`/`expired` — a real duplication risk (ADR-002
+SoR boundaries exists precisely to prevent two systems each independently
+writing the same fact) unless the relationship between them is explicit:
+
+- **RFQ is a CASE** (a multi-week engagement -- solicit rates, iterate,
+  negotiate), not a document. Its lifecycle tracks the case's own progress
+  (`sourcing_rates`, `pricing`, `issued`, ...).
+- **`Quote.accepted` is the primary fact** — QMS is the sole writer. A specific
+  priced quote *version* was accepted.
+- **`RFQ.accepted` is derived, never independently written** — CRM sets it
+  (or, until CRM exists, it's understood as a projection) only in response to
+  observing `Quote.status == accepted`, the same "SoR reads/writes via its own
+  boundary" discipline the rest of this file already applies to agents.
+
+CRM doesn't exist yet (`systems/crm/README.md` is a bare stub) — this is the
+intended relationship for when it's built, not a currently-enforced rule.
 
 ## Threshold coverage (the seven from the business process)
 

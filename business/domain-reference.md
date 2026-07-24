@@ -107,8 +107,8 @@ For logistics RFQs, there is rarely a single system of record. Instead, the proc
 | Shipment planning            | TMS                       |
 | Incoterms & commercial rules | ERP / TMS                 |
 | Cost estimates               | TMS / Pricing Engine      |
-| Sales price                  | CPQ / Quote Management    |
-| Quote document               | CPQ / Document Management |
+| Sales price                  | QMS / Quote Management    |
+| Quote document               | QMS / Document Management |
 | Booking                      | TMS                       |
 | Shipment execution           | TMS                       |
 | Invoice                      | ERP                       |
@@ -127,7 +127,7 @@ CRM
     └── Contacts
          │
          ▼
-CPQ / Quote Management
+QMS / Quote Management
          │
          ├── Pricing
          ├── Quote Versions
@@ -166,11 +166,11 @@ A freight forwarder might work like this:
 It depends on the object:
 
 * **Customer** → CRM or ERP
-* **Quote** → CPQ / Quote Management
+* **Quote** → QMS / Quote Management
 * **Carrier rates** → TMS or Rate Management
 * **Shipment** → TMS
 * **Invoice** → ERP
-* **Commercial documents** → DMS or CPQ
+* **Commercial documents** → DMS or QMS
 
 This fragmentation is one of the reasons RFQ automation is difficult: a quote requires assembling information from multiple authoritative systems, plus unstructured conversations (emails, attachments, calls). There is often **no single system that contains a complete, current picture of the RFQ**. An orchestration layer—or an agentic system—typically has to reconcile these sources rather than replace them.
 

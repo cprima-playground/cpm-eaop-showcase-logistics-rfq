@@ -30,7 +30,7 @@ The process must replan onto a feasible alternative and reprice.
    - (obligations merge: customer-service review **and** operations review)
 4. `quote.submit-for-approval` — margin still ≥ floor and FX variance ≤ 2% here, so
    **no forbid fires**; but the lane deviation still routes to a human.
-5. Human sets `Quote.status = approved` in CPQ (the decision record) → new quote version.
+5. Human sets `Quote.status = approved` in QMS (the decision record) → new quote version.
 
 ## Expected authorization decisions
 

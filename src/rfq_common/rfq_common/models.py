@@ -63,7 +63,7 @@ class Quote(BaseModel):
 
     quote_id: str
     version: int
-    system_of_record: Literal["cpq"] = "cpq"
+    system_of_record: Literal["qms"] = "qms"
     status: QuoteStatus = "draft"
     customer_id: str | None = None  # -> masterdata Party (ADR-010)
     currency: str | None = None

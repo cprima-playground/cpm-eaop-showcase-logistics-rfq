@@ -2,14 +2,14 @@
 
 **Status:** accepted.
 **Context:** a logistics RFQ has **no single system of record** — truth is fragmented
-across CRM, TMS, Rate, CPQ, FX, and Workflow. Agents must not become shadow stores.
+across CRM, TMS, Rate, QMS, FX, and Workflow. Agents must not become shadow stores.
 
 ## Decision
 
 - Every business object has **exactly one authoritative owner** (`systems/systems-of-record.yaml`).
 - **Agents carry snapshots + identifiers, never authoritative state.** They read/write
   via the owning system, they do not own the object.
-- The **human decision is a `Quote.status` transition in the quote SoR (CPQ/CRM)** —
+- The **human decision is a `Quote.status` transition in the quote SoR (QMS/CRM)** —
   not a record owned by the workflow system (ADR-005).
 - Every policy-relevant fact declares source · freshness · fail-behavior (`systems/data-provenance.md`);
   default failure is **deny** (fail closed).

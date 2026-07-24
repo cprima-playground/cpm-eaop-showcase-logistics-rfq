@@ -33,7 +33,7 @@ services:
   crm:      {image: rfq/crm,      environment: [*determinism, *oidc], profiles: [core, full]}
   tms:      {image: rfq/tms,      environment: [*determinism, *oidc], profiles: [core, full]}
   rate:     {image: rfq/rate,     environment: [*determinism, *oidc], profiles: [core, full]}
-  cpq:      {image: rfq/cpq,      environment: [*determinism, *oidc], profiles: [core, full]}   # approval UI
+  qms:      {image: rfq/qms,      environment: [*determinism, *oidc], profiles: [core, full]}   # approval UI
   fx:       {image: rfq/fx,       environment: [*determinism],         profiles: [core, full]}   # APIKEY, no SSO
   workflow: {image: rfq/workflow, environment: [*determinism, *oidc], profiles: [core, full]}
 
@@ -41,7 +41,7 @@ services:
   crm-mcp:        {image: rfq/crm-mcp,        depends_on: [crm],      profiles: [full]}
   tms-mcp:        {image: rfq/tms-mcp,        depends_on: [tms],      profiles: [full]}
   rate-mcp:       {image: rfq/rate-mcp,       depends_on: [rate],     profiles: [full]}
-  commercial-mcp: {image: rfq/commercial-mcp, depends_on: [cpq],      profiles: [full]}
+  commercial-mcp: {image: rfq/commercial-mcp, depends_on: [qms],      profiles: [full]}
   approval-mcp:   {image: rfq/approval-mcp,   depends_on: [workflow], profiles: [full]}
 
   # --- agents (A2A chain: lane -> commercial -> route) ---------------------

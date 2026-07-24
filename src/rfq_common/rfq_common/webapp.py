@@ -1,5 +1,5 @@
 """Shared web-frontend scaffolding for every human-facing system (ops-dashboard
-today; HITL/CPQ next, per build-plan.md). Centralizes what would otherwise be
+today; HITL/QMS next, per build-plan.md). Centralizes what would otherwise be
 copy-pasted per system: the base Jinja layout (header/nav/footer chrome) and
 themed HTTP-error rendering -- so a second/third frontend doesn't duplicate it
 or drift from it.

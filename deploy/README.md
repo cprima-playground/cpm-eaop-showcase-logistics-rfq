@@ -17,8 +17,8 @@ same image, never separate state.
 
 | Showcase component | GCP service | Notes |
 | --- | --- | --- |
-| Mock system backend+API (CRM/TMS/Rate/CPQ/FX/Workflow) | **Cloud Run** (one service each) | jsonl fixtures baked into image; stateless |
-| System frontends (CPQ/CRM/Workflow full · TMS/Rate minimal) | **Cloud Run** — the chosen Jinja2+HTMX SSR frontend is served by the same FastAPI app (ADR-006) | per-system theme; static assets baked in or on Cloud Storage+CDN. A future SPA → Cloud Storage+CDN or Firebase Hosting |
+| Mock system backend+API (CRM/TMS/Rate/QMS/FX/Workflow) | **Cloud Run** (one service each) | jsonl fixtures baked into image; stateless |
+| System frontends (QMS/CRM/Workflow full · TMS/Rate minimal) | **Cloud Run** — the chosen Jinja2+HTMX SSR frontend is served by the same FastAPI app (ADR-006) | per-system theme; static assets baked in or on Cloud Storage+CDN. A future SPA → Cloud Storage+CDN or Firebase Hosting |
 | MCP servers (crm/tms/rate/commercial/approval) | **Cloud Run** | APIKEY from Secret Manager for server→backend |
 | FX REST API | **Cloud Run** | machine service, APIKEY; no MCP |
 | The 3 agents (lane/commercial/route) | **Vertex AI Agent Engine (ADK)** or **Cloud Run** | A2A between them |
@@ -41,7 +41,7 @@ same image, never separate state.
         │ /authorize
 [ Control plane ]        control-plane svc + cedar-agent (Cloud Run, PRIVATE)
         │ authorized dispatch
-[ Systems plane ]        CRM/TMS/Rate/CPQ/FX/Workflow (Cloud Run) — GOVERNED targets
+[ Systems plane ]        CRM/TMS/Rate/QMS/FX/Workflow (Cloud Run) — GOVERNED targets
 [ Identity plane ]       Keycloak / Identity Platform (+ Entra), WIF for agents
 [ Observability ]        Cloud Logging/Trace/Monitoring (internal)
 ```

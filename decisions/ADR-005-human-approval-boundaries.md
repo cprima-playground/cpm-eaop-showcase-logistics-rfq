@@ -8,7 +8,7 @@ the process is cleanly resumable.
 ## Decision
 
 The human decision **is a `Quote.status` transition in the quote system of record
-(CPQ/CRM)**: `approval_required → approved | rejected | revise`.
+(QMS/CRM)**: `approval_required → approved | rejected | revise`.
 
 - The approval task / workflow MCP is a **mechanism only** — it surfaces the decision
   to a human and triggers resumption; it does **not** own the decision.
@@ -33,7 +33,7 @@ The human decision **is a `Quote.status` transition in the quote system of recor
 
 ## Consequences
 
-- CPQ is the only mandatory frontend (the approval UI writes `Quote.status`).
+- QMS is the only mandatory frontend (the approval UI writes `Quote.status`).
 - Obligations (commercial approval · notify · reviews) attach to the permits; the PEP
   enforces them; the human transition is the gate.
 - Scenario 03 exercises the `approval_required → revise → … → approved` trail.

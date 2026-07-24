@@ -47,7 +47,7 @@ end-to-end/       runs scenario 01 through the mocks + PDP
 ## Deliberate simplifications
 
 - Entra tenant simulated; agents are service principals with Keycloak client ids.
-- Carrier/CRM/TMS/CPQ are static fixtures, not real integrations.
+- Carrier/CRM/TMS/QMS are static fixtures, not real integrations.
 - FX rates are fixture values (one "yesterday", one "today").
 - Money is EUR cents; percents are integer tenths (Cedar has no decimal type).
 - A2A messages are not durable in the first cut.

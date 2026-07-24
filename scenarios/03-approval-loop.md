@@ -16,7 +16,7 @@ workflow callback the agents own. The agents poll/observe `Quote.status`; a
 
 1. (Scenario 01 result) Route B recommended; `Quote.status = approval_required`;
    human review package delivered.
-2. Human sets **`Quote.status = revise`** in CPQ with a note: *"try to keep the
+2. Human sets **`Quote.status = revise`** in QMS with a note: *"try to keep the
    contracted Hamburg lane; re-check a cheaper carrier."*
 3. Process observes the `revise` status → **Lane agent resumes** (`lane.evaluate`),
    searches again, produces a new option set (e.g. a cheaper Route A carrier).
@@ -43,7 +43,7 @@ recommend → approval_required → human sets revise → lane agent resumes
 
 ## Expected system-of-record changes
 
-- CPQ `Quote.status`: `approval_required → revise → approval_required → approved`
+- QMS `Quote.status`: `approval_required → revise → approval_required → approved`
   (each transition is a durable, observable decision point).
 - New quote version on final approval.
 

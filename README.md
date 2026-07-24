@@ -109,7 +109,7 @@ stay consistent. `TARGET` = design intent that does not yet exist in cpm-eaop.
 | **Phase 2 — mock-masterdata (ADR-010, 9 domains)** | ✓ | ✓ | ✓ **24 tests, verified live** | ✓ |
 | **Phase 2 — mock-tms (topology + availability overlay)** | ✓ | ✓ | ✓ **38 tests, verified live** | ✓ |
 | **Phase 2 — mock-rate (carrier rates, exercises Party)** | ✓ | ✓ | ✓ **25 tests, verified live** | ✓ |
-| **Ops Dashboard (first frontend + human SSO, de-risks CPQ)** | ✓ | ✓ | ✓ **44 tests, verified live incl. real Keycloak login** | ✓ |
+| **Ops Dashboard (first frontend + human SSO, de-risks QMS)** | ✓ | ✓ | ✓ **44 tests, verified live incl. real Keycloak login** | ✓ |
 | Environments (dev·test·prod) + agent identity + persistence | ✓ decided | — | — | — |
 | Credential inventory + management (ADR-009: Vault-dev/Secret Manager) | ✓ decided | ✓ **live** | ✓ | ✓ |
 
@@ -131,7 +131,7 @@ RfQ/
 ├── src/ops-dashboard/  ★ REAL CODE — first frontend + human SSO, verified LIVE (44 tests, real Keycloak login)
 ├── business/     process · actions · decisions · domain-model · domain-reference
 ├── systems/      systems-of-record · data-provenance · mock-architecture · reference-data · theming
-│   └── crm/ tms/ rate/ cpq/ fx/ workflow/ masterdata/   ← per system (openapi.yaml · fixtures · mock spec)
+│   └── crm/ tms/ rate/ qms/ fx/ workflow/ masterdata/   ← per system (openapi.yaml · fixtures · mock spec)
 │                 tms/fixtures: routes · route-availability (locations now owned by masterdata)
 │                 rate/fixtures: cost-model · rates
 ├── identity/     actors · claims-contract · entra-objects (TARGET terraform)
@@ -189,12 +189,12 @@ Seven real, tested codebases exist today, all green:
   SSO login (dev Keycloak via `infra/keycloak/`, real Auth-Code+PKCE, RP-initiated
   logout), fronted through a real local-HTTPS Caddy edge (`infra/caddy/`).
   Role-gated (`ops-viewer`); zero writes, zero domain state machine — de-risks
-  CPQ's harder approval-UI build. `/fx` is list-then-detail (OANDA convention,
+  QMS's harder approval-UI build. `/fx` is list-then-detail (OANDA convention,
   matching `/masterdata` → `/masterdata/{domain}`): an overview of every pair
   mock-fx holds, then a detail/chart view with base/quote dropdown selectors.
   Shared chrome (base layout, error pages, status checks, static assets) now
   lives in `rfq_common` (`webapp.py`, `templates/`, `static/`), ready for
-  HITL/CPQ to reuse without duplicating it. `/status` distinguishes frontend
+  HITL/QMS to reuse without duplicating it. `/status` distinguishes frontend
   vs. backend vs. identity-provider reachability (separate columns), each
   real (`/healthz`, an authenticated call, or the identity server's OIDC
   discovery doc + issuer match) — not assumed. Every system's Swagger UI

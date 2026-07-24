@@ -83,13 +83,13 @@ packs + determinism (`RUNNING.md`).
       dashboard.
 - [ ] **HITL notification-list system** — a standalone system (own subdomain
       reserved, `hitl.rfq-showcase.localhost`), complementing (not replacing)
-      the planned CPQ. Initially just a notification list: surfaces pending
+      the planned QMS. Initially just a notification list: surfaces pending
       human-decision points as they arise from Cedar `permit+notify`/obligation
       outcomes (D3b lane-deviation review, D4a FX-move notify, D5 margin-floor
       approval, D6 monetary/delegated-limit approval, D8 cost-variance review,
       D9 transit-variance review — expect more as policies grow, e.g. further
       monetary thresholds), each entry linking out to wherever the actual
-      approval action happens (CPQ's `Quote.status` transition UI once built).
+      approval action happens (QMS's `Quote.status` transition UI once built).
       Per `business/decisions.md`: "Human-in-the-loop = a status change in the
       quote system of record" — HITL is the *mechanism that surfaces* the
       decision, never itself authoritative over it.

@@ -44,4 +44,4 @@ policy_thresholds_fired:
 expected_human_decision_points:
   - quote_status: approval_required
     evidence: [baseline_lane, reroute_lane, fx_source_and_timestamp, converted_costs, margin_impact, triggered_thresholds]
-    resolves_by: quote_status_transition            # approved | rejected | revise (in CPQ)
+    resolves_by: quote_status_transition            # approved | rejected | revise (in QMS)

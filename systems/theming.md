@@ -44,7 +44,7 @@ file (or Secret/Config); select a built-in by name.
               "success": "#…", "warning": "#…", "danger": "#…",
               "bg": "#…", "surface": "#…", "text": "#…", "muted": "#…" },
   "systems": { "crm": "#…", "tms": "#…", "rate": "#…",
-               "cpq": "#…", "fx": "#…", "workflow": "#…" },
+               "qms": "#…", "fx": "#…", "workflow": "#…" },
   "typography": { "font": "…", "scale": "comfortable|compact" },
   "density": "comfortable|compact"
 }

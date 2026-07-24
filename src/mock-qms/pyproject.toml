@@ -1,14 +1,11 @@
 [project]
-name = "ops-dashboard"
+name = "mock-qms"
 version = "0.1.0"
-description = "Read-only ops dashboard over TMS/Rate/Masterdata -- the first frontend + human SSO login in RfQ, deliberately simple (no writes, no domain state machine) to prove the plumbing before QMS."
+description = "Quote Management System (QMS) -- every path from interfaces/api/qms.openapi.yaml is a real, typed FastAPI route (null-op 501 bodies) -- no Quote store, R1-R6 pricing math, or Cedar wiring yet (business/qms-pricing-rules.md)."
 requires-python = ">=3.10"
 dependencies = [
     "rfq-common",
     "uvicorn>=0.30",
-    "jinja2>=3.1",
-    "itsdangerous>=2.2",
-    "pyjwt>=2.9",
 ]
 
 [dependency-groups]
@@ -25,7 +22,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["ops_dashboard"]
+packages = ["mock_qms"]
 
 [project.scripts]
-ops-dashboard = "ops_dashboard.cli:main"
+mock-qms = "mock_qms.cli:main"

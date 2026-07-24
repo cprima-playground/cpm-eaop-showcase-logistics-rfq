@@ -310,6 +310,12 @@ def test_status_page_shows_overall_pass_when_all_services_ok(app, monkeypatch):
         if "well-known" in url:
             return httpx.Response(200, json={"issuer": api_module.config.keycloak_issuer_url()},
                                    request=httpx.Request("GET", url))
+        if "openapi.json" in url:
+            return httpx.Response(200, json={"info": {"title": "Quote Management System (QMS)"}},
+                                   request=httpx.Request("GET", url))
+        if "sys/health" in url:
+            return httpx.Response(200, json={"initialized": True, "sealed": False},
+                                   request=httpx.Request("GET", url))
         return _fake_healthz_response(200)
 
     monkeypatch.setattr(api_module.httpx, "get", _fake_get)
@@ -317,6 +323,7 @@ def test_status_page_shows_overall_pass_when_all_services_ok(app, monkeypatch):
     assert r.status_code == 200
     assert "Overall: pass" in r.text
     assert "tms" in r.text and "masterdata" in r.text and "rate" in r.text and "fx" in r.text
+    assert "qms" in r.text
     assert "keycloak" in r.text and "ops-dashboard" in r.text
 
 

@@ -14,8 +14,8 @@ from .theme import ThemePack, render_css_vars
 
 def create_app(name: str, *, system_id: str | None = None,
                theme_pack: ThemePack | None = None) -> FastAPI:
-    """`name` is the system's display name (e.g. "Mock CPQ"). `system_id` (e.g.
-    "cpq") selects that system's accent from the theme pack's `systems` map."""
+    """`name` is the system's display name (e.g. "Mock QMS"). `system_id` (e.g.
+    "qms") selects that system's accent from the theme pack's `systems` map."""
     # /swagger not the FastAPI default /docs -- distinct from this app's own
     # generic "docs" concept (READMEs, /status page links); ReDoc stays at its
     # default /redoc as the second, alternative spec viewer.

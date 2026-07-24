@@ -52,7 +52,7 @@ def test_app_healthz():
 
 def test_app_theme_css_and_banner_header():
     pack = ThemePack.from_path(THEMES_DIR / "teaching.theme.json")
-    app = create_app("Mock CPQ", system_id="cpq", theme_pack=pack)
+    app = create_app("Mock QMS", system_id="qms", theme_pack=pack)
     client = TestClient(app)
 
     css = client.get("/_theme.css")

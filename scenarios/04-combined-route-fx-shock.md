@@ -37,7 +37,7 @@ event** and triggers the widest policy surface — a `forbid` (deny-precedence) 
 7. Route agent opens a human review task with full evidence; `Quote.status =
    approval_required`.
 8. `mona.commercial` approves within limit (**D6**); sets `Quote.status = approved`
-   in CPQ → new quote version written.
+   in QMS → new quote version written.
 
 ## Expected authorization decisions
 

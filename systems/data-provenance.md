@@ -9,15 +9,15 @@ failure behavior. Default failure behavior is **deny** (fail closed).
 | --- | --- | --- | --- | --- |
 | `exchange_rate` / `fx_rate_ref` | FX service (Treasury) | FX REST API | ≤ 15 min (freshness window) | deny — never normalize on a stale rate |
 | `fx_age_seconds` | derived from `observed_at` | computed at entity build | authoritative | deny if unknown |
-| `margin_pct_x10` | CPQ (pricing terms + floor) | commercial MCP | synchronous | deny |
-| `margin_floor` | CPQ | commercial MCP, cached | 1 hour | deny |
+| `margin_pct_x10` | QMS (pricing terms + floor) | commercial MCP | synchronous | deny |
+| `margin_floor` | QMS | commercial MCP, cached | 1 hour | deny |
 | `carrier_rate` (amount+currency) | Rate management | rate MCP | synchronous | deny |
 | `capacity_status` | TMS | tms MCP | 5 min | deny |
 | `contracted_lane` | CRM / contract mgmt | crm MCP | authoritative | deny |
-| `quote.prior_version_fx` | CPQ (previous quote) | commercial MCP | authoritative | deny |
+| `quote.prior_version_fx` | QMS (previous quote) | commercial MCP | authoritative | deny |
 | `principal.active` | IdP claim → resolved principal | token | per-request | deny |
 | `quote_value_eur_cents` | derived (normalized cost × price) | computed | authoritative | deny |
-| `quote.status` (human decision) | CPQ / CRM | commercial MCP | authoritative | deny — resume only on a real status change |
+| `quote.status` (human decision) | QMS / CRM | commercial MCP | authoritative | deny — resume only on a real status change |
 | `cost_variance_pct_x10` | derived vs baseline lane cost | computed | authoritative | deny |
 | `transit_variance_days` | derived vs baseline transit | TMS-sourced | 5 min | deny |
 

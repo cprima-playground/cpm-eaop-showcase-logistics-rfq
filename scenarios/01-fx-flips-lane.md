@@ -26,7 +26,7 @@ would win but falls below the margin floor unless the sell price rises.
 
 - Actors: `lane-evaluation-agent`, `commercial-normalization-agent`,
   `route-decision-agent`, `mona.commercial` (CommercialManager).
-- Systems: CRM, TMS, Rate, CPQ, FX service, Workflow (all mocked).
+- Systems: CRM, TMS, Rate, QMS, FX service, Workflow (all mocked).
 - Objects: `RFQ-1001`, `Quote v2`, `RouteOption route-a/route-b`, `ExchangeRate CNY-EUR`,
   `RouteRecommendation REC-1001-v2`, `ApprovalTask`.
 
@@ -74,12 +74,12 @@ triggered_thresholds:
   - {id: NON_CONTRACTED_LANE, actual: true,      threshold: false}
 ```
 
-The human resolves it by setting `Quote.status` in CPQ (the decision record):
+The human resolves it by setting `Quote.status` in QMS (the decision record):
 `approval_required → approved` (with a raised sell price).
 
 ## Expected system-of-record changes
 
-- CPQ: **`Quote.status` transition** `approval_required → approved`; new Quote
+- QMS: **`Quote.status` transition** `approval_required → approved`; new Quote
   version (Route B, increased sell price). This status change *is* the human decision.
 - Route-evaluation record: recommendation + FX snapshot ref.
 

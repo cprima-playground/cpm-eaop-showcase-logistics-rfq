@@ -23,6 +23,10 @@ class FxUnavailableError(RuntimeError):
     pass
 
 
+class QmsUnavailableError(RuntimeError):
+    pass
+
+
 class TmsClient:
     def __init__(self, base_url: str | None = None, api_key: str | None = None, timeout: float = 5.0):
         self._base_url = base_url or os.environ.get("TMS_URL", "http://127.0.0.1:8004")
@@ -126,3 +130,27 @@ class FxClient:
 
     def get_rate_history(self, base: str, quote: str, days: int = 30) -> list[dict]:
         return self._get(f"/exchange-rates/{base}/{quote}/history?days={days}") or []
+
+
+class QmsClient:
+    """mock-qms is a minimal skeleton today (no business routes, no APIKEY --
+    see src/mock-qms/mock_qms/api.py's docstring): there's no authenticated
+    business call to probe yet. `probe()` hits /openapi.json instead -- proves
+    the real FastAPI app booted and its schema loaded, not just that SOME
+    process answers on the port."""
+
+    def __init__(self, base_url: str | None = None, timeout: float = 5.0):
+        self._base_url = base_url or os.environ.get("QMS_URL", "http://127.0.0.1:8007")
+        self._timeout = timeout
+
+    @property
+    def base_url(self) -> str:
+        return self._base_url
+
+    def probe(self) -> dict:
+        try:
+            r = httpx.get(f"{self._base_url}/openapi.json", timeout=self._timeout)
+        except httpx.HTTPError as exc:
+            raise QmsUnavailableError(f"QMS unreachable at {self._base_url}: {exc}") from exc
+        r.raise_for_status()
+        return r.json()

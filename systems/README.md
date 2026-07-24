@@ -11,7 +11,7 @@
 | `crm/` | Mock CRM | RFQ · ContractedLane (Customer identity → masterdata Party) | crm-mcp (TARGET) |
 | `tms/` | Mock TMS | RouteTopology · FeasibleLane · TransitTime · Capacity | tms-mcp (TARGET) |
 | `rate/` | Mock Rate Service | ContractRate · CarrierSpotRate · LaneSurcharge | rate-mcp (TARGET) |
-| `cpq/` | Mock CPQ | PricingTerms · MarginFloor · QuoteVersion · **QuoteStatus (human decision)** | commercial-mcp (TARGET) |
+| `qms/` | Mock QMS | PricingTerms · MarginFloor · QuoteVersion · **QuoteStatus (human decision)** | commercial-mcp (TARGET) |
 | `fx/` | Corporate FX Service | ExchangeRate | fx-api / REST (TARGET) |
 | `workflow/` | Mock Approval/Workflow | ApprovalTask (mechanism only) | approval-mcp (TARGET) |
 
@@ -19,7 +19,7 @@ Each subfolder holds that system's **contract** (what it exposes), **fixtures** 
 seed data for the scenarios), and **mock spec** (what the spike implements). Nothing
 is implemented in this pass — these are homes to fill.
 
-> The human decision is a `Quote.status` transition in **`cpq/`**, not a record in
+> The human decision is a `Quote.status` transition in **`qms/`**, not a record in
 > `workflow/` (see `systems-of-record.yaml`).
 
 > **Masterdata is a different category** (ADR-010) — slow-changing reference data,

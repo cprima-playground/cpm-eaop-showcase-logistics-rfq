@@ -19,7 +19,7 @@ It doesn't, because it governs a **different category of data**:
 | --- | --- | --- |
 | Examples | RFQ, Quote, RouteOption, ExchangeRate | Party, Location, Currency, Incoterm, Commodity, Equipment, UoM, DG class, Payment term |
 | Volatility | changes per request/event | changes rarely (days/months/years) |
-| Ownership today | fragmented on purpose (CRM/TMS/Rate/CPQ/FX/Workflow) | **nowhere** — scattered as bare strings, no owner at all |
+| Ownership today | fragmented on purpose (CRM/TMS/Rate/QMS/FX/Workflow) | **nowhere** — scattered as bare strings, no owner at all |
 | Pattern | reconcile across owners (the showcase's whole point) | **one** canonical registry, referenced by id everywhere |
 
 Master Data Management is a textbook-distinct layer specifically *because*

@@ -18,6 +18,10 @@ paths:
       x-domain-action: fx-rate.read       # -> business/actions.yaml
       x-resource-type: ExchangeRate       # -> authz-projection.yaml
       x-authz-context: [fx_age_seconds, quote_currency]
+      x-consults:
+        - service: masterdata
+          endpoint: "GET /currencies/{code}"
+          purpose: "every currency in every loaded rate is validated on reload (ADR-010, fail closed if masterdata is unreachable or the code is unknown) -- not a per-request call on THIS endpoint, but the reason this endpoint can trust base/quote are real currencies at all"
       parameters:
         - {name: base,  in: path,  required: true, schema: {type: string, example: CNY}}
         - {name: quote, in: path,  required: true, schema: {type: string, example: EUR}}

@@ -1,8 +1,8 @@
 # ops-dashboard — read-only ops view, first frontend + first human SSO in RfQ
 
-De-risks CPQ (build-plan.md): proves Jinja2/HTMX/Tailwind (ADR-006) + Keycloak
+De-risks QMS (build-plan.md): proves Jinja2/HTMX/Tailwind (ADR-006) + Keycloak
 human SSO (identity/claims-contract.md) in isolation, with **zero write
-actions and zero domain state machine** — CPQ's approval UI builds on this
+actions and zero domain state machine** — QMS's approval UI builds on this
 proven shell instead of inventing frontend+SSO plumbing under
 approval-workflow pressure too.
 
@@ -79,7 +79,7 @@ the fix, caught via a HAR capture from an actual browser session.
 
 ## Not built here (explicitly out of scope)
 
-Any write action, audit/history trail, task inbox — those are CPQ/Workflow
+Any write action, audit/history trail, task inbox — those are QMS/Workflow
 concepts tied to actual state changes, which this dashboard has none of.
 
 ## Result

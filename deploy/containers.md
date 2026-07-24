@@ -17,7 +17,7 @@
 
 | Component | Image | Local (compose) | GCP |
 | --- | --- | --- | --- |
-| 6 mock systems (crm·tms·rate·cpq·fx·workflow) | `rfq/<system>` (FastAPI+Typer+SSR) | `:80xx` each | Cloud Run (one service each) |
+| 6 mock systems (crm·tms·rate·qms·fx·workflow) | `rfq/<system>` (FastAPI+Typer+SSR) | `:80xx` each | Cloud Run (one service each) |
 | 5 MCP servers (crm·tms·rate·commercial·approval) | `rfq/<name>-mcp` | `:81xx` | Cloud Run |
 | 3 agents (lane·commercial·route) | `rfq/<agent>` | `:82xx` | Cloud Run (or Vertex Agent Engine) |
 | Cedar PDP | `permitio/cedar-agent` (upstream) | `:8180` | Cloud Run (private) |
@@ -27,7 +27,7 @@
 | Scenario runner | `rfq/runner` (Typer CLI) | one-shot | Cloud Run Job / local |
 
 CLI is **not a separate image** — it's the same system image with a Typer entrypoint
-(`docker run rfq/cpq cli ...`).
+(`docker run rfq/qms cli ...`).
 
 ## Build strategy
 
@@ -54,7 +54,7 @@ Caddy is the single local entry point, standing in for **Apigee** on GCP. Reuses
 cpm-eaop `infra/caddy` pattern. It gives, on the dev box:
 
 - **One entry point** — all services behind `:443`; no juggling ports.
-- **Per-system hostnames** — `crm.localhost`, `cpq.localhost`, … → each frontend gets
+- **Per-system hostnames** — `crm.localhost`, `qms.localhost`, … → each frontend gets
   its own origin (reinforces the distinct-but-cohesive branding; keeps cookies/SSO
   per-system clean).
 - **Automatic local HTTPS** — Caddy's internal CA. **SSO needs https** for OIDC
@@ -72,7 +72,7 @@ cpm-eaop `infra/caddy` pattern. It gives, on the dev box:
 crm.localhost      { reverse_proxy crm:8000 }
 tms.localhost      { reverse_proxy tms:8000 }
 rate.localhost     { reverse_proxy rate:8000 }
-cpq.localhost      { reverse_proxy cpq:8000 }        # approval UI
+qms.localhost      { reverse_proxy qms:8000 }        # approval UI
 workflow.localhost { reverse_proxy workflow:8000 }
 fx.localhost       { reverse_proxy fx:8000 }         # API only
 keycloak.localhost { reverse_proxy keycloak:8080 }
