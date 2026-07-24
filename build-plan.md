@@ -65,10 +65,20 @@ schema-gen + entity assembly) — without it the authz model can't be exercised.
   rates per route, `carrier_id` validated as a real masterdata Party with
   `kind=carrier` (first system to exercise Party, not just Currency/Location).
   See `src/mock-rate/README.md`.
-- ⬜ **CPQ** next (the `Quote.status` SoR — the mandatory approval frontend,
-  first to need SSO + a real frontend), then CRM/Workflow.
-- 6 transactional systems + 1 masterdata layer total over `rfq_common`,
-  jsonl/fixture-baked, admin `reset`. 4 of 7 built (FX, masterdata, TMS, Rate).
+- ✅ **Ops Dashboard** (added beyond the original 6/7, cross-cutting — de-risks
+  CPQ) — `src/ops-dashboard/` built, 16 tests green, verified live through a
+  real browser: read-only Jinja2/HTMX/Tailwind frontend + the first real human
+  SSO login in RfQ (dev Keycloak, `infra/keycloak/`, Auth-Code+PKCE), role-gated
+  (`ops-viewer`), reading TMS+Rate+Masterdata live. Proves the ADR-006/007
+  frontend+theming plumbing and `identity/claims-contract.md`'s
+  `resolve_principal` for real, before CPQ needs the same plumbing under
+  approval-workflow pressure too. Zero writes, zero domain state machine. See
+  `src/ops-dashboard/README.md`.
+- ⬜ **CPQ** next (the `Quote.status` SoR — the mandatory approval frontend;
+  builds on ops-dashboard's proven shell/theme/SSO base), then CRM/Workflow.
+- 6 transactional systems + 1 masterdata layer + 1 cross-cutting dashboard
+  total over `rfq_common`, jsonl/fixture-baked, admin `reset`. 4 of 7
+  transactional systems built (FX, masterdata, TMS, Rate); dashboard built.
 - **Exit:** each system serves REST + Typer CLI; loads its fixtures; `reset` restores baseline.
 
 ## Phase 3 — Governed edges (MCP + PDP)

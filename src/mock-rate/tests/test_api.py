@@ -25,7 +25,7 @@ def test_rates_requires_api_key():
 def test_list_rates():
     r = client().get("/rates", headers={"X-API-Key": API_KEY})
     assert r.status_code == 200
-    assert len(r.json()) == 8
+    assert len(r.json()) == 13
 
 
 def test_get_rate():
@@ -45,6 +45,14 @@ def test_get_surcharges():
     r = client().get("/rates/SHA-HAM-MUC/surcharges", headers={"X-API-Key": API_KEY})
     assert r.status_code == 200
     assert r.json()["surcharges"] == 5100
+
+
+def test_get_rate_new_geography():
+    r = client().get("/rates/MEA-SUEZ", headers={"X-API-Key": API_KEY})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["carrier_id"] == "MSC"
+    assert body["currency"] == "EUR"
 
 
 def test_admin_reset():

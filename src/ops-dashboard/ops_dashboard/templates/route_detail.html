@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}{{ route.id }}{% endblock %}
+{% block content %}
+<a href="/" class="underline text-sm">&larr; back to dashboard</a>
+<h1 class="text-2xl font-bold my-4">{{ route.id }}</h1>
+
+<dl class="grid grid-cols-2 gap-2 max-w-md mb-6">
+  <dt class="font-semibold">Lane</dt><dd>{{ route.lane }}</dd>
+  <dt class="font-semibold">Contracted</dt><dd>{{ "yes" if route.contracted else "no" }}</dd>
+  <dt class="font-semibold">Availability</dt>
+  <dd>
+    {% if availability %}
+      <span class="badge-{{ availability.status }} px-2 py-0.5 rounded text-xs">{{ availability.status }}</span>
+      {% if availability.reason %} — {{ availability.reason }}{% endif %}
+    {% else %}unknown{% endif %}
+  </dd>
+</dl>
+
+<h2 class="text-lg font-semibold mb-2">Legs</h2>
+<table class="w-full text-sm border-collapse mb-6">
+  <thead><tr class="text-left border-b"><th class="py-2">From</th><th class="py-2">To</th><th class="py-2">Mode</th><th class="py-2">Days</th></tr></thead>
+  <tbody>
+    {% for leg in route.legs %}
+    <tr class="border-b">
+      <td class="py-2">{{ leg["from"] }}</td>
+      <td class="py-2">{{ leg.to }}</td>
+      <td class="py-2">{{ leg.mode }}</td>
+      <td class="py-2">{{ leg.duration_days }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<h2 class="text-lg font-semibold mb-2">Rate</h2>
+{% if rate %}
+<dl class="grid grid-cols-2 gap-2 max-w-md">
+  <dt class="font-semibold">Carrier</dt><dd>{{ rate.carrier_id }}</dd>
+  <dt class="font-semibold">Base cost</dt><dd>{{ rate.base_cost }} {{ rate.currency }}</dd>
+  <dt class="font-semibold">Surcharges</dt><dd>{{ rate.surcharges }} {{ rate.currency }}</dd>
+</dl>
+{% else %}
+<p class="text-gray-500">No rate on file for this route.</p>
+{% endif %}
+{% endblock %}

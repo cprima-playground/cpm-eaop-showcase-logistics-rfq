@@ -43,6 +43,7 @@ This is the second of the two correlated boundaries (agent→tool, then tool→A
 | **CPQ** | ✓ | ✓ | ✓ `commercial-mcp` | human **SSO** (approval UI) + agent client-creds | ✓ **approval UI** | ✓ |
 | **FX** | ✓ **built** | ✓ **built** (REST — the point) | ✗ (deliberately none) | **APIKEY** (machine) — **built** | — | ✓ **built** |
 | **Workflow** | ✓ | ✓ | ✓ `approval-mcp` | human **SSO** | maybe (task inbox) | ✓ |
+| **Ops Dashboard** | — (reads only) | — (not a backend) | ✗ (deliberately none) | human **SSO** — **built** | ✓ **built, read-only** | — |
 
 Legend: ✓ = build · — = not needed · ✗ = deliberately excluded.
 
@@ -50,6 +51,12 @@ Legend: ✓ = build · — = not needed · ✗ = deliberately excluded.
 the reference layer every other system points at by id/code (`customer_id`,
 `carrier_id`, `locode`, currency code, …) instead of embedding a copy. See
 `../decisions/ADR-010-masterdata-source.md`.
+
+**Ops Dashboard is not one of the original 6 either** — a cross-cutting,
+read-only view over TMS/Rate/Masterdata, added to prove the frontend+human-SSO
+plumbing (ADR-006/007, `identity/claims-contract.md`) before CPQ needs the
+same plumbing under approval-workflow pressure too. No MCP (not agent-facing),
+no writes, no domain state machine. See `../src/ops-dashboard/README.md`.
 
 ### Why each subset
 - **Masterdata** — no SSO (machine/agent consumers only), no MCP yet (agents call

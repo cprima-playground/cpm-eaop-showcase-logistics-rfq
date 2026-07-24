@@ -17,7 +17,8 @@ infra/
 ├── caddy/                 # Caddyfile — local edge (*.localhost + local HTTPS)
 ├── cedar-agent/           # docker-compose for the Cedar PDP sidecar (reuse cpm-eaop)
 ├── vault/                 # ★ built — dev-only secrets store (ADR-009)
-├── keycloak/              # realm import (rfq realm: users · groups · clients)
+├── keycloak/              # ★ built — dev IdP (Dockerfile+compose) + keycloak/terraform/
+│                          #   (realm/client/users, Terraform — mirrors cpm-eaop)
 ├── entra/                 # azuread Terraform (client-secret now → WIF target) — reuse infra/entra
 ├── dockerfiles/           # base.Dockerfile (rfq/base) + per-service Dockerfiles
 ├── terraform/             # GCP: Cloud Run services · Apigee · Artifact Registry ·

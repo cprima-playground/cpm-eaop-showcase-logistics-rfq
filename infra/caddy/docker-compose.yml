@@ -1,0 +1,23 @@
+# Local edge. cpm-eaop's own Caddy already holds :80 on this machine (verified
+# free of any conflict), so RfQ's Caddy binds :443 -- standard HTTPS port,
+# subdomains alone disambiguate (SNI/Host), no nonstandard port needed.
+name: rfq-showcase-caddy
+services:
+  caddy:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: rfq-showcase-caddy
+    container_name: rfq-showcase-caddy
+    ports:
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data   # persists Caddy's internal CA across restarts -- must
+                            # stay stable, or every restart mints a new untrusted CA
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+volumes:
+  caddy-data:

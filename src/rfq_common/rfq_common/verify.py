@@ -11,6 +11,7 @@ actual decode/validate.
 
 from __future__ import annotations
 
+import ssl
 from dataclasses import dataclass
 
 import httpx
@@ -75,7 +76,14 @@ def verify(token: str, *, jwks_uri: str, issuer: str, audience: str) -> Verified
     return VerifiedToken(claims=claims, issuer=claims["iss"], audience=str(claims.get("aud")))
 
 
-def fetch_jwks(jwks_uri: str, *, timeout: float = 10.0) -> dict:
-    r = httpx.get(jwks_uri, timeout=timeout)
+def fetch_jwks(jwks_uri: str, *, timeout: float = 10.0, verify: str | bool | None = None) -> dict:
+    """`verify` overrides the TLS trust store for this one call -- a path to
+    a CA bundle, or False to disable verification. Needed for an issuer whose
+    cert chains to a local/internal CA (e.g. Caddy's, infra/caddy/) rather
+    than a publicly-trusted one; None uses httpx's normal default (certifi)."""
+    tls_verify = ssl.create_default_context(cafile=verify) if isinstance(verify, str) else (
+        verify if verify is not None else True
+    )
+    r = httpx.get(jwks_uri, timeout=timeout, verify=tls_verify)
     r.raise_for_status()
     return r.json()

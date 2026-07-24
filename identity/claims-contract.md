@@ -2,7 +2,18 @@
 
 Documents the IdP-agnostic claim contract this showcase assumes, **mirroring**
 cpm-eaop `src/spike/model/identity.py` (`resolve_principal`). One contract, many
-IdPs. No engine code is implemented here — this is the contract the mocks honor.
+IdPs.
+
+**First real (partial) implementation**: `rfq_common.identity.resolve_principal`
+— built for `src/ops-dashboard/`'s human SSO login, proven against a real dev
+Keycloak (`infra/keycloak/`). Deliberately narrower than the full contract
+below: only the **human** path is implemented (`tid`/`oid`/`groups`/`roles` →
+`Principal`); a non-human caller resolves to `kind="service"`, not `kind="agent"`
+— the `azp`-vs-agent-registry branch isn't implemented (no agent authenticates
+via SSO anywhere in RfQ; agents use client-credentials, a separate, already-proven
+path). `department`/`business_unit` derivation from `groups.yaml` also isn't
+implemented (that file doesn't exist yet — see `TODO.md`). Everything else below
+remains contract-only, not yet coded.
 
 ## What `resolve_principal(claims)` consumes
 

@@ -36,7 +36,7 @@ def test_unknown_domain_fails():
 def test_reset_command():
     result = runner.invoke(app, ["reset"])
     assert result.exit_code == 0
-    assert "'locations': 15" in result.output
+    assert "'locations': 20" in result.output
 
 
 def test_whoami_inherited():

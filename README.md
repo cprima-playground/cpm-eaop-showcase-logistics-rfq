@@ -103,12 +103,13 @@ stay consistent. `TARGET` = design intent that does not yet exist in cpm-eaop.
 | API contracts (OpenAPI 3.1 per API) | ✓ | — | — | — |
 | Theming (ADR-007 · passable colorscheme) | ✓ | — | — | — |
 | Build plan (phased) | ✓ | — | — | — |
-| **Phase 1 — `rfq_common` foundation** | ✓ | — | ✓ **49 tests green** | ✓ |
+| **Phase 1 — `rfq_common` foundation** | ✓ | — | ✓ **57 tests green** | ✓ |
 | **Policy-evaluation spike (scenarios 01–04 + failures)** | ✓ | — | ✓ **7 tests green** | ✓ |
 | **Phase 2 — mock-fx (consumes masterdata via API)** | ✓ | ✓ | ✓ **37 tests, verified live** | ✓ |
 | **Phase 2 — mock-masterdata (ADR-010, 9 domains)** | ✓ | ✓ | ✓ **24 tests, verified live** | ✓ |
-| **Phase 2 — mock-tms (topology + availability overlay)** | ✓ | ✓ | ✓ **33 tests, verified live** | ✓ |
-| **Phase 2 — mock-rate (carrier rates, exercises Party)** | ✓ | ✓ | ✓ **24 tests, verified live** | ✓ |
+| **Phase 2 — mock-tms (topology + availability overlay)** | ✓ | ✓ | ✓ **37 tests, verified live** | ✓ |
+| **Phase 2 — mock-rate (carrier rates, exercises Party)** | ✓ | ✓ | ✓ **25 tests, verified live** | ✓ |
+| **Ops Dashboard (first frontend + human SSO, de-risks CPQ)** | ✓ | ✓ | ✓ **22 tests, verified live incl. real Keycloak login** | ✓ |
 | Environments (dev·test·prod) + agent identity + persistence | ✓ decided | — | — | — |
 | Credential inventory + management (ADR-009: Vault-dev/Secret Manager) | ✓ decided | ✓ **live** | ✓ | ✓ |
 
@@ -122,11 +123,12 @@ RfQ/
 ├── TODO.md       design-stage gaps
 ├── KNOWN-ISSUES.md  bugs/limitations in already-built code (distinct from TODO/build-plan)
 ├── decisions/    10 ADRs, all accepted (001–005 domain · 006 stack · 007 theming · 008 agent runtime · 009 credentials · 010 masterdata)
-├── src/rfq_common/     ★ REAL CODE — the Phase 1 foundation (52 tests green, see below)
+├── src/rfq_common/     ★ REAL CODE — the Phase 1 foundation (57 tests green, see below)
 ├── src/mock-fx/        ★ REAL CODE — Phase 2, verified LIVE (37 tests, consumes masterdata via API)
 ├── src/mock-masterdata/ ★ REAL CODE — masterdata source (ADR-010), verified LIVE (24 tests)
-├── src/mock-tms/       ★ REAL CODE — route topology + availability overlay, verified LIVE (33 tests)
-├── src/mock-rate/      ★ REAL CODE — carrier rates, exercises Party, verified LIVE (24 tests)
+├── src/mock-tms/       ★ REAL CODE — route topology + availability overlay, verified LIVE (37 tests)
+├── src/mock-rate/      ★ REAL CODE — carrier rates, exercises Party, verified LIVE (25 tests)
+├── src/ops-dashboard/  ★ REAL CODE — first frontend + human SSO, verified LIVE (22 tests, real Keycloak login)
 ├── business/     process · actions · decisions · domain-model · domain-reference
 ├── systems/      systems-of-record · data-provenance · mock-architecture · reference-data · theming
 │   └── crm/ tms/ rate/ cpq/ fx/ workflow/ masterdata/   ← per system (openapi.yaml · fixtures · mock spec)
@@ -147,11 +149,12 @@ RfQ/
 
 ## What's actually running (not just designed)
 
-Six real, tested codebases exist today, all green:
+Seven real, tested codebases exist today, all green:
 
 - **`src/rfq_common/`** — the Phase 1 foundation library (models, jsonl, JWT/JWKS
   verify, PDP client + schema generator, theme renderer, clock/seed, base
-  FastAPI/Typer apps · masterdata client). 52 tests, `uv run pytest`.
+  FastAPI/Typer apps · masterdata client · `identity.resolve_principal`).
+  57 tests, `uv run pytest`.
 - **`spikes/repricing/policy-evaluation/`** — drives scenarios 01–04 + 3 failure
   injections through a live, isolated `cedar-agent` (port `:8280`, container
   `rfq-showcase-cedar-agent` — never the `:8180` instance cpm-eaop runs for its own
@@ -172,13 +175,20 @@ Six real, tested codebases exist today, all green:
 - **`src/mock-tms/`** — route topology + volatile availability overlay, two
   systems of record deliberately kept separate. Every leg's location validated
   via masterdata; the now-redundant `systems/tms/fixtures/locations.yaml`
-  removed (masterdata is sole owner). 33 tests, incl. live PATCH availability round-trip.
+  removed (masterdata is sole owner). 37 tests, incl. live PATCH availability round-trip and 3 new geographic lanes (Transpacific, Middle-East/Suez, Intra-Europe).
 - **`src/mock-rate/`** — carrier rates per route; first system to exercise the
   **Party** domain (not just Currency/Location) — correctly rejects a customer
-  id used as a carrier. 24 tests.
-- **177 tests total, all green**, across `rfq_common` (52) · `mock-fx` (37) ·
-  `mock-masterdata` (24) · `mock-tms` (33) · `mock-rate` (24) ·
-  `policy-evaluation` (7).
+  id used as a carrier. 25 tests.
+- **`src/ops-dashboard/`** — read-only ops view over TMS/Rate/Masterdata;
+  RfQ's first frontend (Jinja2/HTMX/Tailwind, ADR-006/007) and first human
+  SSO login (dev Keycloak via `infra/keycloak/`, real Auth-Code+PKCE, RP-initiated
+  logout), fronted through a real local-HTTPS Caddy edge (`infra/caddy/`).
+  Role-gated (`ops-viewer`); zero writes, zero domain state machine — de-risks
+  CPQ's harder approval-UI build. 22 tests, verified live through a full
+  browser-equivalent login→dashboard→logout→re-login round trip.
+- **209 tests total, all green**, across `rfq_common` (57) · `mock-fx` (37) ·
+  `mock-masterdata` (24) · `mock-tms` (37) · `mock-rate` (25) ·
+  `policy-evaluation` (7) · `ops-dashboard` (22).
 
 Building these surfaced and fixed **4 real bugs** pure design review missed: two
 missing baseline policies (D10/D11), one missing "nothing is wrong" permit (D12),

@@ -1,0 +1,30 @@
+# Real local HTTPS (Caddy's internal CA, not public ACME -- *.localhost isn't
+# a real domain). Required because Keycloak marks its session cookies Secure;
+# over plain HTTP those get silently dropped once the hostname isn't literally
+# "localhost" (which browsers/curl treat as an implicit secure context, but
+# only that exact name). See KNOWN-ISSUES.md. The CA's private key lives in
+# the caddy-data volume (docker-compose.yml) -- must persist across restarts,
+# or every restart mints a new CA the OS/browser no longer trusts.
+#
+# rfq-showcase.localhost namespacing (not a bare *.localhost) avoids colliding
+# with any other project's generically-named "ops-dashboard"/"keycloak" local
+# service. Windows' hosts file has no wildcard support, so each subdomain
+# still needs its own literal hosts-file line -- see infra/caddy/README.md.
+
+# ops-dashboard: the only frontend built so far. Proxies to the app running
+# on the host (uv run ops-dashboard serve, :8006) -- host.docker.internal is
+# Docker Desktop's route from a container back to the host. When more
+# frontends exist (CPQ etc.) they get their own subdomain block here.
+https://ops-dashboard.rfq-showcase.localhost {
+    reverse_proxy host.docker.internal:8006
+}
+
+# Keycloak (dev IdP) -- fronted here too so the OIDC issuer is a stable name,
+# not a bare port. Keycloak's start-dev derives the `iss` claim from whichever
+# Host header reached it (no KC_HOSTNAME set), so every caller -- browser, the
+# dashboard's backend token exchange, this Caddy proxy itself -- must
+# consistently use keycloak.rfq-showcase.localhost, never localhost:8081
+# directly, or issued tokens' `iss` won't match what verify_with_jwks() expects.
+https://keycloak.rfq-showcase.localhost {
+    reverse_proxy host.docker.internal:8081
+}

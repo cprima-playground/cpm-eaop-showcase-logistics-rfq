@@ -13,3 +13,8 @@
 {"locode": "CZPRG", "name": "Prague", "type": "inland_terminal", "country": "CZ", "timezone": "Europe/Prague", "lat": 50.08, "lon": 14.44}
 {"locode": "DEFRA", "name": "Frankfurt", "type": "airport", "country": "DE", "timezone": "Europe/Berlin", "lat": 50.03, "lon": 8.56}
 {"locode": "DEMUC", "name": "Munich", "type": "inland_terminal", "country": "DE", "timezone": "Europe/Berlin", "lat": 48.14, "lon": 11.58}
+{"locode": "USLAX", "name": "Los Angeles", "type": "seaport", "country": "US", "timezone": "America/Los_Angeles", "lat": 33.74, "lon": -118.27}
+{"locode": "USOAK", "name": "Oakland", "type": "seaport", "country": "US", "timezone": "America/Los_Angeles", "lat": 37.80, "lon": -122.32}
+{"locode": "AEJEA", "name": "Jebel Ali", "type": "seaport", "country": "AE", "timezone": "Asia/Dubai", "lat": 25.01, "lon": 55.06}
+{"locode": "ZADUR", "name": "Durban", "type": "seaport", "country": "ZA", "timezone": "Africa/Johannesburg", "lat": -29.87, "lon": 31.02}
+{"locode": "ITMIL", "name": "Milan", "type": "inland_terminal", "country": "IT", "timezone": "Europe/Rome", "lat": 45.46, "lon": 9.19}

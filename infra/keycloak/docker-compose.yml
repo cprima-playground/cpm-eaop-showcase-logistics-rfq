@@ -1,0 +1,28 @@
+# Dev-only OIDC provider for human SSO (the ops-dashboard). Dev-server mode,
+# fixed admin credentials for local convenience -- same posture as
+# infra/vault's fixed dev root token -- NEVER use dev mode outside dev.
+name: rfq-showcase-keycloak
+services:
+  keycloak:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: rfq-showcase-keycloak
+    container_name: rfq-showcase-keycloak
+    command: start-dev
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: rfq-dev-admin
+      # Trust X-Forwarded-Proto/Host from infra/caddy (TLS-terminating edge) --
+      # without this, Keycloak generates http:// URLs in its own login pages
+      # even when reached over https, because its direct backend connection
+      # from Caddy's reverse_proxy is plain HTTP.
+      KC_PROXY_HEADERS: xforwarded
+    ports:
+      - "8081:8080"
+    volumes:
+      - keycloak-data:/opt/keycloak/data
+    restart: unless-stopped
+
+volumes:
+  keycloak-data:

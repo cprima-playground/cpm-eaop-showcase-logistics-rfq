@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Masterdata{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Masterdata reference domains</h1>
+<ul class="space-y-1">
+  {% for d in domains %}
+  <li><a class="underline accent" href="/masterdata/{{ d }}">{{ d }}</a></li>
+  {% endfor %}
+</ul>
+{% endblock %}

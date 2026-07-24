@@ -12,8 +12,8 @@ def store():
     return TmsStore(FIXTURES_DIR, StubMasterdataClient())
 
 
-def test_loads_all_8_routes():
-    assert len(store().list_routes()) == 8
+def test_loads_all_13_routes():
+    assert len(store().list_routes()) == 13
 
 
 def test_contracted_route():
@@ -42,6 +42,21 @@ def test_feasible_lanes_filters_by_lane():
     s = store()
     lanes = s.feasible_lanes("CNSHA-DEMUC")
     assert len(lanes) == 7
+
+
+def test_feasible_lanes_new_geography():
+    """Geographic diversity: 3 new lanes outside the China->Germany corridor."""
+    s = store()
+    assert len(s.feasible_lanes("CNSHA-USLAX")) == 2   # transpacific: LA + Oakland
+    assert len(s.feasible_lanes("AEJEA-DEHAM")) == 2   # Middle-East: Suez + Cape reroute
+    assert len(s.feasible_lanes("NLRTM-ITMIL")) == 1   # intra-Europe: no alternative
+
+
+def test_multi_leg_middle_east_reroute():
+    s = store()
+    route = s.get_route("MEA-CAPE")
+    assert [leg.from_ for leg in route.legs] == ["AEJEA", "ZADUR"]
+    assert [leg.to for leg in route.legs] == ["ZADUR", "DEHAM"]
 
 
 def test_unknown_route_returns_none():

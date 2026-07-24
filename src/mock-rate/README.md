@@ -40,7 +40,7 @@ fixtures location (defaults to `../../systems/rate/fixtures/`).
 
 ## Result
 
-24/24 tests green, including 3 that genuinely hit a live masterdata service —
+25/25 tests green, including 3 that genuinely hit a live masterdata service —
 real load, real rejection of an unknown carrier, real fail-closed behavior when
 masterdata is unreachable. Verified live end-to-end (`SHA-HAM-MUC` → COSCO,
 42000 CNY).

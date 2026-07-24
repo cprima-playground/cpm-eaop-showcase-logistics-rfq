@@ -27,6 +27,9 @@ def main() -> int:
     for entry in inventory.active():
         if entry.vault_path is None:
             continue
+        if not entry.seed:
+            print(f"skipped (seed: false, set manually): {entry.name}")
+            continue
         value = pysecrets.token_urlsafe(32)
         admin.put(entry.vault_path, {"value": value})
         print(f"seeded: {entry.name} -> {entry.vault_path}")

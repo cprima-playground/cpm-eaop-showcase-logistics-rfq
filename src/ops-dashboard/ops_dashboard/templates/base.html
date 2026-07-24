@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{% block title %}Ops Dashboard{% endblock %} — RfQ Showcase</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/_theme.css">
+  <style>
+    body { background: var(--color-bg, #f8fafc); color: var(--color-text, #0f172a); font-family: var(--font, sans-serif); }
+    .accent { color: var(--color-primary, #2563eb); }
+    .badge-available { background: var(--color-success, #16a34a); color: white; }
+    .badge-limited, .badge-degraded { background: var(--color-warning, #d97706); color: white; }
+    .badge-unavailable { background: var(--color-danger, #dc2626); color: white; }
+  </style>
+</head>
+<body class="min-h-screen">
+  <div class="bg-yellow-100 text-yellow-900 text-xs text-center py-1">
+    SHOWCASE — dev environment, read-only ops dashboard
+  </div>
+  <header class="flex items-center justify-between px-6 py-3 border-b">
+    <nav class="flex items-center gap-4">
+      <a href="/" class="text-lg font-semibold accent">Ops Dashboard</a>
+      <a href="/" class="text-sm underline">Routes</a>
+      <a href="/fx" class="text-sm underline">FX</a>
+      <a href="/masterdata" class="text-sm underline">Masterdata</a>
+    </nav>
+    <div class="flex items-center gap-4 text-sm">
+      <a href="/docs" class="underline">API docs</a>
+      {% if principal %}
+        <span>{{ principal.id }} ({{ principal.roles|join(', ') if principal.roles else 'no roles' }})</span>
+        <a href="/logout" class="underline">Logout</a>
+      {% else %}
+        <a href="/login" class="underline">Login</a>
+      {% endif %}
+    </div>
+  </header>
+  <main class="p-6">
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="px-6 py-2 text-xs text-gray-500 border-t">
+    correlation-id: {{ correlation_id }}
+  </footer>
+</body>
+</html>

@@ -22,6 +22,10 @@ class CredentialEntry(BaseModel):
     vault_path: str | None = None
     secret_manager_id: str | None = None
     status: Literal["active", "planned"] = "active"
+    seed: bool = True  # False for values seed.py must never randomize (e.g. a
+    # secret that must match something generated elsewhere, like a Terraform
+    # output) -- the inventory still declares the credential exists, seed.py
+    # just skips writing a random value for it.
 
 
 class CredentialsInventory(BaseModel):

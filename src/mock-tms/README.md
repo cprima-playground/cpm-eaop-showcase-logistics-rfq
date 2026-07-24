@@ -18,7 +18,7 @@ uv run mock-tms routes                    # CLI, no HTTP
 uv run mock-tms feasible-lanes CNSHA-DEMUC
 uv run mock-tms reset
 uv run mock-tms set-availability SHA-HAM-MUC unavailable --reason "port congestion"
-uv run pytest -v                          # 33 tests
+uv run pytest -v                          # 37 tests
 ```
 
 ```sh
@@ -69,7 +69,7 @@ Not a bug; documented in `tests/test_store.py`.
 
 ## Result
 
-33/33 tests green, including 3 that genuinely hit a live masterdata service
+37/37 tests green, including 3 that genuinely hit a live masterdata service
 (not a stub) — real load, real rejection of an unknown location, real
 fail-closed behavior when masterdata is unreachable.
 

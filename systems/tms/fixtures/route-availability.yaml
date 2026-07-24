@@ -12,6 +12,11 @@ route_availability:
   - {route_id: SHA-GOA-MUC, status: available}
   - {route_id: NGB-HAM-MUC, status: available}
   - {route_id: SHA-GDN-MUC, status: available}
+  - {route_id: TPA-LAX, status: available}
+  - {route_id: TPA-OAK, status: available}
+  - {route_id: MEA-SUEZ, status: available}
+  - {route_id: MEA-CAPE, status: available}
+  - {route_id: EUR-MIL, status: available}
 
 # Example of an override (as injected by hamburg-port-closure / combined packs):
 # - route_id: SHA-HAM-MUC

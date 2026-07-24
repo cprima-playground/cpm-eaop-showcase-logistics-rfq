@@ -25,7 +25,7 @@ def test_routes_requires_api_key():
 def test_list_routes():
     r = client().get("/routes", headers={"X-API-Key": API_KEY})
     assert r.status_code == 200
-    assert len(r.json()) == 8
+    assert len(r.json()) == 13
 
 
 def test_get_route():
@@ -62,6 +62,23 @@ def test_feasible_lanes():
     r = client().get("/feasible-lanes", params={"lane": "CNSHA-DEMUC"}, headers={"X-API-Key": API_KEY})
     assert r.status_code == 200
     assert len(r.json()) == 7  # all routes on the lane; see test_store.py's note
+
+
+def test_get_new_geography_route():
+    r = client().get("/routes/MEA-SUEZ", headers={"X-API-Key": API_KEY})
+    assert r.status_code == 200
+    assert r.json()["lane"] == "AEJEA-DEHAM"
+    assert r.json()["legs"][0]["from"] == "AEJEA"
+
+
+def test_feasible_lanes_new_geography():
+    r = client().get("/feasible-lanes", params={"lane": "CNSHA-USLAX"}, headers={"X-API-Key": API_KEY})
+    assert r.status_code == 200
+    assert len(r.json()) == 2
+
+    r = client().get("/feasible-lanes", params={"lane": "NLRTM-ITMIL"}, headers={"X-API-Key": API_KEY})
+    assert r.status_code == 200
+    assert len(r.json()) == 1
 
 
 def test_admin_reset():

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Routes</h1>
+
+<div class="flex gap-3 mb-6">
+  {% for status, count in kpi_counts.items() %}
+    <div class="badge-{{ status }} px-3 py-1 rounded text-sm">{{ status }}: {{ count }}</div>
+  {% endfor %}
+</div>
+
+<table class="w-full text-sm border-collapse">
+  <thead>
+    <tr class="text-left border-b">
+      <th class="py-2">Route</th>
+      <th class="py-2">Lane</th>
+      <th class="py-2">Contracted</th>
+      <th class="py-2">Availability</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in routes %}
+    <tr class="border-b hover:bg-gray-50">
+      <td class="py-2"><a class="underline accent" href="/routes/{{ r.id }}">{{ r.id }}</a></td>
+      <td class="py-2">{{ r.lane }}</td>
+      <td class="py-2">{{ "yes" if r.contracted else "no" }}</td>
+      <td class="py-2"><span class="badge-{{ r._availability_status }} px-2 py-0.5 rounded text-xs">{{ r._availability_status }}</span></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

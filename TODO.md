@@ -27,6 +27,12 @@ packs + determinism (`RUNNING.md`).
   - [ ] `identity/groups.yaml` (full directory; actors only sketch groups inline)
   - [ ] `identity/delegation-model.md` (A2A **signed delegation-chain**)
   - [ ] `identity/terraform/` (TARGET stub — client-secret pattern per `infra/entra`)
+- [~] **Claims-contract `resolve_principal`** — **partially built**,
+      `rfq_common/identity.py` (human path only: `tid`/`oid`/`groups`/`roles`
+      → `Principal`, proven against a real dev Keycloak via `src/ops-dashboard/`).
+      Still open: the agent-kind branch (`azp` vs. `agents/catalog.yaml`),
+      `department`/`business_unit` derivation (needs `identity/groups.yaml`,
+      below).
 - [x] **Entity / request assembly** — **built**, `rfq_common.pdp` (`ref`/`uid`/
       `action_ref`, path/namespace-parameterized). Proven against 5 real decisions
       through the isolated cedar-agent. Still open: wiring dynamic per-request
@@ -65,8 +71,9 @@ packs + determinism (`RUNNING.md`).
       no command list yet).
 - [ ] `interfaces/a2a/agent-cards/*.json` — per-agent cards (handoff.md sketches one).
 - [ ] `interfaces/api/{rfq,pricing,booking}.openapi.yaml` — TARGET stubs.
-- [ ] `business/glossary.md` — RFQ · lane · Incoterm · margin floor · freshness window ·
-      baseline lane.
+- [x] `business/glossary.md` — **built**: RFQ · lane · route · contracted/baseline
+      lane · route deviation · Incoterm · margin floor · freshness window ·
+      route availability · obligation · masterdata · principal.
 
 ## Nice-to-have
 
