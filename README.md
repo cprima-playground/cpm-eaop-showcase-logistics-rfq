@@ -116,6 +116,7 @@ RfQ/
 ├── RUNNING.md    deterministic demo runs (pin clock · seed · idempotent apply)
 ├── build-plan.md  phased build → run → demo (0 decide … 8 demo+CI)
 ├── TODO.md       design-stage gaps
+├── KNOWN-ISSUES.md  bugs/limitations in already-built code (distinct from TODO/build-plan)
 ├── decisions/    8 ADRs, all accepted (001–005 domain · 006 stack · 007 theming · 008 agent runtime)
 ├── src/rfq_common/  ★ REAL CODE — the Phase 1 foundation (33 tests green, see below)
 ├── src/mock-fx/     ★ REAL CODE — first Phase 2 system, verified LIVE (21 tests, see below)
