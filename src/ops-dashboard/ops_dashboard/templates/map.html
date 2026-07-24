@@ -32,9 +32,22 @@ fetch("/static/vendor/natural-earth/ne_110m_admin_0_countries.geojson")
     }).addTo(map);
   });
 
+// Straight-line lon interpolation breaks at the +-180 seam: a naive line from
+// Shanghai (lon ~121E) to LA (lon ~118W) draws the LONG way, through Europe/
+// Africa, instead of the short Pacific crossing. Fix: if the endpoints are
+// more than 180 degrees apart, shift one so the interpolation takes the
+// shorter path across the antimeridian instead.
+function unwrapLongitude(from, to) {
+  const [lat1, lon1] = from;
+  let [lat2, lon2] = to;
+  if (lon2 - lon1 > 180) lon2 -= 360;
+  else if (lon1 - lon2 > 180) lon2 += 360;
+  return [[lat1, lon1], [lat2, lon2]];
+}
+
 for (const r of routes) {
   const color = statusColor[r.status] || statusColor.unknown;
-  const line = L.polyline([r.from, r.to], { color, weight: 2, opacity: 0.85 }).addTo(map);
+  const line = L.polyline(unwrapLongitude(r.from, r.to), { color, weight: 2, opacity: 0.85 }).addTo(map);
   line.bindPopup(`<a href="/routes/${r.id}">${r.id}</a><br>${r.lane}<br>${r.status}`);
 }
 </script>

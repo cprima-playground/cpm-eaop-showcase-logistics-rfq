@@ -46,28 +46,28 @@ def _masterdata_client() -> MasterdataClient:
     api_key = os.environ.get("MASTERDATA_API_KEY")
     if not api_key:
         api_key = SecretsClient("dev", inventory_path=INVENTORY_PATH).get("masterdata-api-key")
-    return MasterdataClient(base_url=os.environ.get("MASTERDATA_URL", "http://localhost:8003"), api_key=api_key)
+    return MasterdataClient(base_url=os.environ.get("MASTERDATA_URL", "http://127.0.0.1:8003"), api_key=api_key)
 
 
 def _tms_client() -> TmsClient:
     api_key = os.environ.get("TMS_API_KEY")
     if not api_key:
         api_key = SecretsClient("dev", inventory_path=INVENTORY_PATH).get("tms-api-key")
-    return TmsClient(base_url=os.environ.get("TMS_URL", "http://localhost:8004"), api_key=api_key)
+    return TmsClient(base_url=os.environ.get("TMS_URL", "http://127.0.0.1:8004"), api_key=api_key)
 
 
 def _rate_client() -> RateClient:
     api_key = os.environ.get("RATE_API_KEY")
     if not api_key:
         api_key = SecretsClient("dev", inventory_path=INVENTORY_PATH).get("rate-api-key")
-    return RateClient(base_url=os.environ.get("RATE_URL", "http://localhost:8005"), api_key=api_key)
+    return RateClient(base_url=os.environ.get("RATE_URL", "http://127.0.0.1:8005"), api_key=api_key)
 
 
 def _fx_client() -> FxClient:
     api_key = os.environ.get("FX_API_KEY")
     if not api_key:
         api_key = SecretsClient("dev", inventory_path=INVENTORY_PATH).get("fx-api-key")
-    return FxClient(base_url=os.environ.get("FX_URL", "http://localhost:8001"), api_key=api_key)
+    return FxClient(base_url=os.environ.get("FX_URL", "http://127.0.0.1:8001"), api_key=api_key)
 
 
 def _current_principal(request: Request) -> Principal | None:

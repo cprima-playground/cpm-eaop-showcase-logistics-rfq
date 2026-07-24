@@ -30,7 +30,7 @@ the masterdata browser).
 # infra/vault + infra/keycloak must be up (docker compose up -d + terraform apply
 # in infra/keycloak/terraform), masterdata/tms/rate/fx must be running
 uv run ops-dashboard serve --port 8006
-uv run pytest -v                          # 25 tests
+uv run pytest -v                          # 26 tests
 ```
 
 Via the local Caddy edge (`infra/keycloak`'s redirect URIs cover both) — this
@@ -63,6 +63,14 @@ Login as `alice` / `rfq-dev-user` (has `ops-viewer` — sees the dashboard) or
   basemap (`static/vendor/natural-earth/`, public domain, no external tile
   server) — straight lines only, since `RouteLeg` carries no polyline/waypoint
   data, just endpoint locodes (looked up via masterdata for lat/lon).
+  Longitude is unwrapped across the antimeridian so a Transpacific route
+  draws the short way, not through Europe/Africa (`KNOWN-ISSUES.md` F12).
+
+**Perf note** (`KNOWN-ISSUES.md` F11): every client defaults to `127.0.0.1`,
+not `localhost` — on this dev machine, connecting via `localhost` costs ~2s
+per connection (IPv6 happy-eyeballs fallback), and `/map` makes ~20
+sequential backend calls; that compounded to a real ~49s page load before
+the fix, caught via a HAR capture from an actual browser session.
 
 ## Not built here (explicitly out of scope)
 
@@ -71,7 +79,7 @@ concepts tied to actual state changes, which this dashboard has none of.
 
 ## Result
 
-25/25 tests green: 22 offline (stub `TmsClient`/`RateClient`/`FxClient`/
+26/26 tests green: 23 offline (stub `TmsClient`/`RateClient`/`FxClient`/
 `MasterdataClient`, principal injected directly to test view/role-gate logic
 without a real login) + 3 that genuinely hit the live Keycloak realm (ROPC
 grant for `alice`/`bob`, real token verify + `resolve_principal`, real
