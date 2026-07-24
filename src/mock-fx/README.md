@@ -16,12 +16,18 @@ uv run mock-fx reset                                          # reload fixtures
 uv run pytest -v                                              # 21 tests
 ```
 
+The API key comes from **`FX_API_KEY`** if set, else **Vault** (ADR-009) — there is
+no hardcoded default (`KNOWN-ISSUES.md` #1, fixed). Get the seeded value and use it:
+
 ```sh
-curl -H "X-API-Key: dev-fx-key" http://localhost:8001/exchange-rates/CNY/EUR
+# in infra/vault/: docker compose up -d && uv run seed.py   (once)
+KEY=$(curl -s -H "X-Vault-Token: rfq-dev-root" \
+  http://localhost:8200/v1/secret/data/rfq/fx-api-key | python -c \
+  "import sys,json; print(json.load(sys.stdin)['data']['data']['value'])")
+curl -H "X-API-Key: $KEY" http://localhost:8001/exchange-rates/CNY/EUR
 ```
 
-`FX_API_KEY` env overrides the dev default; `FX_FIXTURES_DIR` overrides the
-fixtures location (defaults to `../../fixtures/fx/`).
+`FX_FIXTURES_DIR` overrides the fixtures location (defaults to `../../fixtures/fx/`).
 
 ## What's here
 

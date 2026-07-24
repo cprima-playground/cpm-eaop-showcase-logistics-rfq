@@ -107,7 +107,7 @@ stay consistent. `TARGET` = design intent that does not yet exist in cpm-eaop.
 | **Policy-evaluation spike (scenarios 01–04 + failures)** | ✓ | — | ✓ **7 tests green** | ✓ |
 | **Phase 2 — mock-fx (first mock system)** | ✓ | ✓ | ✓ **21 tests, verified live** | ✓ |
 | Environments (dev·test·prod) + agent identity + persistence | ✓ decided | — | — | — |
-| Credential inventory + management (ADR-009: Vault-dev/Secret Manager) | ✓ decided | ✓ (Vault compose) | — | — |
+| Credential inventory + management (ADR-009: Vault-dev/Secret Manager) | ✓ decided | ✓ **live** | ✓ | ✓ |
 
 ## Layout
 
@@ -152,7 +152,10 @@ Three real, tested codebases exist today, all green:
   work). 7 tests, `uv run pytest` (after `docker compose up -d`).
 - **`src/mock-fx/`** — the first Phase 2 mock system, verified **actually running**:
   `uv run mock-fx serve` and hit it — real Swagger UI at `/docs`, APIKEY-gated
-  `/exchange-rates/{base}/{quote}`, `/admin/reset`. 21 tests.
+  `/exchange-rates/{base}/{quote}`, `/admin/reset`. 24 tests.
+- **`infra/vault/` + `rfq_common.secrets`** — ADR-009's Vault-dev credential store,
+  standing and seeded (`rfq-showcase-vault`, :8200); `mock-fx`'s API key now comes
+  from Vault, no hardcoded fallback. 74 tests total across all four codebases.
 
 Building these surfaced and fixed **4 real bugs** pure design review missed: two
 missing baseline policies (D10/D11), one missing "nothing is wrong" permit (D12),

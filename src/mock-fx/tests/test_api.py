@@ -1,8 +1,7 @@
 from fastapi.testclient import TestClient
 
 from mock_fx.api import build_app
-
-API_KEY = "dev-fx-key"
+from conftest import TEST_API_KEY as API_KEY
 
 
 def client():

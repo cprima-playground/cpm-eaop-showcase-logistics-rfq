@@ -1,6 +1,6 @@
 # Dev-only secrets store (ADR-009). Dev-server mode: in-memory, auto-unsealed,
 # a fixed root token for local convenience -- NEVER use dev mode outside dev.
-name: rfq-showcase
+name: rfq-showcase-vault
 services:
   vault:
     image: hashicorp/vault:latest

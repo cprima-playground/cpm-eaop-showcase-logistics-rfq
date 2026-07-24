@@ -1,0 +1,12 @@
+[project]
+name = "rfq-vault-seed"
+version = "0.1.0"
+description = "Seeds the dev Vault from identity/credentials-inventory.yaml (ADR-009)."
+requires-python = ">=3.10"
+dependencies = ["rfq-common"]
+
+[tool.uv.sources]
+rfq-common = { path = "../../src/rfq_common", editable = true }
+
+[tool.uv]
+package = false
