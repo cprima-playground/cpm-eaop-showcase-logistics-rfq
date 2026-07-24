@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from rfq_common.jsonl import load_jsonl, read_jsonl, write_jsonl
-from rfq_common.models import RFQ, InternalPrincipal, Quote
+from rfq_common.models import RFQ, InternalPrincipal, QuoteVersion
 
 
 def test_rfq_model_defaults():
@@ -11,7 +11,7 @@ def test_rfq_model_defaults():
 
 
 def test_quote_status_is_the_human_decision():
-    q = Quote(quote_id="Q-1001", version=2, status="approval_required", margin_pct_x10=50)
+    q = QuoteVersion(quote_id="Q-1001", version=2, status="approval_required", margin_pct_x10=50)
     assert q.status == "approval_required"
     q2 = q.model_copy(update={"status": "approved"})
     assert q2.status == "approved"

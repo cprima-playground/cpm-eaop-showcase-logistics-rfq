@@ -26,7 +26,7 @@ from fastapi import FastAPI, Header, HTTPException
 from rfq_common.app import create_app
 from rfq_common.theme import load_theme
 
-from . import models as m
+from rfq_common import models as m
 
 RFQ_ROOT = Path(__file__).resolve().parents[3]
 
@@ -571,7 +571,7 @@ def build_app() -> FastAPI:
         _stub()
 
     @app.get(
-        "/carrier-rates", tags=["Pricing Configuration"], response_model=list[m.CarrierRate],
+        "/carrier-rates", tags=["Pricing Configuration"], response_model=list[m.CarrierRateView],
         summary="Carrier rates for a lane, scoped to what the caller is entitled to see.",
         description=(
             "rate.read returns identity/lane/currency; cost_cents (the carrier's actual charge) "

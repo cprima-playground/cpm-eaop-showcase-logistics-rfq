@@ -1,15 +1,20 @@
-"""Pydantic models for the QMS API. Kept local to mock-qms (not rfq_common.models)
--- these are still design-stage and several carry deliberate x-gap fields;
-promoting them to the shared library is a later step, once the business
-rules/Cedar wiring behind them is real, not just route shapes. QuoteStatus
-itself is the one exception -- reused as-is from rfq_common.models rather than
-duplicated, since it's also the type derive_rfq_status_from_quote takes
-(business/decisions.md's "SoR boundary: RFQ vs Quote").
+"""QMS -- the quote system of record (systems/qms/, src/mock-qms/). Promoted
+here from src/mock-qms/mock_qms/models.py (previously local/design-stage) now
+that the shapes are stable enough to share -- these are still design-stage
+in the sense that mock-qms's routes are null-op (business/qms-pricing-rules.md,
+no store/R1-R6/Cedar wiring yet), but the SCHEMA itself is no longer
+provisional; the openapi_extra x-domain-action/x-gap annotations live on
+mock-qms's routes (mock_qms/api.py), not here -- this module only owns shape.
 
-x-owner/x-role on fields (via Field(json_schema_extra=...)) migrated from the
-former interfaces/api/qms.openapi.yaml: who OWNS a value (system of record),
-and whether THIS field merely REFERENCES it or QMS COMPUTES it. Catches
-accidental duplication before implementation."""
+x-owner/x-role on fields (via Field(json_schema_extra=...)): who OWNS a
+value (system of record), and whether THIS field merely REFERENCES it or
+QMS COMPUTES it. Catches accidental duplication before implementation.
+
+Quote vs QuoteVersion: Quote is the lightweight AGGREGATE (identity +
+customer/RFQ linkage); QuoteVersion is the immutable, versioned commercial
+record -- the split flagged as deferred during early design (a QuoteVersion
+stub next to a still-flat Quote would have been a duplicate noun) turned out
+to be needed once the full API boundary was specced, and is completed here."""
 
 from __future__ import annotations
 
@@ -17,7 +22,57 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from rfq_common.models import QuoteStatus as QuoteVersionStatus
+RfqStatus = Literal[
+    "draft", "awaiting_information", "sourcing_rates", "pricing",
+    "approval_required", "issued", "accepted", "rejected", "expired",
+]
+
+
+class RFQ(BaseModel):
+    """RFQ is a CASE (a multi-week engagement -- solicit rates, iterate,
+    negotiate), not a document; `status` tracks the case's own progress.
+    `accepted`/`rejected`/`expired` are DERIVED from the Quote that closed the
+    case (see `derive_rfq_status_from_quote` below) -- never set independently.
+    QuoteVersion is the primary fact (business/decisions.md, "SoR boundary:
+    RFQ vs Quote"); this is CRM's projection of it, not a second authority."""
+
+    rfq_id: str
+    system_of_record: Literal["crm"] = "crm"
+    status: RfqStatus = "draft"
+    customer_id: str | None = None  # -> masterdata Party (ADR-010) -- reference, never copy
+    origin: str | None = None
+    destination: str | None = None
+    quote_currency: str | None = None
+    contracted_lane: str | None = None
+    region: str | None = None
+
+
+QuoteStatus = Literal[
+    "draft", "priced", "approval_required", "approved", "published",
+    "accepted", "rejected", "revise", "expired", "withdrawn",
+]
+
+# Quote.status -> the RfqStatus it implies, for the terminal outcomes only.
+# Every other Quote status (draft/priced/approval_required/approved/published/
+# revise) has no RFQ-level meaning yet -- the case is still in progress, so
+# there is nothing to derive.
+_RFQ_STATUS_FROM_TERMINAL_QUOTE_STATUS: dict[str, RfqStatus] = {
+    "accepted": "accepted",
+    "rejected": "rejected",
+    "withdrawn": "rejected",
+    "expired": "expired",
+}
+
+
+def derive_rfq_status_from_quote(quote_status: QuoteStatus) -> RfqStatus | None:
+    """The code-level resolution of business/decisions.md's "SoR boundary: RFQ
+    vs Quote": QuoteVersion.status is the primary fact (QMS-owned); RFQ.status's
+    accepted/rejected/expired are a DERIVED projection of it (CRM-owned),
+    never written independently. Returns None for every non-terminal Quote
+    status -- the case is still open, there is nothing for RFQ to reflect yet.
+    A future CRM would call this on every Quote status change, not accept a
+    direct write to its own accepted/rejected/expired."""
+    return _RFQ_STATUS_FROM_TERMINAL_QUOTE_STATUS.get(quote_status)
 
 
 def _ref(owner: str) -> dict:
@@ -32,36 +87,9 @@ def _computes(owner: str | None = "qms") -> dict:
     return {"x-owner": owner, "x-role": "computes"}
 
 
-class RFQ(BaseModel):
-    rfq_id: str
-    status: str
-    customer_id: str | None = None
-    origin: str | None = None
-    destination: str | None = None
-    quote_currency: str | None = None
-    contracted_lane: str | None = None
-    region: str | None = None
-
-
-class CarrierRate(BaseModel):
-    """A carrier rate is a SUPPLIER-side cost to the forwarder -- "sell" is
-    never a property of the rate itself, only of the Quote built from it
-    (QuoteVersion.proposed_sell_price_eur_cents). One cost field, gated by
-    D15 -- no second, confusable field."""
-
-    rate_id: str = Field(json_schema_extra=_ref("rate_management"))
-    carrier_id: str = Field(json_schema_extra=_ref("masterdata"))
-    lane_id: str = Field(json_schema_extra=_ref("rate_management"))
-    currency: str = Field(json_schema_extra=_ref("masterdata"))
-    cost_cents: int | None = Field(
-        default=None, json_schema_extra=_ref("rate_management"),
-        description="The carrier's published rate to the forwarder -- present only if buy-rate.read (D15) is also authorized, absent (not zero) otherwise.",
-    )
-    confidentiality_class: str | None = Field(default=None, json_schema_extra=_ref("rate_management"))
-
-
 class Quote(BaseModel):
-    """The aggregate -- identity + customer/RFQ linkage. Commercial content lives on QuoteVersion."""
+    """The aggregate -- identity + customer/RFQ linkage. Commercial content
+    lives on QuoteVersion."""
 
     quote_id: str = Field(json_schema_extra=_owns())
     rfq_id: str = Field(json_schema_extra=_ref("crm"))
@@ -109,18 +137,25 @@ class CreateNextVersionRequest(BaseModel):
 
 
 class QuoteVersion(BaseModel):
+    """The human-in-the-loop decision IS `status` here -- not a separate
+    workflow record (business/decisions.md, ADR-005). `status`'s terminal
+    values feed RFQ.status via `derive_rfq_status_from_quote` -- RFQ never
+    sets its own accepted/rejected/expired independently. Immutable once
+    written: a "revise" never mutates a QuoteVersion, it supersedes it with
+    a new one (D17, quote.supersede)."""
+
     quote_id: str = Field(json_schema_extra=_owns())
     version: int = Field(json_schema_extra=_owns())
     prior_version: int | None = Field(default=None, json_schema_extra=_owns())
-    status: QuoteVersionStatus = Field(
-        json_schema_extra=_owns(),
+    status: QuoteStatus = Field(
+        default="draft", json_schema_extra=_owns(),
         description="The human-in-the-loop decision (approval_required -> approved|rejected|revise) is a status change (decisions.md).",
     )
     currency: str | None = Field(default=None, json_schema_extra=_computes())
     total_cost_eur_cents: int | None = Field(default=None, json_schema_extra=_computes(), description="Null until priced.")
     proposed_sell_price_eur_cents: int | None = Field(
         default=None, json_schema_extra=_computes(owner=None),
-        description="x-owner left null on purpose -- see POST .../price's x-gap on sell-price origin.",
+        description="x-owner left null on purpose -- see mock_qms/api.py's POST .../price x-gap on sell-price origin.",
     )
     margin_pct_x10: int | None = Field(default=None, json_schema_extra=_computes(), description="R1 -- (sell - cost) / sell * 1000")
     fx_variance_pct_x10: int | None = Field(default=None, json_schema_extra=_computes(), description="R2, only once compared against a later current rate")
@@ -148,7 +183,8 @@ class RuleResult(BaseModel):
 
 
 class PricingResult(BaseModel):
-    """Customer-facing pricing result -- no buy-cost detail (see PricingBreakdown for that, D15-gated)."""
+    """Customer-facing pricing result -- no buy-cost detail (see
+    PricingBreakdown for that, D15-gated)."""
 
     currency: str
     total_cost_cents: int
@@ -180,8 +216,9 @@ class QuoteDecisionRequest(BaseModel):
 
 
 class CustomerQuoteView(BaseModel):
-    """What D18 actually governs -- excludes buy rates, confidential margins,
-    policy diagnostics, rejected alternatives, internal comments."""
+    """What D18 (buy-rate.disclose) actually governs -- excludes buy rates,
+    confidential margins, policy diagnostics, rejected alternatives, internal
+    comments."""
 
     quote_id: str
     version: int
@@ -239,3 +276,23 @@ class ExtendValidityRequest(BaseModel):
 
 class GenerateDocumentRequest(BaseModel):
     document_type: str | None = None
+
+
+class CarrierRateView(BaseModel):
+    """QMS's disclosure-gated READ PROJECTION of a carrier rate (D14
+    rate.read / D15 buy-rate.read) -- distinct from rate.CarrierRate, which
+    is mock-rate's own storage/quoting shape. A carrier rate is a
+    SUPPLIER-side cost to the forwarder; "sell" is never a property of the
+    rate itself, only of the QuoteVersion built from it
+    (proposed_sell_price_eur_cents). One cost field, gated by D15 -- no
+    second, confusable field."""
+
+    rate_id: str = Field(json_schema_extra=_ref("rate_management"))
+    carrier_id: str = Field(json_schema_extra=_ref("masterdata"))
+    lane_id: str = Field(json_schema_extra=_ref("rate_management"))
+    currency: str = Field(json_schema_extra=_ref("masterdata"))
+    cost_cents: int | None = Field(
+        default=None, json_schema_extra=_ref("rate_management"),
+        description="The carrier's published rate to the forwarder -- present only if buy-rate.read (D15) is also authorized, absent (not zero) otherwise.",
+    )
+    confidentiality_class: str | None = Field(default=None, json_schema_extra=_ref("rate_management"))
