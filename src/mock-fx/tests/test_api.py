@@ -78,3 +78,60 @@ def test_admin_reset():
 def test_theme_css_endpoint_present():
     r = client().get("/_theme.css")
     assert r.status_code == 200
+
+
+# --- /convert -- fractional-unit handling via masterdata (ADR-010) ------------
+
+def test_convert_cny_to_eur():
+    r = client().get(
+        "/convert",
+        params={"amount": "42000", "from_currency": "CNY", "to_currency": "EUR"},
+        headers={"X-API-Key": API_KEY},
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["converted_amount"] == "5014.80"  # 42000 * 0.1194, 2 decimals
+    assert body["minor_unit"] == 2
+
+
+def test_convert_inverse_direction_eur_to_cny():
+    r = client().get(
+        "/convert",
+        params={"amount": "100", "from_currency": "EUR", "to_currency": "CNY"},
+        headers={"X-API-Key": API_KEY},
+    )
+    assert r.status_code == 200
+    # inverse of CNY/EUR=0.1194 -> 100 / 0.1194 ~= 837.52, rounded to CNY's 2 decimals
+    assert r.json()["minor_unit"] == 2
+
+
+def test_convert_unknown_currency_400():
+    r = client().get(
+        "/convert",
+        params={"amount": "100", "from_currency": "CNY", "to_currency": "ZZZ"},
+        headers={"X-API-Key": API_KEY},
+    )
+    assert r.status_code == 400
+
+
+def test_convert_malformed_amount_400():
+    r = client().get(
+        "/convert",
+        params={"amount": "not-a-number", "from_currency": "CNY", "to_currency": "EUR"},
+        headers={"X-API-Key": API_KEY},
+    )
+    assert r.status_code == 400
+
+
+def test_convert_no_rate_404():
+    r = client().get(
+        "/convert",
+        params={"amount": "100", "from_currency": "USD", "to_currency": "JPY"},
+        headers={"X-API-Key": API_KEY},
+    )
+    assert r.status_code == 404
+
+
+def test_convert_requires_api_key():
+    r = client().get("/convert", params={"amount": "1", "from_currency": "CNY", "to_currency": "EUR"})
+    assert r.status_code == 401

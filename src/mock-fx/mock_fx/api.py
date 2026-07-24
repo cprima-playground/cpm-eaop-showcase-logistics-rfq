@@ -4,31 +4,52 @@ interfaces/api/fx.openapi.yaml on top of rfq_common's base FastAPI app.
 Mocked, deterministic: rates are seeded from real historical CNY/EUR snapshots
 (fixtures/fx/*.json), not a live provider (see fx-api.md "Mock vs live"). No SSO,
 no MCP -- APIKEY only (systems/mock-architecture.md).
+
+FX is also the currency-conversion authority (/convert): it holds both the rate
+and, via a REAL masterdata API call (ADR-010 -- never a duplicated file), each
+currency's minor_unit, so it's the one place that rounds fractional units
+correctly (0 decimals for JPY, 2 for most).
 """
 
 from __future__ import annotations
 
 import os
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException
 
 from rfq_common.app import create_app
+from rfq_common.masterdata_client import MasterdataClient, MasterdataUnavailableError
+from rfq_common.secrets import SecretsClient
 from rfq_common.theme import load_theme
 
 from .auth import require_api_key
-from .store import FxStore
+from .convert import convert_amount
+from .store import FxStore, UnknownCurrencyError
 
 RFQ_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_FIXTURES_DIR = RFQ_ROOT / "fixtures" / "fx"
+INVENTORY_PATH = RFQ_ROOT / "identity" / "credentials-inventory.yaml"
 
 
 def _fixtures_dir() -> Path:
     return Path(os.environ.get("FX_FIXTURES_DIR", str(DEFAULT_FIXTURES_DIR)))
 
 
-def build_app(*, fixtures_dir: Path | None = None) -> FastAPI:
-    store = FxStore(fixtures_dir or _fixtures_dir())
+def _masterdata_client() -> MasterdataClient:
+    """The credential FX uses to call OUT to masterdata -- same env-then-Vault
+    resolution as auth.py's inbound check, but a distinct concern (outbound
+    caller credential, not "who may call FX")."""
+    api_key = os.environ.get("MASTERDATA_API_KEY")
+    if not api_key:
+        api_key = SecretsClient("dev", inventory_path=INVENTORY_PATH).get("masterdata-api-key")
+    base_url = os.environ.get("MASTERDATA_URL", "http://localhost:8003")
+    return MasterdataClient(base_url=base_url, api_key=api_key)
+
+
+def build_app(*, fixtures_dir: Path | None = None, masterdata_client: MasterdataClient | None = None) -> FastAPI:
+    store = FxStore(fixtures_dir or _fixtures_dir(), masterdata_client or _masterdata_client())
 
     theme_pack = None
     try:
@@ -49,6 +70,41 @@ def build_app(*, fixtures_dir: Path | None = None) -> FastAPI:
             raise HTTPException(status_code=404, detail=f"no rate for {base}/{quote}")
         return rate.model_dump(mode="json")
 
+    @app.get("/convert", dependencies=[Depends(require_api_key)])
+    def convert(amount: str, from_currency: str, to_currency: str, effectiveAt: str | None = None) -> dict:
+        try:
+            amount_dec = Decimal(amount)
+        except InvalidOperation:
+            raise HTTPException(status_code=400, detail=f"amount is not a valid decimal: {amount!r}")
+
+        try:
+            target_minor_unit = store.minor_unit(to_currency)
+        except UnknownCurrencyError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+        except MasterdataUnavailableError as exc:
+            raise HTTPException(status_code=503, detail=str(exc))
+
+        rate = store.get(from_currency, to_currency, effective_at=effectiveAt)
+        inverse = False
+        if rate is None:
+            rate = store.get(to_currency, from_currency, effective_at=effectiveAt)
+            inverse = True
+        if rate is None:
+            raise HTTPException(status_code=404, detail=f"no rate for {from_currency}/{to_currency}")
+
+        effective_rate = (1 / rate.rate) if inverse else rate.rate
+        converted = convert_amount(amount_dec, effective_rate, target_minor_unit=target_minor_unit)
+
+        return {
+            "amount": str(amount_dec),
+            "from_currency": from_currency,
+            "to_currency": to_currency,
+            "rate": effective_rate,
+            "rate_ref": rate.rate_ref,
+            "converted_amount": str(converted),
+            "minor_unit": target_minor_unit,
+        }
+
     @app.post("/admin/reset", dependencies=[Depends(require_api_key)])
     def reset() -> dict:
         store.reload()
@@ -57,4 +113,8 @@ def build_app(*, fixtures_dir: Path | None = None) -> FastAPI:
     return app
 
 
-app = build_app()
+# NOTE: no module-level `app = build_app()` singleton (unlike before FX depended
+# on masterdata). build_app() now makes a real outbound call, so constructing it
+# eagerly at import time would break merely importing this module (CLI commands,
+# test collection) even when nothing needs the FastAPI app yet. Callers that need
+# an app instance (tests, cli.py's `serve`) call build_app() explicitly.

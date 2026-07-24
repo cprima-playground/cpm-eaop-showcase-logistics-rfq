@@ -103,9 +103,9 @@ stay consistent. `TARGET` = design intent that does not yet exist in cpm-eaop.
 | API contracts (OpenAPI 3.1 per API) | ✓ | — | — | — |
 | Theming (ADR-007 · passable colorscheme) | ✓ | — | — | — |
 | Build plan (phased) | ✓ | — | — | — |
-| **Phase 1 — `rfq_common` foundation** | ✓ | — | ✓ **33 tests green** | ✓ |
+| **Phase 1 — `rfq_common` foundation** | ✓ | — | ✓ **49 tests green** | ✓ |
 | **Policy-evaluation spike (scenarios 01–04 + failures)** | ✓ | — | ✓ **7 tests green** | ✓ |
-| **Phase 2 — mock-fx (first mock system)** | ✓ | ✓ | ✓ **24 tests, verified live** | ✓ |
+| **Phase 2 — mock-fx (first mock system, now consumes masterdata via API)** | ✓ | ✓ | ✓ **37 tests, verified live** | ✓ |
 | **Phase 2 — mock-masterdata (ADR-010, 9 domains)** | ✓ | ✓ | ✓ **24 tests, verified live** | ✓ |
 | Environments (dev·test·prod) + agent identity + persistence | ✓ decided | — | — | — |
 | Credential inventory + management (ADR-009: Vault-dev/Secret Manager) | ✓ decided | ✓ **live** | ✓ | ✓ |
@@ -121,7 +121,7 @@ RfQ/
 ├── KNOWN-ISSUES.md  bugs/limitations in already-built code (distinct from TODO/build-plan)
 ├── decisions/    10 ADRs, all accepted (001–005 domain · 006 stack · 007 theming · 008 agent runtime · 009 credentials · 010 masterdata)
 ├── src/rfq_common/  ★ REAL CODE — the Phase 1 foundation (46 tests green, see below)
-├── src/mock-fx/     ★ REAL CODE — first Phase 2 system, verified LIVE (24 tests, see below)
+├── src/mock-fx/     ★ REAL CODE — first Phase 2 system, verified LIVE (37 tests, consumes masterdata via API)
 ├── src/mock-masterdata/ ★ REAL CODE — masterdata source (ADR-010), verified LIVE (24 tests)
 ├── business/     process · actions · decisions · domain-model · domain-reference
 ├── systems/      systems-of-record · data-provenance · mock-architecture · reference-data · theming
@@ -147,14 +147,15 @@ Three real, tested codebases exist today, all green:
 
 - **`src/rfq_common/`** — the Phase 1 foundation library (models, jsonl, JWT/JWKS
   verify, PDP client + schema generator, theme renderer, clock/seed, base
-  FastAPI/Typer apps). 33 tests, `uv run pytest`.
+  FastAPI/Typer apps · masterdata client). 49 tests, `uv run pytest`.
 - **`spikes/repricing/policy-evaluation/`** — drives scenarios 01–04 + 3 failure
   injections through a live, isolated `cedar-agent` (port `:8280`, container
   `rfq-showcase-cedar-agent` — never the `:8180` instance cpm-eaop runs for its own
   work). 7 tests, `uv run pytest` (after `docker compose up -d`).
 - **`src/mock-fx/`** — the first Phase 2 mock system, verified **actually running**:
   `uv run mock-fx serve` and hit it — real Swagger UI at `/docs`, APIKEY-gated
-  `/exchange-rates/{base}/{quote}`, `/admin/reset`. 24 tests.
+  `/exchange-rates/{base}/{quote}`, `/convert` (currency rounding, JPY-aware), `/admin/reset`.
+  Now consumes masterdata via its real API (ADR-010) to validate currencies. 37 tests.
 - **`infra/vault/` + `rfq_common.secrets`** — ADR-009's Vault-dev credential store,
   standing and seeded (`rfq-showcase-vault`, :8200); `mock-fx`'s API key comes
   from Vault, no hardcoded fallback.
@@ -164,7 +165,7 @@ Three real, tested codebases exist today, all green:
   verified live. Closes the original "no customer/carrier reference" gap —
   `RFQ`/`Quote`/`RouteOption` now carry `customer_id`/`carrier_id` referencing
   Party instead of embedding bare strings. 24 tests.
-- **101 tests total, all green**, across `rfq_common` (46) · `mock-fx` (24) ·
+- **117 tests total, all green**, across `rfq_common` (49) · `mock-fx` (37) ·
   `mock-masterdata` (24) · `policy-evaluation` (7).
 
 Building these surfaced and fixed **4 real bugs** pure design review missed: two

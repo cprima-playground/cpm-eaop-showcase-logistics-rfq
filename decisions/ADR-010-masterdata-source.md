@@ -66,6 +66,17 @@ not nine copy-pasted fixture files. Same auth posture as FX — **APIKEY, no SSO
   discipline — reference data is fetched or cached with a documented TTL, same as
   any other cross-system fact, not exempted from that rule.
 
+## First proven consumer
+
+`mock-fx` consumes masterdata **via its REST API**, never a duplicated file or a
+shared fixture directory: every currency in every FX fixture is validated
+against `GET /currencies/{code}` at load time (fail closed if masterdata is
+unreachable or the currency is unknown). FX also uses masterdata's `minor_unit`
+per currency to round its `/convert` endpoint correctly — the caveat: JPY has
+`minor_unit=0` (a whole-yen amount, not yen-cents), so a hardcoded "2 decimals"
+assumption would silently corrupt it. Proven with a live (non-stubbed)
+integration test suite (`src/mock-fx/tests/test_masterdata_integration.py`).
+
 ## Consequences
 
 - `rfq_common.models` gains 9 new Pydantic models + a `CodeListStore`.

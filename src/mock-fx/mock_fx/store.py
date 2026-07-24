@@ -4,7 +4,8 @@ Point-in-time lookup: `effectiveAt` picks the latest snapshot with
 observed_at <= effectiveAt for the pair (or the latest overall if omitted) --
 matches interfaces/api/fx-api.md ("Authoritative FX rate for a currency pair at
 a point in time"). Deterministic: reload() re-reads the same fixture files, no
-network, no randomness.
+network, no randomness (except currency validation, which IS a real API call --
+ADR-010: masterdata must be consumed via API, never a duplicated file).
 """
 
 from __future__ import annotations
@@ -13,6 +14,7 @@ import json
 from datetime import datetime
 from pathlib import Path
 
+from rfq_common.masterdata_client import MasterdataClient, MasterdataUnavailableError
 from rfq_common.models import ExchangeRate
 
 
@@ -20,19 +22,46 @@ def _parse(ts: str) -> datetime:
     return datetime.fromisoformat(ts.replace("Z", "+00:00"))
 
 
+class UnknownCurrencyError(ValueError):
+    pass
+
+
 class FxStore:
-    def __init__(self, fixtures_dir: str | Path):
+    def __init__(self, fixtures_dir: str | Path, masterdata_client: MasterdataClient | None = None):
         self._fixtures_dir = Path(fixtures_dir)
+        self._masterdata = masterdata_client
+        self._minor_unit_cache: dict[str, int] = {}
         self._rates: list[ExchangeRate] = []
         self.reload()
 
     def reload(self) -> None:
-        """Reload every *.json fixture in the fixtures dir -- the admin `reset`."""
+        """Reload every *.json fixture in the fixtures dir -- the admin `reset`.
+        Every currency in every fixture is validated against the masterdata API
+        (fail closed: unreachable masterdata or an unknown currency code both
+        raise -- this store never falls back to assuming a currency is valid)."""
         rates = []
         for path in sorted(self._fixtures_dir.glob("*.json")):
             data = json.loads(path.read_text(encoding="utf-8"))
-            rates.append(ExchangeRate.model_validate(data))
+            rate = ExchangeRate.model_validate(data)
+            if self._masterdata is not None:
+                for code in rate.pair.split("/"):
+                    self._validate_currency(code)
+            rates.append(rate)
         self._rates = rates
+
+    def _validate_currency(self, code: str) -> None:
+        if code in self._minor_unit_cache:
+            return
+        entry = self._masterdata.get("currencies", code)  # raises MasterdataUnavailableError if unreachable
+        if entry is None:
+            raise UnknownCurrencyError(f"masterdata has no currency entry for {code!r}")
+        self._minor_unit_cache[code] = entry["minor_unit"]
+
+    def minor_unit(self, code: str) -> int:
+        """The currency's decimal-place count (0 for JPY, 2 for most), via
+        masterdata -- never hardcoded."""
+        self._validate_currency(code)
+        return self._minor_unit_cache[code]
 
     def get(self, base: str, quote: str, *, effective_at: str | None = None) -> ExchangeRate | None:
         pair = f"{base}/{quote}"
