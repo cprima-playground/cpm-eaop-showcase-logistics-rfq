@@ -105,6 +105,7 @@ stay consistent. `TARGET` = design intent that does not yet exist in cpm-eaop.
 | Build plan (phased) | ✓ | — | — | — |
 | **Phase 1 — `rfq_common` foundation** | ✓ | — | ✓ **33 tests green** | ✓ |
 | **Policy-evaluation spike (scenarios 01–04 + failures)** | ✓ | — | ✓ **7 tests green** | ✓ |
+| **Phase 2 — mock-fx (first mock system)** | ✓ | ✓ | ✓ **21 tests, verified live** | ✓ |
 | Environments (dev·test·prod) + agent identity + persistence | ✓ decided | — | — | — |
 
 ## Layout
@@ -117,6 +118,7 @@ RfQ/
 ├── TODO.md       design-stage gaps
 ├── decisions/    8 ADRs, all accepted (001–005 domain · 006 stack · 007 theming · 008 agent runtime)
 ├── src/rfq_common/  ★ REAL CODE — the Phase 1 foundation (33 tests green, see below)
+├── src/mock-fx/     ★ REAL CODE — first Phase 2 system, verified LIVE (21 tests, see below)
 ├── business/     process · actions · decisions · domain-model · domain-reference
 ├── systems/      systems-of-record · data-provenance · mock-architecture · reference-data · theming
 │   └── crm/ tms/ rate/ cpq/ fx/ workflow/   ← per system (openapi.yaml · fixtures · mock spec)
@@ -137,7 +139,7 @@ RfQ/
 
 ## What's actually running (not just designed)
 
-Two real, tested codebases exist today, both green:
+Three real, tested codebases exist today, all green:
 
 - **`src/rfq_common/`** — the Phase 1 foundation library (models, jsonl, JWT/JWKS
   verify, PDP client + schema generator, theme renderer, clock/seed, base
@@ -146,6 +148,9 @@ Two real, tested codebases exist today, both green:
   injections through a live, isolated `cedar-agent` (port `:8280`, container
   `rfq-showcase-cedar-agent` — never the `:8180` instance cpm-eaop runs for its own
   work). 7 tests, `uv run pytest` (after `docker compose up -d`).
+- **`src/mock-fx/`** — the first Phase 2 mock system, verified **actually running**:
+  `uv run mock-fx serve` and hit it — real Swagger UI at `/docs`, APIKEY-gated
+  `/exchange-rates/{base}/{quote}`, `/admin/reset`. 21 tests.
 
 Building these surfaced and fixed **4 real bugs** pure design review missed: two
 missing baseline policies (D10/D11), one missing "nothing is wrong" permit (D12),

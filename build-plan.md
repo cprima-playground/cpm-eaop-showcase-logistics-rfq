@@ -44,10 +44,15 @@ schema-gen + entity assembly) — without it the authz model can't be exercised.
   issue), non-ASCII banner text breaking an HTTP header (latin-1-only) — all fixed.
   See `src/rfq_common/README.md` + `spikes/repricing/policy-evaluation/README.md`.
 
-## Phase 2 — Mock systems (backend · API · CLI)
+## Phase 2 — Mock systems (backend · API · CLI) · IN PROGRESS
 
-- 6 systems over `rfq_common`, jsonl fixtures baked, admin `reset`. **Order: FX first**
-  (simplest vertical slice), then **CPQ** (the `Quote.status` SoR), then CRM/TMS/Rate/Workflow.
+- ✅ **FX** — `src/mock-fx/` built, 21 tests green, verified **actually running**
+  (`uv run mock-fx serve`): `/healthz`, real Swagger UI at `/docs`, APIKEY-gated
+  `/exchange-rates/{base}/{quote}` with point-in-time lookup, `/admin/reset`. See
+  `src/mock-fx/README.md`.
+- ⬜ **CPQ** next (the `Quote.status` SoR — the mandatory approval frontend), then
+  CRM/TMS/Rate/Workflow.
+- 6 systems total over `rfq_common`, jsonl/fixture-baked, admin `reset`.
 - **Exit:** each system serves REST + Typer CLI; loads its fixtures; `reset` restores baseline.
 
 ## Phase 3 — Governed edges (MCP + PDP)
