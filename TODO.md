@@ -27,15 +27,18 @@ packs + determinism (`RUNNING.md`).
   - [ ] `identity/groups.yaml` (full directory; actors only sketch groups inline)
   - [ ] `identity/delegation-model.md` (A2A **signed delegation-chain**)
   - [ ] `identity/terraform/` (TARGET stub — client-secret pattern per `infra/entra`)
-- [ ] **Entity / request assembly** — how domain snapshots (RFQ/Quote/RouteOption/FX)
-      become Cedar **entities + context** (runbook step 11; `entities.py`/`_context`
-      equivalent). Without it the policies can't be exercised.
+- [x] **Entity / request assembly** — **built**, `rfq_common.pdp` (`ref`/`uid`/
+      `action_ref`, path/namespace-parameterized). Proven against 5 real decisions
+      through the isolated cedar-agent. Still open: wiring dynamic per-request
+      resource attributes if a future policy ever needs one (none do today — every
+      condition reads only `context.*`/`principal.*`).
 - [ ] **Grants / hot-path decision** — does the repricing slice use short-lived grants
       (decide-once-redeem-locally, per cpm-eaop) or per-call decisions? `grant.issue`
       exists in governance actions but no grant flow is documented.
-- [ ] **`rfq_common` library spec** — the shared contract (Pydantic entity models ·
-      jsonl loader · JWT verify · PDP client · base FastAPI/Typer app · clock/seed ·
-      theme token model + CSS-var renderer). Gates every service build (see build-plan Phase 1).
+- [x] **`rfq_common` library** — **built**, `src/rfq_common/`, 33 tests green (build-plan
+      Phase 1, done). Pydantic entity models · jsonl loader · JWT/JWKS verify · PDP
+      client + schema generator + policy bundle · theme model/renderer · clock/seed ·
+      base FastAPI/Typer apps.
 - [ ] **Observability design** — how a `correlation_id`/`run_id` propagates
       agent→PEP→PDP→SoR; the audit sink; what each hop logs.
 - [ ] **Scenario-runner interface** — the concrete CLI surface (`rfq scenario apply

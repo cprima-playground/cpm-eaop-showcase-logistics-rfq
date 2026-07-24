@@ -1,0 +1,26 @@
+[project]
+name = "rfq-common"
+version = "0.1.0"
+description = "Shared foundation for the RfQ repricing showcase's mock systems (build-plan.md Phase 1)."
+requires-python = ">=3.10"
+dependencies = [
+    "pydantic>=2.0",
+    "pyyaml>=6.0",
+    "httpx>=0.27",
+    "pyjwt[crypto]>=2.8",
+    "fastapi>=0.110",
+    "typer>=0.12",
+]
+
+[dependency-groups]
+dev = ["pytest>=8.0"]
+
+[tool.uv]
+package = true
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["rfq_common"]

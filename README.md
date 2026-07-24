@@ -103,6 +103,8 @@ stay consistent. `TARGET` = design intent that does not yet exist in cpm-eaop.
 | API contracts (OpenAPI 3.1 per API) | ✓ | — | — | — |
 | Theming (ADR-007 · passable colorscheme) | ✓ | — | — | — |
 | Build plan (phased) | ✓ | — | — | — |
+| **Phase 1 — `rfq_common` foundation** | ✓ | — | ✓ **33 tests green** | ✓ |
+| **Policy-evaluation spike (scenarios 01–04 + failures)** | ✓ | — | ✓ **7 tests green** | ✓ |
 | Environments (dev·test·prod) + agent identity + persistence | ✓ decided | — | — | — |
 
 ## Layout
@@ -113,7 +115,8 @@ RfQ/
 ├── RUNNING.md    deterministic demo runs (pin clock · seed · idempotent apply)
 ├── build-plan.md  phased build → run → demo (0 decide … 8 demo+CI)
 ├── TODO.md       design-stage gaps
-├── decisions/    ADRs (006 tech stack · 007 theming · 001–005 domain planned)
+├── decisions/    8 ADRs, all accepted (001–005 domain · 006 stack · 007 theming · 008 agent runtime)
+├── src/rfq_common/  ★ REAL CODE — the Phase 1 foundation (33 tests green, see below)
 ├── business/     process · actions · decisions · domain-model · domain-reference
 ├── systems/      systems-of-record · data-provenance · mock-architecture · reference-data · theming
 │   └── crm/ tms/ rate/ cpq/ fx/ workflow/   ← per system (openapi.yaml · fixtures · mock spec)
@@ -128,6 +131,24 @@ RfQ/
 ├── themes/       teaching · solarized-light · corporate-sample (passable colorscheme)
 ├── deploy/       the PLAN — GCP mapping · container strategy · environments
 ├── infra/        the ARTIFACTS — compose · caddy · terraform · cloudbuild · keycloak · entra (TARGET)
-├── spikes/       repricing/ (the first spike definition — mocks, no code yet)
+├── spikes/       repricing/policy-evaluation/ ★ REAL CODE — 7 tests green against a live, isolated cedar-agent (:8280)
 └── traceability.yaml   proves the chain resolves end-to-end
 ```
+
+## What's actually running (not just designed)
+
+Two real, tested codebases exist today, both green:
+
+- **`src/rfq_common/`** — the Phase 1 foundation library (models, jsonl, JWT/JWKS
+  verify, PDP client + schema generator, theme renderer, clock/seed, base
+  FastAPI/Typer apps). 33 tests, `uv run pytest`.
+- **`spikes/repricing/policy-evaluation/`** — drives scenarios 01–04 + 3 failure
+  injections through a live, isolated `cedar-agent` (port `:8280`, container
+  `rfq-showcase-cedar-agent` — never the `:8180` instance cpm-eaop runs for its own
+  work). 7 tests, `uv run pytest` (after `docker compose up -d`).
+
+Building these surfaced and fixed **4 real bugs** pure design review missed: two
+missing baseline policies (D10/D11), one missing "nothing is wrong" permit (D12),
+and cedar-agent rejecting `is`-in-scope Cedar syntax (same issue cpm-eaop hit
+historically) — plus a non-ASCII HTTP header bug in `rfq_common`. See each
+component's own README for details.

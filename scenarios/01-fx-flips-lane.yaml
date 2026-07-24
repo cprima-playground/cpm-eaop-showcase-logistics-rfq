@@ -32,7 +32,8 @@ then:
   authorization:
     - {action: fx-rate.read,            effect: allow, determining: [commercial-may-read-fresh-fx]}
     - {action: route-cost.normalize,    effect: allow, determining: [commercial-may-normalize]}
-    - {action: route.recommend,         effect: allow, determining: [recommend-noncontracted-lane], obligations: [oblig-lane-deviation]}
+    # cost_variance_pct_x10: 93 (9.3%) also exceeds D8's 8% threshold -> obligations MERGE:
+    - {action: route.recommend,         effect: allow, determining: [recommend-high-cost-variance, recommend-noncontracted-lane], obligations: [oblig-cost-variance-review, oblig-lane-deviation]}
     - {action: quote.submit-for-approval, effect: deny, determining: [forbid-auto-replace-on-fx]}   # deny-precedence
     - {action: route-deviation.approve, effect: allow, determining: [manager-may-approve-within-limit]}
   records:

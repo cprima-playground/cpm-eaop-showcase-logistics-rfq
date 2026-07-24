@@ -1,0 +1,11 @@
+# Isolated Cedar PDP sidecar for the showcase — port 8280, NOT 8180.
+# cpm-eaop already runs its own cedar-agent on :8180 for other work; this must
+# never touch that container (loading a new schema/policies/data wipes it).
+name: rfq-showcase
+services:
+  cedar-agent:
+    image: permitio/cedar-agent:latest
+    container_name: rfq-showcase-cedar-agent
+    ports:
+      - "8280:8180"
+    restart: unless-stopped

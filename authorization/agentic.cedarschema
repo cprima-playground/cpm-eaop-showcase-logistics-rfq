@@ -1,0 +1,369 @@
+{
+  "Agentic": {
+    "entityTypes": {
+      "Principal": {
+        "memberOfTypes": [
+          "Group"
+        ],
+        "shape": {
+          "type": "Record",
+          "attributes": {
+            "kind": {
+              "type": "String"
+            },
+            "active": {
+              "type": "Boolean"
+            },
+            "department": {
+              "type": "String",
+              "required": false
+            },
+            "roles": {
+              "type": "Set",
+              "element": {
+                "type": "String"
+              },
+              "required": false
+            }
+          }
+        }
+      },
+      "AgentPrincipal": {
+        "memberOfTypes": [
+          "Group"
+        ],
+        "shape": {
+          "type": "Record",
+          "attributes": {
+            "kind": {
+              "type": "String"
+            },
+            "active": {
+              "type": "Boolean"
+            },
+            "trust_domain": {
+              "type": "String",
+              "required": false
+            }
+          }
+        }
+      },
+      "Group": {
+        "shape": {
+          "type": "Record",
+          "attributes": {}
+        }
+      },
+      "RFQ": {
+        "shape": {
+          "type": "Record",
+          "attributes": {
+            "region": {
+              "type": "String",
+              "required": false
+            },
+            "contracted_lane": {
+              "type": "String",
+              "required": false
+            }
+          }
+        }
+      },
+      "RouteOption": {
+        "shape": {
+          "type": "Record",
+          "attributes": {
+            "lane_id": {
+              "type": "String",
+              "required": false
+            },
+            "capacity_status": {
+              "type": "String",
+              "required": false
+            }
+          }
+        }
+      },
+      "ExchangeRate": {
+        "shape": {
+          "type": "Record",
+          "attributes": {
+            "pair": {
+              "type": "String",
+              "required": false
+            },
+            "source": {
+              "type": "String",
+              "required": false
+            }
+          }
+        }
+      },
+      "Quote": {
+        "shape": {
+          "type": "Record",
+          "attributes": {
+            "status": {
+              "type": "String",
+              "required": false
+            }
+          }
+        }
+      },
+      "RouteRecommendation": {
+        "shape": {
+          "type": "Record",
+          "attributes": {
+            "non_contracted_lane": {
+              "type": "Boolean",
+              "required": false
+            }
+          }
+        }
+      },
+      "ApprovalTask": {
+        "shape": {
+          "type": "Record",
+          "attributes": {
+            "status": {
+              "type": "String",
+              "required": false
+            }
+          }
+        }
+      }
+    },
+    "actions": {
+      "lane.evaluate": {
+        "appliesTo": {
+          "principalTypes": [
+            "AgentPrincipal"
+          ],
+          "resourceTypes": [
+            "RFQ"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "lane.option.create": {
+        "appliesTo": {
+          "principalTypes": [
+            "AgentPrincipal"
+          ],
+          "resourceTypes": [
+            "RFQ"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "capacity.check": {
+        "appliesTo": {
+          "principalTypes": [
+            "AgentPrincipal"
+          ],
+          "resourceTypes": [
+            "RouteOption"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "carrier-rate.read": {
+        "appliesTo": {
+          "principalTypes": [
+            "AgentPrincipal"
+          ],
+          "resourceTypes": [
+            "RouteOption"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "fx-rate.read": {
+        "appliesTo": {
+          "principalTypes": [
+            "AgentPrincipal"
+          ],
+          "resourceTypes": [
+            "ExchangeRate"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {
+              "fx_age_seconds": {
+                "type": "Long"
+              },
+              "quote_currency": {
+                "type": "String"
+              }
+            }
+          }
+        }
+      },
+      "route-cost.normalize": {
+        "appliesTo": {
+          "principalTypes": [
+            "AgentPrincipal"
+          ],
+          "resourceTypes": [
+            "RouteOption"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {
+              "fx_age_seconds": {
+                "type": "Long"
+              },
+              "target_currency": {
+                "type": "String"
+              }
+            }
+          }
+        }
+      },
+      "quote-price.calculate": {
+        "appliesTo": {
+          "principalTypes": [
+            "AgentPrincipal"
+          ],
+          "resourceTypes": [
+            "Quote"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "quote-variance.evaluate": {
+        "appliesTo": {
+          "principalTypes": [
+            "AgentPrincipal"
+          ],
+          "resourceTypes": [
+            "Quote"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {
+              "fx_variance_pct_x10": {
+                "type": "Long"
+              }
+            }
+          }
+        }
+      },
+      "route.recommend": {
+        "appliesTo": {
+          "principalTypes": [
+            "AgentPrincipal"
+          ],
+          "resourceTypes": [
+            "RFQ"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {
+              "cost_variance_pct_x10": {
+                "type": "Long"
+              },
+              "transit_variance_days": {
+                "type": "Long"
+              },
+              "margin_pct_x10": {
+                "type": "Long"
+              },
+              "non_contracted_lane": {
+                "type": "Boolean"
+              }
+            }
+          }
+        }
+      },
+      "route-deviation.propose": {
+        "appliesTo": {
+          "principalTypes": [
+            "AgentPrincipal"
+          ],
+          "resourceTypes": [
+            "RouteRecommendation"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "quote.submit-for-approval": {
+        "appliesTo": {
+          "principalTypes": [
+            "AgentPrincipal"
+          ],
+          "resourceTypes": [
+            "Quote"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {
+              "fx_variance_pct_x10": {
+                "type": "Long"
+              },
+              "margin_pct_x10": {
+                "type": "Long"
+              }
+            }
+          }
+        }
+      },
+      "approval.request": {
+        "appliesTo": {
+          "principalTypes": [
+            "AgentPrincipal"
+          ],
+          "resourceTypes": [
+            "ApprovalTask"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "route-deviation.approve": {
+        "appliesTo": {
+          "principalTypes": [
+            "Principal"
+          ],
+          "resourceTypes": [
+            "RouteRecommendation"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {
+              "quote_value_eur_cents": {
+                "type": "Long"
+              },
+              "fx_variance_pct_x10": {
+                "type": "Long"
+              },
+              "margin_pct_x10": {
+                "type": "Long"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -37,7 +37,9 @@ would win but falls below the margin floor unless the sell price rises.
    costs to EUR (**D2** permit).
 3. Recompute margins → route ranking flips: Route B now ranks above Route A.
 4. Route agent recommends **Route B** (`route.recommend`, `non_contracted_lane=true`
-   → **D3b** permit + obligation *customer-service review*).
+   → **D3b** permit + obligation *customer-service review*). Route B's cost also
+   exceeds the baseline by 9.3% (> 8%) → **D8** also fires, adding *cost-variance
+   review* — obligations **merge**.
 5. Agent attempts `quote.submit-for-approval`. Two policies bear on it:
    - **D4b forbid** (FX variance 2.7% > 2%) → **deny-precedence wins** → agent cannot
      auto-submit; **D4a** already obliged *notify pricing manager*.
@@ -52,7 +54,7 @@ would win but falls below the margin floor unless the sell price rises.
 | - | --- | --- | --- | --- | --- |
 | D1 | fx-rate.read | commercial-norm-agent | ExchangeRate::CNY-EUR | allow | — |
 | D2 | route-cost.normalize | commercial-norm-agent | RouteOption::route-b | allow | — |
-| D3b | route.recommend | route-decision-agent | RFQ::RFQ-1001 | allow | oblig-lane-deviation |
+| D3b+D8 | route.recommend | route-decision-agent | RFQ::RFQ-1001 | allow | oblig-lane-deviation, oblig-cost-variance-review |
 | D4a | quote-variance.evaluate | commercial-norm-agent | Quote::Q-1001-v2 | allow | oblig-notify-pricing-manager |
 | D4b | quote.submit-for-approval | commercial-norm-agent | Quote::Q-1001-v2 | **deny** | — (forbid, deny-precedence) |
 | D6 | route-deviation.approve | mona.commercial | RouteRecommendation::REC-1001-v2 | allow | — |

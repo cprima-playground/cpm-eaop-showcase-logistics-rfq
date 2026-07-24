@@ -19,7 +19,17 @@ enforced`.
 | D6 | May a commercial manager approve a route deviation within their limit? | `route-deviation.approve` | CommercialManager (Human) | RouteRecommendation | `quote_value_eur_cents`, `margin_pct_x10` | modeled | `manager-may-approve-within-limit` |
 | D8 | May the decision agent recommend a route whose cost exceeds baseline by >8%? (permit + obligation) | `route.recommend` | RouteDecisionAgent | RFQ | `cost_variance_pct_x10` | modeled | `recommend-high-cost-variance`, `oblig-cost-variance-review` |
 | D9 | May the decision agent recommend a route adding >3 transit days? (permit + obligation) | `route.recommend` | RouteDecisionAgent | RFQ | `transit_variance_days` | modeled | `recommend-slower-transit`, `oblig-transit-review` |
+| D10 | May an active agent check route capacity? (read-only, informational — no obligation) | `capacity.check` | LaneEvaluationAgent | RouteOption | — | enforced | `agent-may-check-capacity` |
+| D11 | May an active agent evaluate lane options for an RFQ? (read-only, informational — no obligation) | `lane.evaluate` | LaneEvaluationAgent | RFQ | — | enforced | `agent-may-evaluate-lane` |
+| D12 | May a quote be submitted when FX is quiet and margin is at/above floor? (baseline permit) | `quote.submit-for-approval` | CommercialNormalizationAgent | Quote | `fx_variance_pct_x10`, `margin_pct_x10` | modeled | `submit-quote-when-within-thresholds` |
 | D7 | Inactive principals must not perform any controlled action. (cross-cutting forbid) | * | * | * | — | enforced | `forbid-inactive` |
+
+*D10/D11 found + fixed during the policy-evaluation spike: scenarios 02/03 exercised
+these actions but no policy existed yet — both would have wrongly default-denied.
+D12 found the same way: the "nothing is wrong" case for `quote.submit-for-approval`
+(FX quiet, margin at/above floor) had no permit at all — only a forbid (D4b) and a
+permit for the below-floor case (D5) — so scenario 02's happy path incorrectly
+default-denied until D12 was added.*
 
 ## Human-in-the-loop = a status change in the quote system of record
 

@@ -21,16 +21,28 @@ schema-gen + entity assembly) — without it the authz model can't be exercised.
   agent/tool-boundaries · authorization-model · human-approval-boundaries).
 - **Exit:** ✅ **met** — all eight ADRs accepted; Phase 0 complete. Next: Phase 1 (`rfq_common`).
 
-## Phase 1 — Foundations (`rfq_common`) · CRITICAL PATH
+## Phase 1 — Foundations (`rfq_common`) · CRITICAL PATH · ✅ DONE
 
-- `rfq_common`: Pydantic entity models · jsonl loader · JWT/JWKS verify (reuse cpm-eaop
-  `entra/verify.py`) · PDP client · base FastAPI + base Typer app · clock/seed helpers ·
-  theme token model + CSS-var renderer (ADR-007).
-- Copy `generate_cedar_schema.py`; generate the showcase `agentic.cedarschema` from
-  `authorization/actions.yaml` + `authz-projection.yaml`.
-- **Entity / request assembly** — domain snapshots → Cedar entities + context.
-- **Exit:** schema PUTs into a local `cedar-agent`; one request (scenario 01 step)
-  evaluates to the expected decision; unit tests green with a mock PDP.
+- ✅ **`rfq_common`** (`src/rfq_common/`, own uv package, 33 tests green):
+  Pydantic entity models (`models.py`) · jsonl loader (`jsonl.py`) · IdP-agnostic
+  JWT/JWKS verify, offline-testable (`verify.py`) · Cedar PDP client + admin +
+  policy bundle + schema generator, path/namespace-parameterized (`pdp/`) · theme
+  token model + CSS-var renderer (`theme.py`, ADR-007) · clock/seed determinism
+  helpers (`clock.py`) · base FastAPI app (`app.py`) · base Typer CLI (`cli.py`).
+- ✅ Schema generation verified to match the committed `agentic.cedarschema`
+  byte-for-byte, generated from the real `authorization/authz-projection.yaml` +
+  `business/actions.yaml`.
+- ✅ **Entity / request assembly** — `pdp.entities` (ref/uid/action_ref), proven
+  against 5 real decisions (D1, D4b forbid, D3b+D8 obligation-merge, D6) through
+  the isolated cedar-agent (`spikes/repricing/policy-evaluation/`, :8280).
+- **Exit — met, exceeded the stated bar:** schema PUTs into the isolated
+  cedar-agent; **5** requests (not just one) evaluate to their expected decisions,
+  including a forbid-beats-permit and an obligation-merge case; unit tests green
+  (33/33, including 6 offline JWT tests against a real generated keypair).
+- **3 real bugs caught by building this for real** (not just designed): D10/D11/D12
+  missing policies, `is`-in-scope Cedar syntax rejection (mirrors a known cpm-eaop
+  issue), non-ASCII banner text breaking an HTTP header (latin-1-only) — all fixed.
+  See `src/rfq_common/README.md` + `spikes/repricing/policy-evaluation/README.md`.
 
 ## Phase 2 — Mock systems (backend · API · CLI)
 

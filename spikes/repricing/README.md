@@ -1,7 +1,10 @@
 # Spike: Cross-Currency Lane Repricing and Approval
 
-**Status: defined — no code implemented in this pass.** This document specifies the
-spike; the mocks and agents are described, not built.
+**Status: policy-evaluation layer built + green.** The Cedar decision layer
+([`policy-evaluation/`](policy-evaluation/README.md)) runs for real against an
+isolated cedar-agent — all 4 scenarios + 3 failure injections pass. The mock
+backends/frontends/agents (everything else in this document) are still described,
+not built — see `../../build-plan.md` Phases 2–8.
 
 ## Decision being verified
 
@@ -69,8 +72,10 @@ quote version carrying the FX snapshot ref; the audit event stream.
 
 ## Result
 
-_Pending — spike not yet executed._ Verdict must be one of: decision supported /
-decision rejected / more evidence required.
+**Decision supported** (policy-evaluation layer). All 4 scenarios + 3 failure
+injections pass against a live, isolated cedar-agent (see
+`policy-evaluation/README.md` for the run + the 3 real bugs it surfaced and fixed).
+The mock backends/agents/frontends remain unbuilt — that verdict is still pending.
 
 ## Architecture consequence
 

@@ -1,0 +1,43 @@
+"""Cedar PDP runtime client — authorization only. Identical shape to cpm-eaop's
+src/spike/model/pdp_client.py (verified against it): a versioned, canonical
+AuthorizationDecision carrying only the raw Cedar result -- no platform concepts.
+Reused as-is here since it's already fully generic (base_url + uid strings)."""
+
+from __future__ import annotations
+
+import os
+from dataclasses import dataclass, field
+
+import httpx
+
+
+@dataclass
+class AuthorizationDecision:
+    effect: str  # "allow" | "deny"
+    determining_policies: list[str] = field(default_factory=list)
+    diagnostics: list = field(default_factory=list)
+    version: int = 1
+
+
+class PDPClient:
+    """Thin HTTP client over cedar-agent `POST /v1/is_authorized`."""
+
+    def __init__(self, base_url: str | None = None, timeout: float = 5.0):
+        self._url = (base_url or os.environ.get("CEDAR_AGENT_URL", "http://localhost:8180")) + "/v1/is_authorized"
+        self._timeout = timeout
+
+    def authorize(self, principal: str, action: str, resource: str,
+                  context: dict | None = None) -> AuthorizationDecision:
+        """principal/action/resource are Cedar entity uids, e.g.
+        `Agentic::Principal::"alice"`, `Agentic::Action::"agent.invoke"`."""
+        body = {"principal": principal, "action": action, "resource": resource,
+                "context": context or {}}
+        r = httpx.post(self._url, json=body, timeout=self._timeout)
+        r.raise_for_status()
+        data = r.json()
+        diag = data.get("diagnostics", {})
+        return AuthorizationDecision(
+            effect="allow" if data.get("decision") == "Allow" else "deny",
+            determining_policies=diag.get("reason", []),
+            diagnostics=diag.get("errors", []),
+        )
