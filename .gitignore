@@ -1,0 +1,16 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Terraform (infra/keycloak/terraform) -- state is local dev state, not IaC
+# source; the CA cert path in config.py's caddy_ca_bundle() docstring is the
+# same story: extracted per-machine via `docker cp`, not committed.
+.terraform/
+*.tfstate
+*.tfstate.backup
+
+# Caddy's internal CA root cert -- extracted manually via docker cp, unique
+# per caddy-data volume instance, never committed (see config.py's
+# caddy_ca_bundle()).
+infra/caddy/root.crt

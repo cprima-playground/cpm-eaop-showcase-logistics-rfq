@@ -11,11 +11,25 @@
 # service. Windows' hosts file has no wildcard support, so each subdomain
 # still needs its own literal hosts-file line -- see infra/caddy/README.md.
 
+# Shared friendly error page for upstream-down cases (502/503/504) -- the mock
+# services/ops-dashboard run as plain host processes (uv run ... serve), not
+# containers Caddy manages, so "backend not started/crashed yet" is a routine
+# dev-loop state, not a real outage. A raw Caddy 502 gives no hint of that;
+# this names the actual likely cause instead.
+(friendly_errors) {
+    handle_errors {
+        @upstream_down expression {err.status_code} in [502, 503, 504]
+        respond @upstream_down "Backend not reachable ({err.status_code}). It's probably not started yet -- run `uv run <system> serve --port <port>` for the service behind {host}, then reload." 502
+        respond "{err.status_code} {err.status_text}" {err.status_code}
+    }
+}
+
 # ops-dashboard: the only frontend built so far. Proxies to the app running
 # on the host (uv run ops-dashboard serve, :8006) -- host.docker.internal is
 # Docker Desktop's route from a container back to the host. When more
 # frontends exist (QMS etc.) they get their own subdomain block here.
 https://ops-dashboard.rfq-showcase.localhost {
+    import friendly_errors
     reverse_proxy host.docker.internal:8006
 }
 
@@ -26,5 +40,6 @@ https://ops-dashboard.rfq-showcase.localhost {
 # consistently use keycloak.rfq-showcase.localhost, never localhost:8081
 # directly, or issued tokens' `iss` won't match what verify_with_jwks() expects.
 https://keycloak.rfq-showcase.localhost {
+    import friendly_errors
     reverse_proxy host.docker.internal:8081
 }
