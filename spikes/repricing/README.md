@@ -26,7 +26,7 @@ artifacts in `../../authorization/` and observable as the decisions in
 
 | Interface | Role | Spec |
 | --- | --- | --- |
-| FX API | direct HTTP, deterministic, easy to mock | `../../interfaces/api/fx-api.md` |
+| FX API | direct HTTP, deterministic, easy to mock | `../../src/mock-fx/` (built, live `/openapi.json`) |
 | TMS / Rate / Commercial / Approval MCP | agent → systems of record | `../../interfaces/mcp/tools.yaml` |
 | A2A | Lane → Commercial → Route Decision handoff | `../../interfaces/a2a/handoff.md` |
 | Cedar PDP | decision point | copies cpm-eaop `cedar-agent` + `src/spike/model` |

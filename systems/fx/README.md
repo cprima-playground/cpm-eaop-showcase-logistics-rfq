@@ -1,12 +1,13 @@
 # Corporate FX Service (mock)
 
-**Owns:** ExchangeRate. **Interface:** `fx-api` / REST (TARGET) — a direct HTTP
-dependency, deliberately NOT MCP (deterministic, narrow, centrally managed, easy to
-mock). See `../../interfaces/api/fx-api.md`.
+**Owns:** ExchangeRate. **Interface:** REST — a direct HTTP dependency,
+deliberately NOT MCP (deterministic, narrow, centrally managed, easy to mock).
 
-Put here: the interface contract (already sketched in `interfaces/api/fx-api.md`),
-fixtures (a "today" and a "yesterday" CNY/EUR snapshot to drive the FX-flip), and the
-mock spec.
+**Built and running** — `../../src/mock-fx/`. The interface contract is the
+live `/openapi.json` FastAPI generates from real routes (`mock_fx/api.py`),
+not a file here; see `../../src/mock-fx/README.md` for the actual endpoints,
+env vars, and live-ECB-anchor behavior.
 
-- `fixtures/` — `CNY-EUR-today.json`, `CNY-EUR-yesterday.json` (also under `../../fixtures/fx/`)
-- `mock-spec.md` — `GET /exchange-rates/{base}/{quote}?effectiveAt=...`; returns rate · observed_at · valid_until · rate_ref
+Fixtures: `../../fixtures/fx/` (`CNY-EUR-today.json`,
+`GBP/JPY/USD-EUR-today.json`, `*-yesterday.json` — the fallback tier when the
+live ECB feed is unreachable; nominal by design, no baked-in breakout).

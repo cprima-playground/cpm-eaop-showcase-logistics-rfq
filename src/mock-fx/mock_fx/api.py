@@ -100,7 +100,19 @@ def build_app(*, fixtures_dir: Path | None = None, masterdata_client: Masterdata
         point-in-time lookup (list-then-detail, matches masterdata/TMS/Rate)."""
         return store.list_latest()
 
-    @app.get("/exchange-rates/{base}/{quote}", dependencies=[Depends(require_api_key)], response_model=ExchangeRate)
+    @app.get(
+        "/exchange-rates/{base}/{quote}", dependencies=[Depends(require_api_key)], response_model=ExchangeRate,
+        summary="Authoritative FX rate for a currency pair at a point in time.",
+        openapi_extra={
+            "x-domain-action": "fx-rate.read",  # -> business/decisions.md D1
+            "x-resource-type": "ExchangeRate",
+            "x-authz-context": ["fx_age_seconds", "quote_currency"],
+            "x-consults": [{
+                "service": "masterdata", "endpoint": "GET /currencies/{code}",
+                "purpose": "every currency in every loaded rate is validated on reload (ADR-010, fail closed if masterdata is unreachable or the code is unknown) -- not a per-request call on THIS endpoint, but the reason this endpoint can trust base/quote are real currencies at all",
+            }],
+        },
+    )
     def get_exchange_rate(base: str, quote: str, effectiveAt: str | None = None) -> ExchangeRate:
         try:
             rate = store.get(base, quote, effective_at=effectiveAt)

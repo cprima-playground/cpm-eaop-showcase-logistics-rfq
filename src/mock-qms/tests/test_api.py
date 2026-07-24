@@ -25,10 +25,11 @@ def test_redoc_reachable():
 
 
 def test_openapi_schema_is_fastapi_generated_from_real_routes():
-    """Every path in interfaces/api/qms.openapi.yaml is a real route now
-    (null-op 501 bodies, but real request/response Pydantic models) -- the
-    served schema is genuinely FastAPI-generated, not a static file swapped
-    into app.openapi."""
+    """Every documented QMS path is a real route (null-op 501 bodies, but
+    real request/response Pydantic models + x-domain-action/x-gap/x-consults
+    via openapi_extra) -- the served schema is genuinely FastAPI-generated,
+    not a hand-authored file (the former interfaces/api/qms.openapi.yaml,
+    deleted -- a duplicate that would only drift, see mock_qms/api.py)."""
     r = client().get("/openapi.json")
     assert r.status_code == 200
     body = r.json()

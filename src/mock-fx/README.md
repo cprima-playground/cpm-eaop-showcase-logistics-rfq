@@ -1,7 +1,9 @@
 # mock-fx — the Corporate FX Service, actually running
 
-First Phase 2 system (build-plan.md). Built on `rfq_common`; realizes
-`interfaces/api/fx-api.md` / `fx.openapi.yaml`. **Live by default**: on boot
+First Phase 2 system (build-plan.md). Built on `rfq_common`; the live
+`/openapi.json` it serves (FastAPI-generated from real routes, `mock_fx/api.py`)
+IS the interface contract — no separate hand-authored spec file.
+**Live by default**: on boot
 and every `reset`, fetches the ECB's real public daily reference-rate history
 (`ecb_client.py`, `eurofxref-hist-90d.xml`) for USD/GBP/JPY/CNY vs EUR — the
 baseline carries **no breakout by design**; a breakout is a scenario-pack
@@ -11,9 +13,8 @@ manually-downloaded copy of the same feed (`FX_ECB_HIST_FILE` — open
 `eurofxref-hist-90d.xml` in a browser, Ctrl+S, point the env var at the saved
 file), (3) committed fixture snapshots (`fixtures/fx/*.json`) plus a
 **generated** 28-day run-up (`generator.py`, seeded via `rfq_common.clock` —
-never committed as fixture files). Not a live *trading* provider (see "Mock vs
-live" in `fx-api.md`) — no SSO, no MCP: **APIKEY only**
-(`systems/mock-architecture.md`).
+never committed as fixture files). Not a live *trading* provider — no SSO,
+no MCP: **APIKEY only** (`systems/mock-architecture.md`).
 
 **Depends on the masterdata source being up** (ADR-010): every currency in every
 FX fixture is validated against masterdata's real API at load time (fail closed

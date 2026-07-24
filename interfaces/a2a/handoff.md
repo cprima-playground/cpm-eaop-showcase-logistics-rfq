@@ -15,7 +15,7 @@ Technology roles kept distinct (each defensible, not "MCP for everything"):
 | Purpose | Technology |
 | --- | --- |
 | agent → internal system of record | MCP (`interfaces/mcp/tools.yaml`) |
-| agent → external FX rate | direct HTTP API (`interfaces/api/fx-api.md`) |
+| agent → external FX rate | direct HTTP API (`src/mock-fx/`, live `/openapi.json`) |
 | agent → agent task/result | A2A (this file) |
 
 ## Agent card (shape sketch — TARGET)
