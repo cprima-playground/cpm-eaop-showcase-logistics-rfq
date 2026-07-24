@@ -21,6 +21,10 @@ class MasterdataClient:
         self._api_key = api_key
         self._timeout = timeout
 
+    @property
+    def base_url(self) -> str:
+        return self._base_url
+
     def get(self, domain: str, code: str) -> dict | None:
         try:
             r = httpx.get(

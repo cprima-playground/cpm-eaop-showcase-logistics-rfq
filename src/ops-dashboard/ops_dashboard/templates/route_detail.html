@@ -1,20 +1,39 @@
 {% extends "base.html" %}
 {% block title %}{{ route.id }}{% endblock %}
+{% block head_extra %}
+{% if route_json %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="/static/js/route-map.js"></script>
+<style>#route-detail-map { height: 200px; width: 320px; }</style>
+{% endif %}
+{% endblock %}
 {% block content %}
 <a href="/" class="underline text-sm">&larr; back to dashboard</a>
 <h1 class="text-2xl font-bold my-4">{{ route.id }}</h1>
 
-<dl class="grid grid-cols-2 gap-2 max-w-md mb-6">
-  <dt class="font-semibold">Lane</dt><dd>{{ route.lane }}</dd>
-  <dt class="font-semibold">Contracted</dt><dd>{{ "yes" if route.contracted else "no" }}</dd>
-  <dt class="font-semibold">Availability</dt>
-  <dd>
-    {% if availability %}
-      <span class="badge-{{ availability.status }} px-2 py-0.5 rounded text-xs">{{ availability.status }}</span>
-      {% if availability.reason %} — {{ availability.reason }}{% endif %}
-    {% else %}unknown{% endif %}
-  </dd>
-</dl>
+<div class="flex justify-between items-start gap-4 mb-6">
+  <dl class="grid grid-cols-2 gap-2 max-w-md">
+    <dt class="font-semibold">Lane</dt><dd>{{ route.lane }}</dd>
+    <dt class="font-semibold">Contracted</dt><dd>{{ "yes" if route.contracted else "no" }}</dd>
+    <dt class="font-semibold">Availability</dt>
+    <dd>
+      {% if availability %}
+        <span class="badge-{{ availability.status }} px-2 py-0.5 rounded text-xs">{{ availability.status }}</span>
+        {% if availability.reason %} — {{ availability.reason }}{% endif %}
+      {% else %}unknown{% endif %}
+    </dd>
+  </dl>
+
+  {% if route_json %}
+  <div id="route-detail-map" class="border rounded shrink-0"></div>
+  <script>
+  const map = rmInitMap("route-detail-map", { mini: true });
+  rmAddBasemap(map);
+  rmDrawRoutes(map, {{ route_json|safe }}, { padding: [10, 10] });
+  </script>
+  {% endif %}
+</div>
 
 <h2 class="text-lg font-semibold mb-2">Legs</h2>
 <table class="w-full text-sm border-collapse mb-6">

@@ -25,7 +25,7 @@ def test_routes_requires_api_key():
 def test_list_routes():
     r = client().get("/routes", headers={"X-API-Key": API_KEY})
     assert r.status_code == 200
-    assert len(r.json()) == 13
+    assert len(r.json()) == 16
 
 
 def test_get_route():

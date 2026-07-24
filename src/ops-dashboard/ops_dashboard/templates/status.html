@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Status{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Backend status</h1>
+<p class="text-sm text-gray-500 mb-3">
+  Two independent checks per backend: <code>/healthz</code> (is it up at all?)
+  and one real authenticated call (does OUR cached API key still match?) --
+  these fail independently. A stale credential after a Vault reseed (401,
+  <code>KNOWN-ISSUES.md</code> #7) shows here as "up" but "auth failed",
+  distinct from the service being down entirely.
+</p>
+
+<div class="mb-4 px-3 py-2 rounded inline-block
+  {{ 'bg-green-100 text-green-800' if overall == 'pass' else ('bg-yellow-100 text-yellow-800' if overall == 'warn' else 'bg-red-100 text-red-800') }}">
+  Overall: {{ overall }}
+</div>
+
+<table class="w-full text-sm border-collapse">
+  <thead>
+    <tr class="text-left border-b">
+      <th class="py-2">Service</th>
+      <th class="py-2">Base URL</th>
+      <th class="py-2">Reachable</th>
+      <th class="py-2">Auth OK</th>
+      <th class="py-2">Latency</th>
+      <th class="py-2">Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for s in services %}
+    <tr class="border-b hover:bg-gray-50">
+      <td class="py-2 font-semibold">{{ s.name }}</td>
+      <td class="py-2">{{ s.base_url }}</td>
+      <td class="py-2">
+        <span class="px-2 py-0.5 rounded text-xs {{ 'badge-available' if s.reachable else 'badge-unavailable' }}">
+          {{ "yes" if s.reachable else "no" }}
+        </span>
+      </td>
+      <td class="py-2">
+        <span class="px-2 py-0.5 rounded text-xs {{ 'badge-available' if s.authenticated else 'badge-unavailable' }}">
+          {{ "yes" if s.authenticated else "no" }}
+        </span>
+      </td>
+      <td class="py-2">{{ s.latency_ms ~ " ms" if s.latency_ms is not none else "—" }}</td>
+      <td class="py-2 text-gray-600">{{ s.detail or "" }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

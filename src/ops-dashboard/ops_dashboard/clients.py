@@ -29,6 +29,10 @@ class TmsClient:
         self._api_key = api_key
         self._timeout = timeout
 
+    @property
+    def base_url(self) -> str:
+        return self._base_url
+
     def _get(self, path: str) -> dict | list | None:
         try:
             r = httpx.get(
@@ -59,6 +63,10 @@ class RateClient:
         self._api_key = api_key
         self._timeout = timeout
 
+    @property
+    def base_url(self) -> str:
+        return self._base_url
+
     def _get(self, path: str) -> dict | list | None:
         try:
             r = httpx.get(
@@ -88,6 +96,10 @@ class FxClient:
         self._base_url = base_url or os.environ.get("FX_URL", "http://127.0.0.1:8001")
         self._api_key = api_key
         self._timeout = timeout
+
+    @property
+    def base_url(self) -> str:
+        return self._base_url
 
     def _get(self, path: str) -> dict | None:
         try:

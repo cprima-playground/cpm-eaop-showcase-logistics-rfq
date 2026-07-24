@@ -18,3 +18,4 @@
 {"locode": "AEJEA", "name": "Jebel Ali", "type": "seaport", "country": "AE", "timezone": "Asia/Dubai", "lat": 25.01, "lon": 55.06}
 {"locode": "ZADUR", "name": "Durban", "type": "seaport", "country": "ZA", "timezone": "Africa/Johannesburg", "lat": -29.87, "lon": 31.02}
 {"locode": "ITMIL", "name": "Milan", "type": "inland_terminal", "country": "IT", "timezone": "Europe/Rome", "lat": 45.46, "lon": 9.19}
+{"locode": "USNYC", "name": "New York", "type": "seaport", "country": "US", "timezone": "America/New_York", "lat": 40.71, "lon": -74.01}

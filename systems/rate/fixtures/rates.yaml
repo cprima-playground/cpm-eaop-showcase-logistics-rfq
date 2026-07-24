@@ -15,6 +15,9 @@ rates:
   - {route_id: MEA-SUEZ,    carrier_id: MSC,             currency: EUR, base_cost: 2900, surcharges: 350, capacity_status: available}
   - {route_id: MEA-CAPE,    carrier_id: MAERSK,          currency: EUR, base_cost: 4100, surcharges: 520, capacity_status: available}
   - {route_id: EUR-MIL,     carrier_id: HAPAG-LLOYD,     currency: EUR, base_cost: 1150, surcharges: 90,  capacity_status: available}
+  - {route_id: TAT-NYC,     carrier_id: HAPAG-LLOYD,     currency: USD, base_cost: 2400, surcharges: 310, capacity_status: available}
+  - {route_id: TAT-RTM,     carrier_id: MSC,             currency: USD, base_cost: 2300, surcharges: 290, capacity_status: available}
+  - {route_id: TAT-ANR,     carrier_id: MAERSK,          currency: USD, base_cost: 2350, surcharges: 300, capacity_status: available}
 
 # Cross-currency point: the contracted lane (SHA-HAM-MUC) is CNY; every viable
 # reroute is EUR -> a reroute forces FX normalization to compare in the EUR quote

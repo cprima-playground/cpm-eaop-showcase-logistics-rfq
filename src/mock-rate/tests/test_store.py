@@ -13,7 +13,7 @@ def store():
 
 
 def test_loads_all_8_rates():
-    assert len(store().list()) == 13
+    assert len(store().list()) == 16
 
 
 def test_get_rate_sha_ham_muc():

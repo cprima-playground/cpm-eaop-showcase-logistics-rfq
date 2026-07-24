@@ -7,7 +7,7 @@ Route topology + operational availability, two systems of record (stable vs
 volatile). Locations referenced via **masterdata**, never embedded (ADR-010) —
 `fixtures/locations.yaml` was removed here; masterdata is the sole owner.
 
-- `fixtures/routes.yaml` — topology (13 routes, ~24 legs, 4 lanes: the
+- `fixtures/routes.yaml` — topology (16 routes, ~29 legs, 4 lanes: the
   China->Germany corridor plus Transpacific, Middle-East/Suez, Intra-Europe)
 - `fixtures/route-availability.yaml` — the volatile overlay (the repricing trigger)
 - Service: `../../src/mock-tms/README.md` — `uv run mock-tms serve`

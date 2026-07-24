@@ -17,6 +17,9 @@ route_availability:
   - {route_id: MEA-SUEZ, status: available}
   - {route_id: MEA-CAPE, status: available}
   - {route_id: EUR-MIL, status: available}
+  - {route_id: TAT-NYC, status: available}
+  - {route_id: TAT-RTM, status: available}
+  - {route_id: TAT-ANR, status: available}
 
 # Example of an override (as injected by hamburg-port-closure / combined packs):
 # - route_id: SHA-HAM-MUC

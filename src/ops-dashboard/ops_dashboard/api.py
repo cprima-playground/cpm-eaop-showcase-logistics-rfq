@@ -9,9 +9,11 @@ from __future__ import annotations
 
 import json
 import os
+import time
 import uuid
 from pathlib import Path
 
+import httpx
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -68,6 +70,63 @@ def _fx_client() -> FxClient:
     if not api_key:
         api_key = SecretsClient("dev", inventory_path=INVENTORY_PATH).get("fx-api-key")
     return FxClient(base_url=os.environ.get("FX_URL", "http://127.0.0.1:8001"), api_key=api_key)
+
+
+def _check_service(name: str, base_url: str, auth_probe) -> dict:
+    """One backend's health, loosely shaped like the IETF health-check-response
+    draft (status: pass/warn/fail). Two independent checks, not one: `/healthz`
+    (unauthenticated, per rfq_common.app.create_app) proves the service is UP;
+    `auth_probe()` (a real authenticated call already used elsewhere in this
+    app) proves OUR credential still matches -- the two fail independently
+    (KNOWN-ISSUES.md #7: a running consumer's cached key going stale after a
+    Vault reseed is a real, previously-unsurfaced failure mode)."""
+    result = {
+        "name": name, "base_url": base_url, "status": "fail",
+        "reachable": False, "authenticated": False, "latency_ms": None, "detail": None,
+    }
+    t0 = time.monotonic()
+    try:
+        r = httpx.get(f"{base_url}/healthz", timeout=3)
+    except httpx.HTTPError as exc:
+        result["detail"] = f"unreachable: {exc}"
+        return result
+    result["latency_ms"] = round((time.monotonic() - t0) * 1000)
+    result["reachable"] = r.status_code == 200
+    if not result["reachable"]:
+        result["detail"] = f"/healthz returned {r.status_code}"
+        return result
+
+    try:
+        auth_probe()
+        result["authenticated"] = True
+        result["status"] = "pass"
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code == 401:
+            result["detail"] = "401 Unauthorized -- cached API key is stale, restart this consumer (KNOWN-ISSUES.md #7)"
+        else:
+            result["detail"] = f"authenticated call failed: HTTP {exc.response.status_code}"
+        result["status"] = "warn"
+    except Exception as exc:
+        result["detail"] = f"authenticated call failed: {exc}"
+        result["status"] = "warn"
+    return result
+
+
+def _route_waypoints(route: dict, location_lookup) -> list[list[float]] | None:
+    """Every leg boundary is a real waypoint (leg[i].to == leg[i+1].from) --
+    used for both /map (all routes) and a route's own mini-map, so a
+    multi-leg route (e.g. SHA-RTM-MUC: CNSHA->Rotterdam->Duisburg->Munich)
+    bends through its real intermediate ports instead of looking direct
+    (KNOWN-ISSUES.md #12/#13). Returns None if any waypoint's coordinates
+    are unavailable -- never fabricate a line."""
+    legs = route.get("legs") or []
+    if not legs:
+        return None
+    codes = [legs[0]["from"]] + [leg["to"] for leg in legs]
+    points = [location_lookup(code) for code in codes]
+    if any(p is None for p in points):
+        return None
+    return [[p["lat"], p["lon"]] for p in points]
 
 
 def _current_principal(request: Request) -> Principal | None:
@@ -154,9 +213,28 @@ def build_app(
             raise HTTPException(status_code=404, detail=f"no route {route_id!r}")
         availability = tms.get_availability(route_id)
         rate_info = rate.get_rate(route_id)
+
+        location_cache: dict[str, dict | None] = {}
+
+        def _location(code: str) -> dict | None:
+            if code not in location_cache:
+                location_cache[code] = masterdata.get("locations", code)
+            return location_cache[code]
+
+        waypoints = _route_waypoints(route, _location)
+        route_json = None
+        if waypoints is not None:
+            route_json = json.dumps([{
+                "id": route["id"],
+                "lane": route["lane"],
+                "status": (availability or {}).get("status", "unknown"),
+                "points": waypoints,
+            }])
+
         return templates.TemplateResponse(
             request, "route_detail.html",
-            _ctx(request, route=route, availability=availability, rate=rate_info, principal=principal),
+            _ctx(request, route=route, availability=availability, rate=rate_info,
+                 route_json=route_json, principal=principal),
         )
 
     @app.get("/fx", response_class=HTMLResponse)
@@ -201,27 +279,37 @@ def build_app(
 
         map_routes = []
         for r in routes:
-            legs = r.get("legs") or []
-            if not legs:
-                continue
-            origin = _location(legs[0]["from"])
-            destination = _location(legs[-1]["to"])
-            if origin is None or destination is None:
-                continue  # masterdata has no coordinates for this endpoint -- skip, don't fabricate a line
+            points = _route_waypoints(r, _location)
+            if points is None:
+                continue  # no legs, or masterdata has no coordinates for some waypoint -- skip, don't fabricate a line
             avail = tms.get_availability(r["id"]) or {}
             map_routes.append({
                 "id": r["id"],
                 "lane": r["lane"],
                 "status": avail.get("status", "unknown"),
-                # Leaflet wants [lat, lon] -- straight lines only (see KNOWN-ISSUES.md:
-                # RouteLeg carries no polyline/waypoint data, only endpoints).
-                "from": [origin["lat"], origin["lon"]],
-                "to": [destination["lat"], destination["lon"]],
+                "points": points,
             })
 
         return templates.TemplateResponse(
             request, "map.html",
             _ctx(request, routes_json=json.dumps(map_routes), principal=principal),
+        )
+
+    @app.get("/status", response_class=HTMLResponse)
+    def status_page(request: Request):
+        principal = _require_role(request, "ops-viewer")
+        services = [
+            _check_service("masterdata", masterdata.base_url, lambda: masterdata.list("currencies")),
+            _check_service("tms", tms.base_url, lambda: tms.list_routes()),
+            _check_service("rate", rate.base_url, lambda: rate.list_rates()),
+            _check_service("fx", fx.base_url, lambda: fx.get_rate("CNY", "EUR")),
+        ]
+        overall = "pass" if all(s["status"] == "pass" for s in services) else (
+            "fail" if any(s["status"] == "fail" for s in services) else "warn"
+        )
+        return templates.TemplateResponse(
+            request, "status.html",
+            _ctx(request, services=services, overall=overall, principal=principal),
         )
 
     @app.exception_handler(HTTPException)

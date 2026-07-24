@@ -12,8 +12,8 @@ def store():
     return TmsStore(FIXTURES_DIR, StubMasterdataClient())
 
 
-def test_loads_all_13_routes():
-    assert len(store().list_routes()) == 13
+def test_loads_all_16_routes():
+    assert len(store().list_routes()) == 16
 
 
 def test_contracted_route():

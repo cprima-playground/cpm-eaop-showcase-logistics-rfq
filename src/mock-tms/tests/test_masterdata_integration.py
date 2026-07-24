@@ -37,7 +37,7 @@ def masterdata_key():
 def test_tms_store_loads_via_real_masterdata_call(masterdata_key):
     client = MasterdataClient(base_url=MASTERDATA_URL, api_key=masterdata_key)
     store = TmsStore(TMS_FIXTURES_DIR, client)
-    assert len(store.list_routes()) == 13
+    assert len(store.list_routes()) == 16
 
 
 def test_tms_store_rejects_unknown_location(tmp_path, masterdata_key):

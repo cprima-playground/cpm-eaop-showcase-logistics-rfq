@@ -8,13 +8,13 @@ runner = CliRunner()
 def test_reset_command():
     result = runner.invoke(app, ["reset"])
     assert result.exit_code == 0
-    assert "loaded 13 rate(s)" in result.output
+    assert "loaded 16 rate(s)" in result.output
 
 
 def test_rates_command():
     result = runner.invoke(app, ["rates"])
     assert result.exit_code == 0
-    assert result.output.count("\n") == 13
+    assert result.output.count("\n") == 16
 
 
 def test_get_rate_command():

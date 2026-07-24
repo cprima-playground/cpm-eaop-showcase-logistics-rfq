@@ -1,8 +1,9 @@
 # Route topology — STABLE graph of legs (location ids from locations.yaml).
-# 13 complete routes, ~24 legs. Lane CNSHA->DEMUC has 6 alternatives (routes r1..r6).
-# 3 further lanes add geographic diversity beyond the China->Germany corridor:
+# 16 complete routes, ~27 legs. Lane CNSHA->DEMUC has 6 alternatives (routes r1..r6).
+# 4 further lanes add geographic diversity beyond the China->Germany corridor:
 # Transpacific (CNSHA-USLAX), Middle-East/Suez (AEJEA-DEHAM, with a Cape-of-
-# Good-Hope alternate), Intra-Europe (NLRTM-ITMIL, single route, no alternative).
+# Good-Hope alternate), Intra-Europe (NLRTM-ITMIL, single route, no alternative),
+# Transatlantic (DEHAM-USNYC, with Rotterdam + Antwerp alternates).
 # Durations are plausible (ocean slow, rail medium, air fast). Costs are NOT here —
 # they are derived, correlated + seeded (rate/fixtures/cost-model.md).
 routes:
@@ -82,15 +83,34 @@ routes:
     legs:
       - {from: NLRTM, to: ITMIL, mode: rail, duration_days: 3}
 
+  - id: TAT-NYC                # Transatlantic — primary (Hamburg)
+    lane: DEHAM-USNYC
+    legs:
+      - {from: DEHAM, to: USNYC, mode: ocean, duration_days: 9}
+
+  - id: TAT-RTM                # Transatlantic — alternate (Rotterdam)
+    lane: DEHAM-USNYC
+    legs:
+      - {from: NLRTM, to: USNYC, mode: ocean, duration_days: 8}
+
+  - id: TAT-ANR                # Transatlantic — alternate (Antwerp)
+    lane: DEHAM-USNYC
+    legs:
+      - {from: BEANR, to: USNYC, mode: ocean, duration_days: 9}
+
 # Alternatives for the important lane CNSHA->DEMUC: r1 (contracted, Hamburg),
 # r2 (Rotterdam), r3 (Antwerp) are the primary three; r4 (air), r5/r6 (Med) are
 # escalation options when the North-Sea gateways are disrupted.
 #
-# Two further multi-route lanes: CNSHA-USLAX (Transpacific, LA primary /
-# Oakland alternate) and AEJEA-DEHAM (Middle-East, Suez primary / Cape-of-
-# Good-Hope alternate — the escalation option if Suez is blocked).
+# Three further multi-route lanes: CNSHA-USLAX (Transpacific, LA primary /
+# Oakland alternate), AEJEA-DEHAM (Middle-East, Suez primary / Cape-of-
+# Good-Hope alternate — the escalation option if Suez is blocked), and
+# DEHAM-USNYC (Transatlantic, Hamburg primary / Rotterdam + Antwerp
+# alternates -- same North-Sea-gateway trio as CNSHA-DEMUC, so a blocked
+# Hamburg has two fallbacks, not zero).
 # NLRTM-ITMIL (Intra-Europe) has a single route, no alternative to list.
 lane_alternatives:
   CNSHA-DEMUC: [SHA-HAM-MUC, SHA-RTM-MUC, SHA-ANR-MUC, PVG-FRA-MUC, SHA-PIR-MUC, SHA-GOA-MUC]
   CNSHA-USLAX: [TPA-LAX, TPA-OAK]
   AEJEA-DEHAM: [MEA-SUEZ, MEA-CAPE]
+  DEHAM-USNYC: [TAT-NYC, TAT-RTM, TAT-ANR]

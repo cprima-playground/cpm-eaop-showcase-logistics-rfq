@@ -13,7 +13,7 @@ TEST_API_KEY = "test-tms-key"
 _KNOWN_LOCATIONS = {
     "CNSHA", "CNNGB", "CNPVG", "SGSIN", "DEHAM", "NLRTM", "BEANR", "PLGDN",
     "GRPIR", "ITGOA", "DEDUI", "DENUE", "CZPRG", "DEFRA", "DEMUC",
-    "USLAX", "USOAK", "AEJEA", "ZADUR", "ITMIL",
+    "USLAX", "USOAK", "AEJEA", "ZADUR", "ITMIL", "USNYC",
 }
 
 

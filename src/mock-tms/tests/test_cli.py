@@ -8,13 +8,13 @@ runner = CliRunner()
 def test_reset_command():
     result = runner.invoke(app, ["reset"])
     assert result.exit_code == 0
-    assert "loaded 13 route(s)" in result.output
+    assert "loaded 16 route(s)" in result.output
 
 
 def test_routes_command():
     result = runner.invoke(app, ["routes"])
     assert result.exit_code == 0
-    assert result.output.count("\n") == 13
+    assert result.output.count("\n") == 16
 
 
 def test_feasible_lanes_command():

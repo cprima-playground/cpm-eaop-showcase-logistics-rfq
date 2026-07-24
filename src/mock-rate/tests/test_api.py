@@ -25,7 +25,7 @@ def test_rates_requires_api_key():
 def test_list_rates():
     r = client().get("/rates", headers={"X-API-Key": API_KEY})
     assert r.status_code == 200
-    assert len(r.json()) == 13
+    assert len(r.json()) == 16
 
 
 def test_get_rate():
