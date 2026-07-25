@@ -42,6 +42,15 @@ servers:
   - id: approval-mcp
     purpose: Expose workflow / approval capabilities
     tools:
+      # approval.request: INVALID as an agent-facing tool, not merely stale
+      # (capability-profile review Finding 2, business/capability-profiles/
+      # offer-to-execution-domain-review.md). ApprovalTask creation is a
+      # system-internal consequence of quote.submit-for-approval, not an
+      # agent command. When the workflow-side trigger is implemented, this
+      # tool must be REMOVED from the agent-facing MCP surface (or redefined
+      # as an internal-only workflow capability, never callable by business
+      # agents) -- do not leave it advertised here once a real trigger
+      # exists, or the interface catalog contradicts the domain model.
       - {name: create_approval_task, action: approval.request, side_effects: [creates_human_task]}
       - {name: get_approval_status,  action: approval.request}
       - {name: record_recommendation, action: route-deviation.propose}

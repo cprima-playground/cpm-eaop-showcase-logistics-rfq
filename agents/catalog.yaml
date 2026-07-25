@@ -37,10 +37,21 @@ agents:
       keycloak_client: commercial-normalization-agent-svc
       audience_asserted: repricing-agent-api
       can_call: [route-decision-agent]
-    owned_actions: [fx-rate.read, route-cost.normalize, quote-price.calculate, quote-variance.evaluate]
+    owned_actions: [fx-rate.read, route-cost.normalize, quote-price.calculate, quote-variance.evaluate, quote.submit-for-approval]
     api_access: [fx-api]                 # direct HTTP, not MCP
     mcp_access: [qms-mcp]
-    prohibited_actions: [route-deviation.approve, quote.submit-for-approval]  # forbidden auto-submit on FX>2%
+    # Finding 1 (capability-profile review, business/capability-profiles/
+    # offer-to-execution-domain-review.md): quote.submit-for-approval moved here
+    # from route-decision-agent -- aligns with business/decisions.md's D4/D12
+    # (2 of 3 entries already said CommercialNormalizationAgent; D5 corrected
+    # to match, see decisions.md). Submitting the QuoteVersion this agent just
+    # priced is a smaller conceptual leap than Planning's agent doing it, and
+    # matches qms being the decision's system of record.
+    # route-deviation.approve/quote.approve/quote.reject: the decision side
+    # stays human-only (D6/D19/D20) -- this agent submits, it never decides.
+    # Cedar's forbid-auto-replace-on-fx (D4b) still blocks the FX>2% submit
+    # case unconditionally, regardless of this list.
+    prohibited_actions: [route-deviation.approve, quote.approve, quote.reject]
     human_escalation: [fx_snapshot_stale]
     source: {path: spikes/repricing/mock-agents/commercial-normalization}
     status: design
@@ -55,9 +66,22 @@ agents:
       keycloak_client: route-decision-agent-svc
       audience_asserted: repricing-agent-api
       can_call: []
-    owned_actions: [route.recommend, route-deviation.propose, quote.submit-for-approval, approval.request]
+    owned_actions: [route.recommend, route-deviation.propose]
     mcp_access: [approval-mcp]
-    prohibited_actions: [route-deviation.approve]   # recommends, never approves
+    # Finding 1: quote.submit-for-approval moved to commercial-normalization-
+    # agent (see its comment) -- this agent recommends routes, it doesn't
+    # touch the Quote/qms domain at all anymore.
+    # Finding 2: approval.request removed entirely, not reassigned -- per
+    # capability-profile review, creating an ApprovalTask should be a system-
+    # internal consequence of quote.submit-for-approval's QMS state
+    # transition to approval_required, not an independently agent-commanded
+    # action (avoids the QuoteVersion/ApprovalTask divergence risk: submitted-
+    # but-no-task or task-but-never-submitted). mcp_access retains
+    # approval-mcp for get_approval_status (read) and record_recommendation/
+    # resume_route_decision (still-owned actions) -- create_approval_task's
+    # MCP tool mapping needs reassignment when workflow's system-internal
+    # trigger is actually implemented (out of this fix's scope).
+    prohibited_actions: [route-deviation.approve, quote.submit-for-approval, quote.approve, quote.reject]   # recommends, never approves or submits
     human_escalation: [threshold_exceeded]
     source: {path: spikes/repricing/mock-agents/route-decision}
     status: design

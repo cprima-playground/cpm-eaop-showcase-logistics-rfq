@@ -1,0 +1,24 @@
+# Groups referenced by identity/actors.yaml's `member_of`.
+#
+# MIRRORS cpm-eaop data/identity/groups.yaml path->cost_center shape (see
+# actors.yaml's header comment). Promoted out of actors.yaml's earlier inline
+# sketch (2 EMEA-only groups) now that the org spans 3 regions (M2, bench-depth
+# expansion). `group_id` values are unchanged for the pre-existing groups —
+# they're live Cedar Group entity uids.
+#
+# Grounded in business/personas.md (persona-first directory review): each
+# group corresponds to a real, research-backed job track (Commercial =
+# Pricing Manager / approval authority, Pricing = Commercial Pricing
+# Specialist / quote-building, Planning = Transport Planner / route
+# evaluation), not an abstract role label.
+
+groups:
+  - {group_id: rfq-commercial-emea, path: /Front-Office/Commercial/EMEA, cost_center: CC-COMM-EMEA}
+  - {group_id: rfq-pricing-emea,    path: /Back-Office/Pricing/EMEA,     cost_center: CC-PRIC-EMEA}
+  - {group_id: rfq-planning-emea,   path: /Front-Office/Planning/EMEA,   cost_center: CC-PLAN-EMEA}
+  - {group_id: rfq-commercial-apac, path: /Front-Office/Commercial/APAC, cost_center: CC-COMM-APAC}
+  - {group_id: rfq-pricing-apac,    path: /Back-Office/Pricing/APAC,     cost_center: CC-PRIC-APAC}
+  - {group_id: rfq-planning-apac,   path: /Front-Office/Planning/APAC,   cost_center: CC-PLAN-APAC}
+  - {group_id: rfq-commercial-amer, path: /Front-Office/Commercial/AMER, cost_center: CC-COMM-AMER}
+  - {group_id: rfq-pricing-amer,    path: /Back-Office/Pricing/AMER,     cost_center: CC-PRIC-AMER}
+  - {group_id: rfq-planning-amer,   path: /Front-Office/Planning/AMER,   cost_center: CC-PLAN-AMER}

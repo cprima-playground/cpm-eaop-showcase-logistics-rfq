@@ -124,9 +124,9 @@
     <label class="text-xs text-gray-500 block mb-1">Reason (optional)</label>
     <input type="text" name="reason" class="border rounded px-2 py-1 text-sm w-full max-w-md mb-2" placeholder="e.g. margin acceptable given strategic account">
     <div class="flex flex-wrap gap-2">
-      <button type="submit" name="decision" value="approved" title="POST .../decisions -- D19-candidate, no dedicated Cedar gate yet (x-domain-action: None)" class="border rounded px-3 py-1 text-sm bg-green-50 border-green-300">Approve</button>
-      <button type="submit" name="decision" value="rejected" title="POST .../decisions -- D19-candidate, no dedicated Cedar gate yet (x-domain-action: None)" class="border rounded px-3 py-1 text-sm bg-red-50 border-red-300">Reject</button>
-      <button type="submit" name="decision" value="revise" title="POST .../decisions -- D19-candidate, no dedicated Cedar gate yet (x-domain-action: None)" class="border rounded px-3 py-1 text-sm bg-yellow-50 border-yellow-300">Request revision</button>
+      <button type="submit" name="decision" value="approved" title="POST .../decisions -- D19 (quote.approve), modeled in Cedar as of the capability-profile review, not yet wired into this endpoint (x-domain-action: None)" class="border rounded px-3 py-1 text-sm bg-green-50 border-green-300">Approve</button>
+      <button type="submit" name="decision" value="rejected" title="POST .../decisions -- D20 (quote.reject), modeled in Cedar as of the capability-profile review, not yet wired into this endpoint (x-domain-action: None)" class="border rounded px-3 py-1 text-sm bg-red-50 border-red-300">Reject</button>
+      <button type="submit" name="decision" value="revise" title="POST .../decisions -- D21 (quote.request-revision), modeled in Cedar as of the capability-profile review, not yet wired into this endpoint (x-domain-action: None)" class="border rounded px-3 py-1 text-sm bg-yellow-50 border-yellow-300">Request revision</button>
     </div>
   </form>
   {% elif latest %}

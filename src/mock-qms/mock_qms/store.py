@@ -374,8 +374,9 @@ class QmsStore:
         return updated
 
     def record_decision(self, quote_id: str, version: int, body: QuoteDecisionRequest) -> QuoteVersion:
-        """The actual D19-candidate action, made real: approval_required ->
-        approved|rejected|revise. `status`'s new value IS the decision (per
+        """The actual D19/D20/D21 actions (quote.approve/reject/request-
+        revision), made real: approval_required -> approved|rejected|revise.
+        `status`'s new value IS the decision (per
         QuoteVersion's own docstring) -- DecisionRecord is kept alongside as
         supporting evidence (who/when/why), not the authoritative signal."""
         qv = self.get_version(quote_id, version)

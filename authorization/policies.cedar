@@ -16,6 +16,24 @@
 // Percents are integer tenths-of-a-percent (6% == 60). Money is EUR cents.
 // The FX freshness window is 900s. Realizes business/decisions.md D1..D9, D10, D11.
 
+// ---- ADR-001: an active agent may open an MCP session with a workload in its
+// own trust domain (transport-level check, independent of any tool call) ----
+@id("agent-may-connect-same-trust-domain")
+@version("1")
+@owner("platform")
+@description("An active agent may open an MCP session with a workload sharing its trust domain.")
+permit(
+  principal,
+  action == Agentic::Action::"mcp.connect",
+  resource
+) when {
+  principal.active == true &&
+  resource.active == true &&
+  principal has trust_domain &&
+  resource has trust_domain &&
+  principal.trust_domain == resource.trust_domain
+};
+
 // ---- D10: an active agent may check route capacity (read-only, informational) --
 @id("agent-may-check-capacity")
 @version("1")
@@ -172,6 +190,47 @@ permit(
 ) when {
   context.quote_value_eur_cents <= 1000000
 };
+
+// ---- D19: commercial manager may approve a submitted quote within limit -----
+// Finding 3 (capability-profile review): distinct from D6 (route-deviation.
+// approve, resource RouteRecommendation) -- this is the actual QMS decision
+// (resource Quote), matching mock_qms's real approved|rejected|revise
+// vocabulary. Same group + value-limit gate as D6.
+@id("commercial-manager-may-approve-quote")
+@version("1")
+@owner("commercial")
+@description("A commercial manager may approve a submitted quote within a 10,000 EUR limit.")
+permit(
+  principal in Agentic::Group::"rfq-commercial-emea",
+  action == Agentic::Action::"quote.approve",
+  resource
+) when {
+  context.quote_value_eur_cents <= 1000000
+};
+
+// ---- D20: commercial manager may reject a submitted quote -------------------
+// No value-limit gate: declining a quote doesn't commit the company to
+// anything, unlike approving one.
+@id("commercial-manager-may-reject-quote")
+@version("1")
+@owner("commercial")
+@description("A commercial manager may reject a submitted quote.")
+permit(
+  principal in Agentic::Group::"rfq-commercial-emea",
+  action == Agentic::Action::"quote.reject",
+  resource
+);
+
+// ---- D21: commercial manager may request revision on a submitted quote -----
+@id("commercial-manager-may-request-quote-revision")
+@version("1")
+@owner("commercial")
+@description("A commercial manager may send a submitted quote back for revision.")
+permit(
+  principal in Agentic::Group::"rfq-commercial-emea",
+  action == Agentic::Action::"quote.request-revision",
+  resource
+);
 
 // ---- D7: cross-cutting -> inactive principals do nothing --------------------
 @id("forbid-inactive")

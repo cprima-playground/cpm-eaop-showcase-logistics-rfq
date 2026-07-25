@@ -48,6 +48,26 @@
           }
         }
       },
+      "Workload": {
+        "shape": {
+          "type": "Record",
+          "attributes": {
+            "kind": {
+              "type": "String"
+            },
+            "active": {
+              "type": "Boolean"
+            },
+            "system": {
+              "type": "String"
+            },
+            "trust_domain": {
+              "type": "String",
+              "required": false
+            }
+          }
+        }
+      },
       "Group": {
         "shape": {
           "type": "Record",
@@ -134,6 +154,20 @@
       }
     },
     "actions": {
+      "mcp.connect": {
+        "appliesTo": {
+          "principalTypes": [
+            "AgentPrincipal"
+          ],
+          "resourceTypes": [
+            "Workload"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
       "lane.evaluate": {
         "appliesTo": {
           "principalTypes": [
@@ -144,7 +178,16 @@
           ],
           "context": {
             "type": "Record",
-            "attributes": {}
+            "attributes": {
+              "executing_workload": {
+                "type": "String",
+                "required": false
+              },
+              "tool": {
+                "type": "String",
+                "required": false
+              }
+            }
           }
         }
       },
@@ -172,7 +215,16 @@
           ],
           "context": {
             "type": "Record",
-            "attributes": {}
+            "attributes": {
+              "executing_workload": {
+                "type": "String",
+                "required": false
+              },
+              "tool": {
+                "type": "String",
+                "required": false
+              }
+            }
           }
         }
       },
@@ -186,7 +238,16 @@
           ],
           "context": {
             "type": "Record",
-            "attributes": {}
+            "attributes": {
+              "executing_workload": {
+                "type": "String",
+                "required": false
+              },
+              "tool": {
+                "type": "String",
+                "required": false
+              }
+            }
           }
         }
       },
@@ -227,6 +288,14 @@
               },
               "target_currency": {
                 "type": "String"
+              },
+              "executing_workload": {
+                "type": "String",
+                "required": false
+              },
+              "tool": {
+                "type": "String",
+                "required": false
               }
             }
           }
@@ -242,7 +311,16 @@
           ],
           "context": {
             "type": "Record",
-            "attributes": {}
+            "attributes": {
+              "executing_workload": {
+                "type": "String",
+                "required": false
+              },
+              "tool": {
+                "type": "String",
+                "required": false
+              }
+            }
           }
         }
       },
@@ -259,6 +337,14 @@
             "attributes": {
               "fx_variance_pct_x10": {
                 "type": "Long"
+              },
+              "executing_workload": {
+                "type": "String",
+                "required": false
+              },
+              "tool": {
+                "type": "String",
+                "required": false
               }
             }
           }
@@ -286,6 +372,14 @@
               },
               "non_contracted_lane": {
                 "type": "Boolean"
+              },
+              "executing_workload": {
+                "type": "String",
+                "required": false
+              },
+              "tool": {
+                "type": "String",
+                "required": false
               }
             }
           }
@@ -301,7 +395,16 @@
           ],
           "context": {
             "type": "Record",
-            "attributes": {}
+            "attributes": {
+              "executing_workload": {
+                "type": "String",
+                "required": false
+              },
+              "tool": {
+                "type": "String",
+                "required": false
+              }
+            }
           }
         }
       },
@@ -336,7 +439,16 @@
           ],
           "context": {
             "type": "Record",
-            "attributes": {}
+            "attributes": {
+              "executing_workload": {
+                "type": "String",
+                "required": false
+              },
+              "tool": {
+                "type": "String",
+                "required": false
+              }
+            }
           }
         }
       },
@@ -361,6 +473,52 @@
                 "type": "Long"
               }
             }
+          }
+        }
+      },
+      "quote.approve": {
+        "appliesTo": {
+          "principalTypes": [
+            "Principal"
+          ],
+          "resourceTypes": [
+            "Quote"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {
+              "quote_value_eur_cents": {
+                "type": "Long"
+              }
+            }
+          }
+        }
+      },
+      "quote.reject": {
+        "appliesTo": {
+          "principalTypes": [
+            "Principal"
+          ],
+          "resourceTypes": [
+            "Quote"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "quote.request-revision": {
+        "appliesTo": {
+          "principalTypes": [
+            "Principal"
+          ],
+          "resourceTypes": [
+            "Quote"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
           }
         }
       }

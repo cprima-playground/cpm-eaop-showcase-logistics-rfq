@@ -34,6 +34,14 @@ entities:
       active: Boolean
       trust_domain: {type: String, required: false}
 
+  Workload:                       # MCP servers (ADR-001) — no default group membership
+    ontology: null
+    attributes:
+      kind: String
+      active: Boolean
+      system: String
+      trust_domain: {type: String, required: false}
+
   Group:
     ontology: group
 

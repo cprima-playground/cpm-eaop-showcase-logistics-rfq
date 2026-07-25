@@ -1,0 +1,207 @@
+# Job titles — real-world, research-grounded where sourced. Business-complete:
+# includes titles with no identity/actors.yaml entry yet (exists_today: false).
+#
+# `responsibilities` for titles marked deeply-researched are pulled from real
+# job postings (see business/personas.md for the full bullet lists + agent
+# delegation mapping on the 4 titles this repricing subprocess implements
+# today). Titles without a `sources` list are organizational placeholders --
+# named so the org chart is complete, not yet responsibility-researched to
+# the same depth. Deepen those before adding more identities, not instead of.
+
+job_titles:
+  # --- Commercial ---------------------------------------------------------
+  - job_title_id: account-manager
+    title: Account Manager
+    department_id: commercial
+    level: specialist
+    exists_today: true            # human modeled this session (Finding 5's actor); crm itself remains unimplemented
+    responsibilities:
+      - Act as main liaison between customers, agents, and carriers on freight quote requests
+      - Prepare quotes for international/domestic shipments (air, ocean, ground)
+      - Manage RFQs for large-scale logistics contracts
+      - Research/identify new business prospects
+      - Maintain professional relationships with existing accounts
+    sources:
+      - {title: Indeed, url: "https://www.indeed.com/q-freight-forwarder-customer-service-jobs.html"}
+      - {title: Staffmark Account Executive, url: "https://staffmark.com/jobs/detail/1001993831/account-executive-freight-forwarding-chandler-az/"}
+
+  - job_title_id: sales-manager
+    title: Sales Manager
+    department_id: commercial
+    level: manager
+    exists_today: false
+    responsibilities: []          # placeholder -- not yet researched to the same depth as Account Manager
+
+  - job_title_id: regional-commercial-director
+    title: Regional Commercial Director
+    department_id: commercial
+    level: director
+    exists_today: true
+    responsibilities:
+      - Own regional commercial P&L and pricing governance
+      - Escalation point above a Pricing Manager's approval limit
+      - Approve pricing policy/discount structure changes for the region
+      - Represent the region in cross-regional pricing alignment
+    sources:
+      - {title: "ISS Global Forwarding Pricing Manager (closest attested tier)", url: "https://iss-globalforwarding.com/jobs/pricing-manager-malaysia/"}
+
+  - job_title_id: pricing-manager
+    title: Pricing Manager
+    department_id: commercial
+    level: manager
+    exists_today: true
+    reports_to_job_title_id: regional-commercial-director
+    responsibilities:
+      - Develop/implement pricing strategies for profitability and competitiveness
+      - Lead pricing governance -- standardized practices, discounting policy, approval protocols
+      - Build rate approval structures and escalation protocols
+      - Conduct profit margin analysis; review pricing strategy for competitiveness
+      - Negotiate rates/contracts with carriers and vendors
+      - Lead pricing reviews, internal approvals, proposal pricing milestones
+    sources:
+      - {title: ISS Global Forwarding Pricing Manager, url: "https://iss-globalforwarding.com/jobs/pricing-manager-malaysia/"}
+      - {title: Indeed Freight Pricing Manager, url: "https://www.indeed.com/q-freight-pricing-manager-jobs.html"}
+
+  # --- Pricing --------------------------------------------------------------
+  - job_title_id: commercial-pricing-specialist
+    title: Commercial Pricing Specialist
+    department_id: pricing
+    level: specialist
+    exists_today: true
+    reports_to_job_title_id: pricing-manager
+    aliases: [Pricing Specialist, Freight Pricing Specialist, Pricing Executive, Tender & Pricing Specialist, Ocean/Air Freight Pricing Specialist]
+    responsibilities:
+      - Prepare freight quotations for Air, Sea (FCL/LCL), and Land
+      - Coordinate with shipping lines, airlines, transporters, overseas agents for competitive rates
+      - Support sales with timely, accurate pricing for inquiries and tenders
+      - Maintain/update rate sheets, tariffs, pricing databases
+      - Analyze market trends and freight rate fluctuations
+      - Ensure quotations comply with company policy and service capability
+    sources:
+      - {title: ZipRecruiter Freight Forwarding Pricing Specialist, url: "https://www.ziprecruiter.com/Jobs/Freight-Forwarding-Pricing-Specialist"}
+      - {title: Hellmann SSC Pricing Specialist, url: "https://careers.hellmann.com/en/jobs/ssc-pricing-specialist-seafreightairfreight"}
+
+  # --- Planning ---------------------------------------------------------
+  - job_title_id: transport-planner
+    title: Transport Planner
+    department_id: planning
+    level: specialist
+    exists_today: true
+    responsibilities:
+      - Plan, tender, and route daily shipments to meet cost/service parameters
+      - Create optimized shipment routes (distance, time, traffic, customer requirements)
+      - Identify lowest freight cost and best mode to maximize efficiency
+      - Monitor load status; adjust plans for delays
+      - Communicate with drivers and carriers
+      - Analyze carrier trends, identify service issues
+    sources:
+      - {title: Velvet Jobs Transportation Planner, url: "https://www.velvetjobs.com/job-descriptions/transportation-planner"}
+      - {title: JobDescription.org Load Planner, url: "https://jobdescription.org/jobs/transportation/load-planner"}
+
+  - job_title_id: operations-planner
+    title: Operations Planner
+    department_id: planning
+    level: manager
+    exists_today: false
+    responsibilities: []          # placeholder
+
+  # --- Carrier Procurement (business-complete, not yet implemented) --------
+  - job_title_id: carrier-procurement-specialist
+    title: Carrier Procurement Specialist
+    department_id: carrier-procurement
+    level: specialist
+    exists_today: true            # human modeled this session; no agent/API/MCP yet
+    responsibilities:
+      - Cultivate carrier relationships while negotiating and securing carriers to move freight
+      - Negotiate linehaul and accessorial rates
+      - Maintain continuous communication with carriers and customers
+      - Inform parties of route modifications, delays, or complications
+      - Schedule/coordinate pickup and delivery appointments
+      - Research databases to identify prospective carriers
+      - Track back-end billing/invoicing to verify carrier charge accuracy
+    sources:
+      - {title: RXO Carrier Procurement Specialist, url: "https://simplify.jobs/p/f2609f31-2e54-468c-a0cf-7fd0286f046f/Carrier-Procurement-Specialist"}
+      - {title: Skypace Ocean Freight Carrier Representative, url: "https://skypace.com/careers/carrier-representative-procurement-specialist-ocean-freight-woodlands-onsite"}
+
+  - job_title_id: carrier-procurement-manager
+    title: Carrier Procurement Manager
+    department_id: carrier-procurement
+    level: manager
+    exists_today: false
+    responsibilities: []          # placeholder
+
+  # --- Operations (future) --------------------------------------------------
+  - job_title_id: operations-manager
+    title: Operations Manager
+    department_id: operations
+    level: manager
+    exists_today: false
+    responsibilities: []          # placeholder -- structure named by business/capability-profiles/operations-coordinator.md, no actor added (no evidence requiring one yet, same treatment as sales-manager/operations-planner)
+
+  - job_title_id: operations-coordinator
+    title: Operations Coordinator
+    department_id: operations
+    level: specialist
+    exists_today: true            # human modeled this session; see business/capability-profiles/operations-coordinator.md
+    responsibilities:
+      - Schedule shipments, coordinate with carriers/drivers
+      - Track freight in transit; resolve issues/delays proactively
+      - Serve as primary customer contact for real-time tracking updates
+      - Liaise with airlines, steamship lines, trucking partners
+      - Coordinate/manage booking, documentation, customs clearance end-to-end
+    sources:
+      - {title: Indeed Logistics Coordinator, url: "https://www.indeed.com/hire/job-description/logistics-coordinator"}
+      - {title: Velvet Jobs Freight Coordinator, url: "https://www.velvetjobs.com/job-descriptions/freight-coordinator"}
+
+  - job_title_id: booking-coordinator
+    title: Booking Coordinator
+    department_id: operations
+    level: specialist
+    exists_today: true            # human modeled this session; quote-to-booking lifecycle itself is Finding 6 -- absent
+    responsibilities:
+      - Ensure ocean carrier timely receipt/response of bookings
+      - Coordinate shipments with forwarders on rates
+      - Generate export documentation compliant with regulations
+      - Create bills of lading, shipping labels, export paperwork
+      - Verify pricing on documents matches purchase orders
+    sources:
+      - {title: Velvet Jobs International Logistics Coordinator, url: "https://www.velvetjobs.com/job-descriptions/international-logistics-coordinator"}
+
+  # --- Customs & Trade (future) ---------------------------------------------
+  - job_title_id: customs-specialist
+    title: Customs & Trade Compliance Specialist
+    department_id: customs-trade
+    level: specialist
+    exists_today: false
+    responsibilities:
+      - Arrange/prepare/confirm customs invoices per project and local regulations
+      - Monitor shipments and customs clearance activity
+      - Assign accurate tariff (HTS) classifications and export control numbers
+      - Manage customs brokerage processes
+      - Track import/export license quantities and expiration dates
+    sources:
+      - {title: Velvet Jobs Trade Compliance Specialist, url: "https://www.velvetjobs.com/job-descriptions/trade-compliance-specialist"}
+
+  # --- Finance (future) ------------------------------------------------------
+  - job_title_id: billing-specialist
+    title: Billing / AR Specialist
+    department_id: finance
+    level: specialist
+    exists_today: false
+    responsibilities:
+      - Review loads for necessary billing information
+      - Modify charges per customer-specific rules
+      - Process/approve invoices
+      - Handle internal/external billing inquiries
+      - Evaluate customer credit limits, process/record payments
+    sources:
+      - {title: "Uber Freight Billing Specialist I", url: "https://builtin.com/job/billing-specialist-i/4232847"}
+
+  # --- Not logistics-domain --------------------------------------------------
+  - job_title_id: platform-administrator
+    title: Platform Administrator
+    department_id: null           # outside the offer-to-cash spine entirely
+    level: specialist
+    exists_today: true
+    responsibilities: []
+    sources: []

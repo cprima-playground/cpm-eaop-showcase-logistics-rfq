@@ -1,0 +1,56 @@
+# Departments — the complete offer-to-cash organizational spine.
+#
+# BUSINESS-COMPLETE, not implementation-scoped: includes departments outside
+# what this repricing subprocess currently touches. Organization describes the
+# company as it exists; the bounded implementation catches up to it over time.
+# See business/personas.md for the reasoning and business/job-titles.yaml for
+# the job titles within each department.
+#
+# `maturity` fields are honest current-state flags, not a plan:
+#   humans: current | future   -- is at least one human actor modeled in identity/actors.yaml
+#   apis:   current | future   -- does a REST API exist for this department's work
+#   mcp:    current | future   -- does an MCP server expose this department's tools
+#   agents: current | partial | none  -- does an agent automate part of this department's work
+
+departments:
+  - department_id: commercial
+    name: Commercial
+    path: /Front-Office/Commercial
+    responsibility: Own the customer relationship, RFQ intake, and deviation-approval authority.
+    maturity: {humans: current, apis: future, mcp: future, agents: none}
+
+  - department_id: pricing
+    name: Pricing
+    path: /Back-Office/Pricing
+    responsibility: Build commercial quotations from cost and rate inputs.
+    maturity: {humans: current, apis: current, mcp: current, agents: current}
+
+  - department_id: planning
+    name: Planning
+    path: /Front-Office/Planning
+    responsibility: Evaluate and recommend executable transport routes.
+    maturity: {humans: current, apis: current, mcp: current, agents: current}
+
+  - department_id: carrier-procurement
+    name: Carrier Procurement
+    path: /Back-Office/CarrierProcurement
+    responsibility: Obtain and negotiate carrier buy rates. Distinct from Pricing, which consumes rates rather than negotiating them.
+    maturity: {humans: current, apis: future, mcp: future, agents: none}
+
+  - department_id: operations
+    name: Operations
+    path: /Back-Office/Operations
+    responsibility: Convert an approved quote into a booking and coordinate execution.
+    maturity: {humans: current, apis: future, mcp: future, agents: none}
+
+  - department_id: customs-trade
+    name: Customs & Trade
+    path: /Back-Office/CustomsTrade
+    responsibility: Verify trade-compliance requirements (classification, documentation, licensing).
+    maturity: {humans: future, apis: future, mcp: future, agents: none}
+
+  - department_id: finance
+    name: Finance
+    path: /Back-Office/Finance
+    responsibility: Invoice and collect payment once a shipment is delivered.
+    maturity: {humans: future, apis: future, mcp: future, agents: none}

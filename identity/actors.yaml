@@ -2,12 +2,49 @@
 #
 # MIRRORS cpm-eaop identity conventions:
 #   - department/business_unit are NOT inline on the actor; they derive from group
-#     path -> cost_center (see data/identity/groups.yaml in cpm-eaop). Actors
-#     reference group ids via member_of.
-#   - principal kind vocab: human | service | agent | workload | external
-#     (taxonomy enum spelling; note cpm-eaop Python uses `external_agent`).
+#     path -> cost_center (see identity/groups.yaml). Actors reference group ids
+#     via member_of.
+#   - principal kind vocab (canonical, as of the M3.1 directory review):
+#     human | agent | workload. `service` was a stale synonym for `workload`,
+#     `external` an unimplemented future kind — both dropped from this
+#     comment (and were never in the Identity Validator's accepted set,
+#     tools/identity/validator.py's `Kind` literal) to stop the doc and the
+#     code disagreeing. Add `external` back here only alongside real support
+#     (a validator change + a Cedar entity type), not preemptively.
 #   - agent actors are classified `kind=agent` because their caller client id is in
 #     the agent registry (agents/catalog.yaml caller_identity.keycloak_client).
+#   - workload actors (kind=workload, added M2) are MCP servers. They are raw,
+#     IdP-neutral identity facts ONLY — id/kind/system/trust_domain. No
+#     `keycloak_client` or any other provider-specific field: that's Keycloak/
+#     Entra projection detail, introduced separately in M3.5's provider-
+#     projection config, not an identity fact (implementation plan decision
+#     #11).
+#   - `system` values are canonical: they match the `src/mock-<system>/`
+#     directory suffix (tms, rate, qms, fx, masterdata) — that directory
+#     naming is the registry, not a free-form label.
+#   - naming for genuinely new entries follows the settled convention:
+#     `human.<name>` / `agent.<persona>` / `workload.<system>`. Pre-existing
+#     bare ids (mona.commercial, sam.pricing, ...) are kept unchanged per the
+#     note below — they are not retrofitted.
+#   - `job_title_id` / `department_id` (organization-first directory review)
+#     are STABLE REFERENCES into business/job-titles.yaml and business/
+#     departments.yaml — not free text. `persona` stays as the pre-existing
+#     internal architecture/Cedar-facing label, unchanged, so nothing that
+#     reads it breaks; job_title_id is what a logistics professional would
+#     recognize on an org chart, and the two intentionally don't always
+#     line up word-for-word (e.g. persona=CommercialManager,
+#     job_title_id=pricing-manager -- persona names which GROUP/authority
+#     tier the actor belongs to, job_title_id names the real-world role).
+#     tools/identity/validator.py cross-checks both ids exist.
+#   - the organization is BUSINESS-COMPLETE (business/departments.yaml,
+#     business/job-titles.yaml cover departments/titles this repricing
+#     subprocess doesn't implement yet, e.g. Carrier Procurement) but
+#     identity/actors.yaml stays IMPLEMENTATION-SCOPED -- a human is only
+#     added here when there's a reason to (grounding an existing agent, or
+#     -- per this session's explicit decision -- making the org chart
+#     recognizable even one step ahead of the agent/API that would
+#     eventually automate part of the role, as with Carrier Procurement
+#     Specialist below).
 
 actors:
   # --- Humans -----------------------------------------------------------
@@ -22,14 +59,19 @@ actors:
     name: Diane Delgado
     kind: human
     persona: RegionalDirector
+    job_title_id: regional-commercial-director
+    department_id: commercial
     region: EMEA
     # Oversees both EMEA teams below; not itself a Cedar-policy-gated role
-    # today (no decision references a "director" principal yet).
+    # today (no decision references a "director" principal yet). See
+    # business/personas.md's Regional Commercial Director section.
 
   - id: mona.commercial
     name: Mona Caldwell
     kind: human
     persona: CommercialManager
+    job_title_id: pricing-manager        # approval authority -- business/personas.md
+    department_id: commercial
     member_of: [rfq-commercial-emea]     # -> department/BU via group path
     manager: diane.delgado
     approval_limit:
@@ -41,39 +83,223 @@ actors:
     name: Marek Petrov
     kind: human
     persona: PricingManager
+    job_title_id: commercial-pricing-specialist   # quote-building, no approval -- business/personas.md
+    department_id: pricing
     member_of: [rfq-pricing-emea]
+    manager: mona.commercial            # -> Pricing Manager, not the Director directly (capability-profile review)
+    region: EMEA
+
+  - id: human.wei.planning
+    name: Wei Chen
+    kind: human
+    persona: TransportPlanner
+    job_title_id: transport-planner
+    department_id: planning
+    member_of: [rfq-planning-emea]
     manager: diane.delgado
     region: EMEA
+    # Grounds lane-evaluation-agent + route-decision-agent -- business/
+    # personas.md's Transport Planner section.
+
+  - id: human.nadia.account
+    name: Nadia Kessler
+    kind: human
+    persona: AccountManager
+    job_title_id: account-manager
+    department_id: commercial
+    manager: diane.delgado
+    region: EMEA
+    # No member_of / no approval_limit / no agent: crm doesn't exist as a
+    # system in this showcase (business/capability-profiles/account-
+    # manager.md, Finding 5) -- same "organization exists, implementation
+    # doesn't" treatment as human.felix.procurement below, one step further:
+    # Carrier Procurement at least has fixture data (Finding 4); crm has
+    # nothing at all.
+
+  - id: human.tariq.booking
+    name: Tariq Farouk
+    kind: human
+    persona: BookingCoordinator
+    job_title_id: booking-coordinator
+    department_id: operations
+    manager: diane.delgado
+    region: EMEA
+    # No member_of / no approval_limit / no agent, same "organization exists,
+    # implementation doesn't" treatment as felix/nadia below -- the
+    # quote-to-booking lifecycle itself is Finding 6 (business/capability-
+    # profiles/booking-coordinator.md): no Booking/Shipment entity, no
+    # conversion action, exists anywhere in this showcase. First Operations
+    # department actor -- no intermediate manager exists yet either.
+
+  - id: human.sofia.operations
+    name: Sofia Ricci
+    kind: human
+    persona: OperationsCoordinator
+    job_title_id: operations-coordinator
+    department_id: operations
+    manager: diane.delgado
+    region: EMEA
+    # Same treatment as tariq.booking below: no member_of / approval_limit /
+    # agent. No Operations Manager actor exists (job-titles.yaml's
+    # operations-manager is a named-but-unfilled placeholder, per business/
+    # capability-profiles/operations-coordinator.md's org-structure finding)
+    # -- both Operations actors report direct to the Director for now.
+
+  - id: human.felix.procurement
+    name: Felix Brandt
+    kind: human
+    persona: CarrierProcurementSpecialist
+    job_title_id: carrier-procurement-specialist
+    department_id: carrier-procurement
+    manager: diane.delgado
+    region: EMEA
+    # No member_of / no approval_limit / no agent: Carrier Procurement has
+    # no Cedar group, action, or MCP server yet (business/departments.yaml
+    # maturity: apis/mcp/agents all "future"). Modeled anyway -- the
+    # organization is business-complete even where the implementation
+    # hasn't caught up (explicit decision, this session). lane-evaluation-
+    # agent's carrier-rate.read is a thin read-only slice of this role's
+    # territory, not a delegation of it -- see business/personas.md.
 
   - id: aiden.ashford
     name: Aiden Ashford
     kind: human
     persona: PlatformAdministrator
+    job_title_id: platform-administrator
     region: EMEA
     # Not part of the commercial/pricing reporting line -- owns QMS's
     # /admin/reset action, no Cedar policy references this persona yet.
+    # Not a logistics-domain role, no department_id -- business/
+    # personas.md and job-titles.yaml both note this.
 
-  # --- Agents (kind=agent; see agents/catalog.yaml) -------------------------
+  # --- APAC (bench-depth expansion, M2) --------------------------------
+  - id: human.lin.director
+    name: Lin Zhao
+    kind: human
+    persona: RegionalDirector
+    job_title_id: regional-commercial-director
+    department_id: commercial
+    region: APAC
+
+  - id: human.priya.commercial
+    name: Priya Nair
+    kind: human
+    persona: CommercialManager
+    job_title_id: pricing-manager
+    department_id: commercial
+    member_of: [rfq-commercial-apac]
+    manager: human.lin.director
+    approval_limit:
+      currency: EUR
+      amount_cents: 1000000
+    region: APAC
+
+  - id: human.tomas.pricing
+    name: Tomas Reyes
+    kind: human
+    persona: PricingManager
+    job_title_id: commercial-pricing-specialist
+    department_id: pricing
+    member_of: [rfq-pricing-apac]
+    manager: human.priya.commercial     # -> Pricing Manager, not the Director directly
+    region: APAC
+
+  - id: human.mei.planning
+    name: Mei Lin
+    kind: human
+    persona: TransportPlanner
+    job_title_id: transport-planner
+    department_id: planning
+    member_of: [rfq-planning-apac]
+    manager: human.lin.director
+    region: APAC
+
+  # --- AMER (bench-depth expansion, M2) --------------------------------
+  - id: human.omar.director
+    name: Omar Haddad
+    kind: human
+    persona: RegionalDirector
+    job_title_id: regional-commercial-director
+    department_id: commercial
+    region: AMER
+
+  - id: human.carla.commercial
+    name: Carla Mendes
+    kind: human
+    persona: CommercialManager
+    job_title_id: pricing-manager
+    department_id: commercial
+    member_of: [rfq-commercial-amer]
+    manager: human.omar.director
+    approval_limit:
+      currency: EUR
+      amount_cents: 1000000
+    region: AMER
+
+  - id: human.diego.pricing
+    name: Diego Alvarez
+    kind: human
+    persona: PricingManager
+    job_title_id: commercial-pricing-specialist
+    department_id: pricing
+    member_of: [rfq-pricing-amer]
+    manager: human.carla.commercial     # -> Pricing Manager, not the Director directly
+    region: AMER
+
+  - id: human.javier.planning
+    name: Javier Torres
+    kind: human
+    persona: TransportPlanner
+    job_title_id: transport-planner
+    department_id: planning
+    member_of: [rfq-planning-amer]
+    manager: human.omar.director
+    region: AMER
+
+  # --- Workloads (kind=workload; MCP servers, M2) ---------------------------
+  # Raw identity facts only -- see header comment. No member_of (no default
+  # group membership; Cedar policy decides what a workload may do).
+  - id: workload.tms-mcp
+    kind: workload
+    system: tms
+    trust_domain: internal
+
+  - id: workload.rate-mcp
+    kind: workload
+    system: rate
+    trust_domain: internal
+
+  - id: workload.qms-mcp
+    kind: workload
+    system: qms
+    trust_domain: internal
+
+  - id: workload.approval-mcp
+    kind: workload
+    system: qms                # shares mock-qms with qms-mcp; ADR-002 must
+    trust_domain: internal     # verify their owned action sets stay disjoint
+
+  # --- Agents (kind=agent) ---------------------------------------------
+  # keycloak_client removed (M3.1 directory review, decision #1): it was a
+  # redundant copy of agents/catalog.yaml's caller_identity.keycloak_client,
+  # which is the field identity resolution actually scans (catalog.yaml:4-5).
+  # Each agent is a bounded SUBSET of a human persona's job -- see
+  # business/personas.md for the persona -> owned_actions mapping and the
+  # real job-description bullets each agent does/doesn't cover.
   - id: agent.lane-evaluation
     kind: agent
     persona: LaneEvaluationAgent
     trust_domain: internal
-    keycloak_client: lane-evaluation-agent-svc
 
   - id: agent.commercial-normalization
     kind: agent
     persona: CommercialNormalizationAgent
     trust_domain: internal
-    keycloak_client: commercial-normalization-agent-svc
 
   - id: agent.route-decision
     kind: agent
     persona: RouteDecisionAgent
     trust_domain: internal
-    keycloak_client: route-decision-agent-svc
 
-# Groups referenced above (mirror data/identity/groups.yaml path->cost_center shape).
-# Full directory would live in identity/groups.yaml; sketched here for the slice.
-groups:
-  - {group_id: rfq-commercial-emea, path: /Front-Office/Commercial/EMEA, cost_center: CC-COMM-EMEA}
-  - {group_id: rfq-pricing-emea,    path: /Back-Office/Pricing/EMEA,     cost_center: CC-PRIC-EMEA}
+# Groups referenced above now live in identity/groups.yaml (promoted out of
+# this file's earlier 2-entry EMEA-only inline sketch, M2).

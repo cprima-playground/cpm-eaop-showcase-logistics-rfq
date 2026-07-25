@@ -47,6 +47,10 @@ def pdp():
         {"uid": uid("Principal", "mona.commercial"),
          "attrs": {"kind": "human", "active": True}, "parents": [uid("Group", "rfq-commercial-emea")]},
         {"uid": uid("Group", "rfq-commercial-emea"), "attrs": {}, "parents": []},
+        {"uid": uid("Workload", "workload.tms-mcp"),
+         "attrs": {"kind": "workload", "active": True, "system": "tms", "trust_domain": "internal"}, "parents": []},
+        {"uid": uid("Workload", "workload.external-mcp"),
+         "attrs": {"kind": "workload", "active": True, "system": "external", "trust_domain": "external"}, "parents": []},
     ])
     return bundle
 
@@ -103,6 +107,91 @@ def test_obligation_resolution_via_policy_bundle(pdp):
     assert decision.effect == "allow"
     obligations = pdp.resolve_obligation_ids(decision.determining_policies)
     assert sorted(obligations) == sorted(["oblig-cost-variance-review", "oblig-lane-deviation"])
+
+
+def test_agent_may_connect_to_workload_in_same_trust_domain(pdp):
+    """ADR-001: mcp.connect permits an agent to open a session with a workload
+    sharing its trust_domain (both 'internal' here)."""
+    client = PDPClient(CEDAR_URL)
+    decision = client.authorize(
+        principal=ref("AgentPrincipal", "commercial-normalization-agent"),
+        action=action_ref("mcp.connect"),
+        resource=ref("Workload", "workload.tms-mcp"),
+        context={},
+    )
+    assert decision.effect == "allow"
+    assert decision.determining_policies == ["agent-may-connect-same-trust-domain"]
+
+
+def test_agent_denied_connect_to_workload_in_different_trust_domain(pdp):
+    """ADR-001: mcp.connect denies when trust_domain differs (agent is
+    'internal', workload.external-mcp is 'external') -- no permit matches,
+    default-deny."""
+    client = PDPClient(CEDAR_URL)
+    decision = client.authorize(
+        principal=ref("AgentPrincipal", "commercial-normalization-agent"),
+        action=action_ref("mcp.connect"),
+        resource=ref("Workload", "workload.external-mcp"),
+        context={},
+    )
+    assert decision.effect == "deny"
+
+
+def test_manager_may_approve_quote_within_limit(pdp):
+    """D19 (Finding 3, capability-profile review): quote.approve, distinct
+    from D6's route-deviation.approve -- resource is Quote, not
+    RouteRecommendation, matching mock_qms's real decision endpoint."""
+    client = PDPClient(CEDAR_URL)
+    decision = client.authorize(
+        principal=ref("Principal", "mona.commercial"),
+        action=action_ref("quote.approve"),
+        resource=ref("Quote", "Q-1001-v2"),
+        context={"quote_value_eur_cents": 645263},
+    )
+    assert decision.effect == "allow"
+    assert decision.determining_policies == ["commercial-manager-may-approve-quote"]
+
+
+def test_manager_may_reject_quote_no_value_limit(pdp):
+    """D20: reject has no value-limit gate -- declining doesn't commit the
+    company to anything, unlike approving."""
+    client = PDPClient(CEDAR_URL)
+    decision = client.authorize(
+        principal=ref("Principal", "mona.commercial"),
+        action=action_ref("quote.reject"),
+        resource=ref("Quote", "Q-1001-v2"),
+        context={},
+    )
+    assert decision.effect == "allow"
+    assert decision.determining_policies == ["commercial-manager-may-reject-quote"]
+
+
+def test_manager_may_request_quote_revision(pdp):
+    """D21: matches mock_qms's third real decision outcome."""
+    client = PDPClient(CEDAR_URL)
+    decision = client.authorize(
+        principal=ref("Principal", "mona.commercial"),
+        action=action_ref("quote.request-revision"),
+        resource=ref("Quote", "Q-1001-v2"),
+        context={},
+    )
+    assert decision.effect == "allow"
+    assert decision.determining_policies == ["commercial-manager-may-request-quote-revision"]
+
+
+def test_agent_cannot_approve_quote(pdp):
+    """quote.approve's schema-level appliesTo.principalTypes is [Principal]
+    only (business/actions.yaml) -- an AgentPrincipal can't even construct a
+    valid request for it. Confirms the structural guarantee, not just the
+    policy-level one."""
+    client = PDPClient(CEDAR_URL)
+    decision = client.authorize(
+        principal=ref("AgentPrincipal", "commercial-normalization-agent"),
+        action=action_ref("quote.approve"),
+        resource=ref("Quote", "Q-1001-v2"),
+        context={"quote_value_eur_cents": 645263},
+    )
+    assert decision.effect == "deny"
 
 
 def test_manager_approval_within_limit(pdp):

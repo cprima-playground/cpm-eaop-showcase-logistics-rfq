@@ -379,8 +379,8 @@ def build_app() -> FastAPI:
         summary="Flip THIS version's status to `revise` -- distinct from creating v2+.",
         openapi_extra={"x-gap": (
             "This is the human decision's \"revise\" outcome, expressed as its own endpoint -- but "
-            "decisions.md's D6/D19-candidate already covers the decision itself (POST .../decisions "
-            "with decision=\"revise\" does the same thing). Two endpoints for one transition is a "
+            "decisions.md's D21 (quote.request-revision) already covers the decision itself (POST "
+            ".../decisions with decision=\"revise\" does the same thing). Two endpoints for one transition is a "
             "real duplication risk this draft is surfacing, not resolving: pick one path before "
             "implementing, most likely folding this into POST .../decisions and removing this endpoint."
         )},

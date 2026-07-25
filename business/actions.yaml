@@ -12,10 +12,24 @@
 # integers, not floats. This is a modelling choice, resolved at entity-build time.
 
 actions:
+  # --- Transport (ADR-001) ---------------------------------------------------
+  # May this agent open an MCP session with this workload at all. Independent
+  # of any specific tool call within that session.
+  mcp.connect:
+    principals: [AgentPrincipal]
+    resources: [Workload]
+
   # --- Lane Evaluation Agent ------------------------------------------------
+  # executing_workload/tool (ADR-001): optional context carried on every
+  # action interfaces/mcp/tools.yaml maps a tool to, so an MCP-mediated call
+  # authorizes the initiating caller while naming which workload executed it.
+  # Absent for non-MCP-mediated calls (e.g. a human via the QMS UI directly).
   lane.evaluate:
     principals: [AgentPrincipal]
     resources: [RFQ]
+    context:
+      executing_workload: {type: String, required: false}
+      tool: {type: String, required: false}
 
   lane.option.create:
     principals: [AgentPrincipal]
@@ -24,10 +38,16 @@ actions:
   capacity.check:
     principals: [AgentPrincipal]
     resources: [RouteOption]
+    context:
+      executing_workload: {type: String, required: false}
+      tool: {type: String, required: false}
 
   carrier-rate.read:
     principals: [AgentPrincipal]
     resources: [RouteOption]
+    context:
+      executing_workload: {type: String, required: false}
+      tool: {type: String, required: false}
 
   # --- Commercial Normalization Agent --------------------------------------
   fx-rate.read:
@@ -43,16 +63,23 @@ actions:
     context:
       fx_age_seconds: Long
       target_currency: String
+      executing_workload: {type: String, required: false}
+      tool: {type: String, required: false}
 
   quote-price.calculate:
     principals: [AgentPrincipal]
     resources: [Quote]
+    context:
+      executing_workload: {type: String, required: false}
+      tool: {type: String, required: false}
 
   quote-variance.evaluate:
     principals: [AgentPrincipal]
     resources: [Quote]
     context:
       fx_variance_pct_x10: Long          # tenths of a percent
+      executing_workload: {type: String, required: false}
+      tool: {type: String, required: false}
 
   # --- Route Decision Agent -------------------------------------------------
   route.recommend:
@@ -63,10 +90,15 @@ actions:
       transit_variance_days: Long
       margin_pct_x10: Long
       non_contracted_lane: Boolean
+      executing_workload: {type: String, required: false}
+      tool: {type: String, required: false}
 
   route-deviation.propose:
     principals: [AgentPrincipal]
     resources: [RouteRecommendation]
+    context:
+      executing_workload: {type: String, required: false}
+      tool: {type: String, required: false}
 
   quote.submit-for-approval:
     principals: [AgentPrincipal]
@@ -78,6 +110,9 @@ actions:
   approval.request:
     principals: [AgentPrincipal]
     resources: [ApprovalTask]
+    context:
+      executing_workload: {type: String, required: false}
+      tool: {type: String, required: false}
 
   # --- Human ----------------------------------------------------------------
   route-deviation.approve:
@@ -87,3 +122,28 @@ actions:
       quote_value_eur_cents: Long
       fx_variance_pct_x10: Long
       margin_pct_x10: Long
+
+  # --- Human: Commercial Governance (Finding 3, capability-profile review) --
+  # mock_qms's real decision endpoint (mock_qms/store.py:378) supports THREE
+  # outcomes -- approved | rejected | revise -- but until now Cedar only
+  # modeled `route-deviation.approve`, a different resource type
+  # (RouteRecommendation, not Quote) reused as a stand-in. business/
+  # decisions.md's D19 was reserved for this (mock_qms/templates/
+  # quote_detail.html:129's "D19-candidate" comment, written before this
+  # action existed). quote.reject/quote.request-revision get their own
+  # Cedar policies; only quote.approve keeps the value-limit gate --
+  # declining a quote isn't committing the company to anything, so it
+  # doesn't need the same threshold as approving one.
+  quote.approve:
+    principals: [Principal]
+    resources: [Quote]
+    context:
+      quote_value_eur_cents: Long
+
+  quote.reject:
+    principals: [Principal]
+    resources: [Quote]
+
+  quote.request-revision:
+    principals: [Principal]
+    resources: [Quote]
