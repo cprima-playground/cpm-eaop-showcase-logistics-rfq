@@ -7,6 +7,7 @@ not a build_app() closure -- see api.py's own docstring on why)."""
 from fastapi.testclient import TestClient
 
 import mock_qms.api as api_module
+from conftest import TEST_API_KEY
 from rfq_common.identity import Principal
 
 READER = Principal(kind="human", id="diane.delgado", roles=["reader"])
@@ -121,11 +122,45 @@ def test_quote_detail_shows_empty_state_for_stub_sections(monkeypatch):
     assert "not available yet" in r.text  # Decision Evidence rows
 
 
-def test_quote_detail_decision_actions_disabled_for_commercial_manager(monkeypatch):
+def test_quote_detail_decision_form_hidden_for_draft_version(monkeypatch):
+    """Q-1001 is seeded draft -- no Approve/Reject/Revise form yet (only
+    approval_required versions can be decided); the other stub actions
+    (choose another lane, etc.) still render disabled."""
     _as(monkeypatch, COMMERCIAL_MANAGER)
     r = client().get("/app/quotes/Q-1001")
-    assert "Approve" in r.text
+    assert "Approve" not in r.text
+    assert "decisions can only be recorded while approval_required" in r.text
     assert "disabled" in r.text
+
+
+def test_quote_detail_decision_form_shown_for_approval_required_version(monkeypatch):
+    _as(monkeypatch, COMMERCIAL_MANAGER)
+    c = client()
+    api_key = TEST_API_KEY
+    q = c.post(
+        "/quotes", headers={"X-API-Key": api_key},
+        json={"rfq_id": "RFQ-9001", "customer_id": "ACME", "currency": "EUR"},
+    ).json()
+    quote_id = q["quote_id"]
+    c.put(
+        f"/quotes/{quote_id}/versions/1/route-recommendation", headers={"X-API-Key": api_key},
+        json={"recommendation_id": "REC-1", "selected_route_id": "SHA-HAM-MUC"},
+    )
+    c.put(
+        f"/quotes/{quote_id}/versions/1/pricing-inputs", headers={"X-API-Key": api_key},
+        json={"fx_rate_ref": "FX-X", "rate_refs": ["SHA-HAM-MUC"], "pricing_terms_ref": "PT-1", "margin_floor_ref": "standard"},
+    )
+    c.post(f"/quotes/{quote_id}/versions/1/price", headers={"X-API-Key": api_key})
+    c.post(f"/quotes/{quote_id}/versions/1/submit-for-approval", headers={"X-API-Key": api_key})
+
+    r = c.get(f"/app/quotes/{quote_id}")
+    assert "Approve" in r.text
+    assert f'action="/app/quotes/{quote_id}/versions/1/decide"' in r.text
+
+    decide = c.post(f"/app/quotes/{quote_id}/versions/1/decide", data={"decision": "approved"}, follow_redirects=False)
+    assert decide.status_code == 303
+    after = c.get(f"/app/quotes/{quote_id}")
+    assert "approved" in after.text.lower()
 
 
 def test_quote_detail_decision_actions_hidden_for_plain_reader(monkeypatch):

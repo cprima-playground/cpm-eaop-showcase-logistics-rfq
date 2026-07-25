@@ -23,8 +23,10 @@ from rfq_common.masterdata_client import MasterdataClient
 from rfq_common.models import (
     CreateNextVersionRequest,
     CreateQuoteRequest,
+    DecisionRecord,
     PricingInputs,
     Quote,
+    QuoteDecisionRequest,
     QuoteVersion,
     RouteRecommendationInput,
     RuleResult,
@@ -89,6 +91,7 @@ class QmsStore:
         self._customer_cache: set[str] = set()
         self._quotes: dict[str, Quote] = {}
         self._versions: dict[str, list[QuoteVersion]] = {}
+        self._decisions: dict[str, list[DecisionRecord]] = {}
         self._next_id = 1001
         self.reload()
 
@@ -97,6 +100,7 @@ class QmsStore:
         quotes/versions created since boot."""
         self._quotes.clear()
         self._versions.clear()
+        self._decisions.clear()
         self._customer_cache.clear()
         self._next_id = 1001
 
@@ -337,6 +341,27 @@ class QmsStore:
         updated = qv.model_copy(update={"status": "approval_required"})
         self._replace_version(quote_id, version, updated)
         return updated
+
+    def record_decision(self, quote_id: str, version: int, body: QuoteDecisionRequest) -> QuoteVersion:
+        """The actual D19-candidate action, made real: approval_required ->
+        approved|rejected|revise. `status`'s new value IS the decision (per
+        QuoteVersion's own docstring) -- DecisionRecord is kept alongside as
+        supporting evidence (who/when/why), not the authoritative signal."""
+        qv = self.get_version(quote_id, version)
+        if qv is None:
+            raise UnknownQuoteError(f"no version {version} for quote {quote_id!r}")
+        if qv.status != "approval_required":
+            raise InvalidStateError(f"version {version} of {quote_id!r} is {qv.status!r}, not approval_required")
+        updated = qv.model_copy(update={"status": body.decision})
+        self._replace_version(quote_id, version, updated)
+        record = DecisionRecord(
+            decision=body.decision, approver=body.approver, reason=body.reason, decided_at=_timestamp(),
+        )
+        self._decisions.setdefault(f"{quote_id}:{version}", []).append(record)
+        return updated
+
+    def list_decisions(self, quote_id: str, version: int) -> list[DecisionRecord]:
+        return list(self._decisions.get(f"{quote_id}:{version}", []))
 
     def search(self, *, customer_id: str | None = None, rfq_id: str | None = None, status: str | None = None) -> list[Quote]:
         results = list(self._quotes.values())

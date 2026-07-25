@@ -26,8 +26,8 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi import Depends, FastAPI, Form, Header, HTTPException, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
@@ -191,11 +191,31 @@ def build_app() -> FastAPI:
         versions = store.list_versions(quoteId)
         timeline = store.timeline(quoteId)
         latest = versions[-1] if versions else None
+        decisions = store.list_decisions(quoteId, latest.version) if latest else []
         return templates.TemplateResponse(
             request, "quote_detail.html",
             _ctx(request, quote=quote, versions=versions, timeline=timeline, latest=latest,
-                 can_decide=principal.has_role("commercial-manager")),
+                 decisions=decisions, can_decide=principal.has_role("commercial-manager")),
         )
+
+    @app.post("/app/quotes/{quoteId}/versions/{version}/decide")
+    def ui_decide_quote_version(request: Request, quoteId: str, version: int,
+                                 decision: str = Form(...), reason: str = Form("")):
+        """The real button behind Approve/Reject/Request revision -- same
+        store.record_decision() the JSON POST .../decisions route calls,
+        session-role-gated instead of API-key-gated. A stale double-submit
+        (version already decided) redirects back rather than 500ing -- the
+        detail page's own re-render is the source of truth for what
+        actually happened."""
+        principal = _require_role(request, "commercial-manager")
+        try:
+            store.record_decision(
+                quoteId, version,
+                m.QuoteDecisionRequest(decision=decision, approver=principal.id, reason=reason or None),
+            )
+        except (UnknownQuoteError, InvalidStateError):
+            pass
+        return RedirectResponse(f"/app/quotes/{quoteId}", status_code=303)
 
     @app.get("/app/quotes/{quoteId}/customer-view", response_class=HTMLResponse)
     def ui_quote_customer_view(request: Request, quoteId: str):
@@ -595,17 +615,20 @@ def build_app() -> FastAPI:
         "/quotes/{quoteId}/versions/{version}/decisions", tags=["Approvals"], response_model=list[m.DecisionRecord],
         summary="Approval history for this version -- supporting evidence, not the authoritative signal.",
         openapi_extra={"x-domain-action": "quote.read", "x-resource-type": "Quote"},
+        dependencies=[Depends(require_api_key)],
     )
     def list_quote_decisions(quoteId: str, version: int):
-        _stub()
+        return store.list_decisions(quoteId, version)
 
     @app.post(
         "/quotes/{quoteId}/versions/{version}/decisions", tags=["Approvals"], response_model=m.QuoteVersion,
         summary="The human-in-the-loop decision -- approval_required -> approved | rejected | revise.",
         description=(
             "The status transition IS the decision, per decisions.md's \"Human-in-the-loop = a "
-            "status change\" principle. This endpoint is real and will be called; it currently runs "
-            "without a dedicated Cedar gate of its own (see x-gap)."
+            "status change\" principle. Real: requires the version to actually be approval_required "
+            "(409 otherwise); records a DecisionRecord alongside. Still runs without a dedicated "
+            "Cedar gate of its own (see x-gap) -- callable by anyone with a valid API key, same as "
+            "every other mutating route in this file today."
         ),
         openapi_extra={
             "x-domain-action": None,  # NOT YET MODELED -- see x-gap
@@ -619,9 +642,15 @@ def build_app() -> FastAPI:
                 "approval_required\" -- not from mirroring this endpoint's name."
             ),
         },
+        dependencies=[Depends(require_api_key)],
     )
     def decide_quote_version(quoteId: str, version: int, body: m.QuoteDecisionRequest):
-        _stub()
+        try:
+            return store.record_decision(quoteId, version, body)
+        except UnknownQuoteError as exc:
+            raise HTTPException(status_code=404, detail=str(exc))
+        except InvalidStateError as exc:
+            raise HTTPException(status_code=409, detail=str(exc))
 
     # ------------------------------------------------------------ Publication
     @app.post(

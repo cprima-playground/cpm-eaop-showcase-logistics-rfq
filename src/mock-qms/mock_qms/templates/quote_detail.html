@@ -119,16 +119,43 @@
 
 <h2 class="text-lg font-semibold mt-8 mb-2">Decision actions</h2>
 {% if can_decide %}
+  {% if latest and latest.status == "approval_required" %}
+  <form method="post" action="/app/quotes/{{ quote.quote_id }}/versions/{{ latest.version }}/decide" class="mb-3">
+    <label class="text-xs text-gray-500 block mb-1">Reason (optional)</label>
+    <input type="text" name="reason" class="border rounded px-2 py-1 text-sm w-full max-w-md mb-2" placeholder="e.g. margin acceptable given strategic account">
+    <div class="flex flex-wrap gap-2">
+      <button type="submit" name="decision" value="approved" title="POST .../decisions -- D19-candidate, no dedicated Cedar gate yet (x-domain-action: None)" class="border rounded px-3 py-1 text-sm bg-green-50 border-green-300">Approve</button>
+      <button type="submit" name="decision" value="rejected" title="POST .../decisions -- D19-candidate, no dedicated Cedar gate yet (x-domain-action: None)" class="border rounded px-3 py-1 text-sm bg-red-50 border-red-300">Reject</button>
+      <button type="submit" name="decision" value="revise" title="POST .../decisions -- D19-candidate, no dedicated Cedar gate yet (x-domain-action: None)" class="border rounded px-3 py-1 text-sm bg-yellow-50 border-yellow-300">Request revision</button>
+    </div>
+  </form>
+  {% elif latest %}
+  <p class="text-sm text-gray-500 mb-3">Version {{ latest.version }} is {{ latest.status }} -- decisions can only be recorded while approval_required.</p>
+  {% endif %}
 <div class="flex flex-wrap gap-2 mb-6">
-  <button disabled title="POST .../decisions -- D19-candidate, not yet modeled (x-domain-action: None)" class="border rounded px-3 py-1 text-sm opacity-50 cursor-not-allowed">Approve</button>
-  <button disabled title="POST .../decisions -- D19-candidate, not yet modeled (x-domain-action: None)" class="border rounded px-3 py-1 text-sm opacity-50 cursor-not-allowed">Reject</button>
-  <button disabled title="POST .../decisions -- D19-candidate, not yet modeled (x-domain-action: None)" class="border rounded px-3 py-1 text-sm opacity-50 cursor-not-allowed">Request revision</button>
   <button disabled title="PUT .../route-recommendation -- no decision governs composing a draft yet" class="border rounded px-3 py-1 text-sm opacity-50 cursor-not-allowed">Choose another lane</button>
   <button disabled title="PUT .../route-recommendation -- no decision governs composing a draft yet" class="border rounded px-3 py-1 text-sm opacity-50 cursor-not-allowed">Request new route search</button>
   <button disabled title="PUT .../pricing-inputs -- no decision governs composing a draft yet" class="border rounded px-3 py-1 text-sm opacity-50 cursor-not-allowed">Require fresh FX snapshot</button>
   <button disabled title="commercial-terms -- field shape entirely undesigned, not a real contract yet" class="border rounded px-3 py-1 text-sm opacity-50 cursor-not-allowed">Adjust margin</button>
   <button disabled title="commercial-terms -- field shape entirely undesigned, not a real contract yet" class="border rounded px-3 py-1 text-sm opacity-50 cursor-not-allowed">Reject carrier rate</button>
 </div>
+{% if decisions %}
+<table class="text-sm border-collapse w-full max-w-2xl mb-6">
+  <thead><tr class="text-left border-b">
+    <th class="py-2 pr-4">Decision</th><th class="py-2 pr-4">By</th><th class="py-2 pr-4">Reason</th><th class="py-2 pr-4">When</th>
+  </tr></thead>
+  <tbody>
+    {% for d in decisions %}
+    <tr class="border-b">
+      <td class="py-2 pr-4">{{ m.lifecycle_badge(d.decision) }}</td>
+      <td class="py-2 pr-4">{{ d.approver }}</td>
+      <td class="py-2 pr-4">{{ d.reason or "—" }}</td>
+      <td class="py-2 pr-4 text-gray-500">{{ d.decided_at }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
 {% else %}
 <p class="text-sm text-gray-500 mb-6">Decision actions require the commercial-manager role.</p>
 {% endif %}

@@ -9,6 +9,7 @@ dependencies = [
     "jinja2>=3.1",
     "itsdangerous>=2.2",
     "pyjwt>=2.9",
+    "python-multipart>=0.0.9",
 ]
 
 [dependency-groups]
