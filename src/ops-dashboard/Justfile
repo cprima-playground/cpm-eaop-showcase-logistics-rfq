@@ -1,0 +1,10 @@
+# ops-dashboard -- convenience wrapper over `uv run ops-dashboard ...` / pytest.
+
+default:
+    @just --list
+
+serve:
+    uv run ops-dashboard serve
+
+test:
+    uv run pytest

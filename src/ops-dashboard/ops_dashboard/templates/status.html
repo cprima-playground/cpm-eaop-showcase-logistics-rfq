@@ -73,9 +73,14 @@
       <td class="py-2">
         {% if s.swagger_url %}
         <a href="{{ s.swagger_url }}" target="_blank" rel="noopener noreferrer" class="underline accent">Swagger</a>
+        {% endif %}
+        {% if s.redoc_url %}
         <a href="{{ s.redoc_url }}" target="_blank" rel="noopener noreferrer" class="underline accent ml-2">ReDoc</a>
+        {% endif %}
+        {% if s.openapi_url %}
         <a href="{{ s.openapi_url }}" target="_blank" rel="noopener noreferrer" class="underline accent ml-2">OpenAPI</a>
-        {% else %}
+        {% endif %}
+        {% if not (s.swagger_url or s.redoc_url or s.openapi_url) %}
         —
         {% endif %}
       </td>

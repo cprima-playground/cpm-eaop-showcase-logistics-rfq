@@ -103,6 +103,16 @@ class StubFxClient:
         ]
 
 
+class StubQmsClient:
+    base_url = "http://stub-qms"
+
+    def probe(self):
+        return {"info": {"title": "Quote Management System (QMS)"}}
+
+    def stats(self):
+        return {"count": 0, "approx_bytes": 0}
+
+
 @pytest.fixture(autouse=True)
 def _session_secret(monkeypatch):
     monkeypatch.setenv("OPS_DASHBOARD_SESSION_SECRET", TEST_SESSION_SECRET)
@@ -113,10 +123,12 @@ def _session_secret(monkeypatch):
 
 @pytest.fixture
 def stub_clients():
-    return StubTmsClient(), StubRateClient(), StubMasterdataClient(), StubFxClient()
+    return StubTmsClient(), StubRateClient(), StubMasterdataClient(), StubFxClient(), StubQmsClient()
 
 
 @pytest.fixture
 def app(stub_clients):
-    tms, rate, masterdata, fx = stub_clients
-    return api_module.build_app(tms_client=tms, rate_client=rate, masterdata_client=masterdata, fx_client=fx)
+    tms, rate, masterdata, fx, qms = stub_clients
+    return api_module.build_app(
+        tms_client=tms, rate_client=rate, masterdata_client=masterdata, fx_client=fx, qms_client=qms,
+    )

@@ -97,7 +97,10 @@ def _fx_client() -> FxClient:
 
 
 def _qms_client() -> QmsClient:
-    return QmsClient(base_url=os.environ.get("QMS_URL", "http://127.0.0.1:8007"))
+    api_key = os.environ.get("QMS_API_KEY")
+    if not api_key:
+        api_key = SecretsClient("dev", inventory_path=INVENTORY_PATH).get("qms-api-key")
+    return QmsClient(base_url=os.environ.get("QMS_URL", "http://127.0.0.1:8007"), api_key=api_key)
 
 
 def _check_service(name: str, base_url: str, auth_probe, *, kind: str = "api", auth_basis: str = "an authenticated call") -> dict:
@@ -187,6 +190,50 @@ def _check_vault(name: str, vault_addr: str) -> dict:
         result["status"] = "pass"
     else:
         result["detail"] = f"initialized={body.get('initialized')}, sealed={body.get('sealed')}"
+        result["status"] = "warn"
+    return result
+
+
+def _check_cedar(name: str, base_url: str) -> dict:
+    """The Cedar PDP (rfq_common.pdp -- this project's OWN instance, port
+    8280, deliberately not cpm-eaop's unrelated cedar-agent on 8180, see
+    pdp/client.py). No API key (cedar-agent has no auth of its own) --
+    reachability is `GET /v1/policies` answering at all; the auth-equivalent
+    is at least one policy actually loaded (a reachable-but-empty agent
+    would silently deny everything, same class of false-"up" as Vault
+    sealed-but-responding)."""
+    result = {
+        "name": name, "kind": "api", "base_url": base_url, "frontend_url": None,
+        "swagger_url": f"{base_url}/swagger-ui/", "redoc_url": None, "openapi_url": f"{base_url}/openapi.json",
+        "status": "fail", "reachable": False, "authenticated": False,
+        "reachable_basis": f"GET {base_url}/v1/policies",
+        "auth_basis": "at least one policy is actually loaded (a reachable-but-empty agent silently denies everything)",
+        "latency_ms": None, "detail": None,
+    }
+    t0 = time.monotonic()
+    try:
+        r = httpx.get(f"{base_url}/v1/policies", timeout=3)
+    except httpx.HTTPError as exc:
+        result["detail"] = f"unreachable: {exc}"
+        return result
+    result["latency_ms"] = round((time.monotonic() - t0) * 1000)
+    result["reachable"] = r.status_code == 200
+    if not result["reachable"]:
+        result["detail"] = f"/v1/policies returned {r.status_code}"
+        return result
+
+    try:
+        policies = r.json()
+    except ValueError:
+        result["detail"] = "/v1/policies did not return valid JSON"
+        result["status"] = "warn"
+        return result
+
+    if policies:
+        result["authenticated"] = True
+        result["status"] = "pass"
+    else:
+        result["detail"] = "reachable but zero policies loaded -- every authorize() call will deny"
         result["status"] = "warn"
     return result
 
@@ -522,13 +569,17 @@ def build_app(
                             auth_basis=f"GET {fx.base_url}/exchange-rates/CNY/EUR with our X-API-Key"),
             _check_qms_frontend("qms", qms.base_url),
             _check_vault("vault", os.environ.get("VAULT_ADDR", "http://127.0.0.1:8200")),
+            _check_cedar("policy", os.environ.get("CEDAR_AGENT_URL", "http://127.0.0.1:8280")),
         ]
-        stats_clients = {"masterdata": masterdata, "tms": tms, "rate": rate, "fx": fx}
+        stats_clients = {"masterdata": masterdata, "tms": tms, "rate": rate, "fx": fx, "qms": qms}
         for s in services:
             s["mcp_server"] = MCP_SERVER_BY_SERVICE.get(s["name"])
             s["stats"] = None
             client = stats_clients.get(s["name"])
-            if client is not None and s["authenticated"]:
+            if client is not None:
+                # Not gated on s["authenticated"]: for qms that flag tracks
+                # frontend SSO (there's no UI yet), not the X-API-Key this
+                # call actually uses -- the try/except is the real safety net.
                 try:
                     s["stats"] = client.stats()
                 except Exception:

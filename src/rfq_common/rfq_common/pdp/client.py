@@ -23,7 +23,8 @@ class PDPClient:
     """Thin HTTP client over cedar-agent `POST /v1/is_authorized`."""
 
     def __init__(self, base_url: str | None = None, timeout: float = 5.0):
-        self._url = (base_url or os.environ.get("CEDAR_AGENT_URL", "http://localhost:8180")) + "/v1/is_authorized"
+        # 8280, not 8180 -- see pdp/admin.py's _base_url() for why.
+        self._url = (base_url or os.environ.get("CEDAR_AGENT_URL", "http://localhost:8280")) + "/v1/is_authorized"
         self._timeout = timeout
 
     def authorize(self, principal: str, action: str, resource: str,

@@ -1,0 +1,14 @@
+# Baseline QMS quotes -- deterministic quote_ids (matches routes.yaml/rates.yaml's
+# pinned-id convention), all status=draft (nothing beyond draft is buildable yet --
+# pricing/R1-R6/Cedar wiring don't exist, see mock_qms/api.py's module docstring).
+# customer_id references masterdata Party (ADR-010) -- ACME is the only kind=customer
+# entry in parties.jsonl today, every quote here reuses it.
+quotes:
+  - quote_id: Q-1001
+    rfq_id: RFQ-1001
+    customer_id: ACME
+    currency: EUR
+  - quote_id: Q-1002
+    rfq_id: RFQ-1002
+    customer_id: ACME
+    currency: EUR

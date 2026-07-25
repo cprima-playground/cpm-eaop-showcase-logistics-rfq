@@ -1,0 +1,21 @@
+# mock-fx -- convenience wrapper over `uv run mock-fx ...` / pytest.
+# `serve` boots the process; every other command (except test) talks to a
+# *running* one over HTTP (see mock_fx/cli.py's docstring for why).
+
+default:
+    @just --list
+
+serve:
+    uv run mock-fx serve
+
+test:
+    uv run pytest
+
+reset:
+    uv run mock-fx reset
+
+list-rates:
+    uv run mock-fx list-rates
+
+stats:
+    uv run mock-fx stats

@@ -148,8 +148,9 @@ class QmsClient:
     the real FastAPI app booted and its schema loaded, not just that SOME
     process answers on the port."""
 
-    def __init__(self, base_url: str | None = None, timeout: float = 5.0):
+    def __init__(self, base_url: str | None = None, api_key: str | None = None, timeout: float = 5.0):
         self._base_url = base_url or os.environ.get("QMS_URL", "http://127.0.0.1:8007")
+        self._api_key = api_key
         self._timeout = timeout
 
     @property
@@ -159,6 +160,21 @@ class QmsClient:
     def probe(self) -> dict:
         try:
             r = httpx.get(f"{self._base_url}/openapi.json", timeout=self._timeout)
+        except httpx.HTTPError as exc:
+            raise QmsUnavailableError(f"QMS unreachable at {self._base_url}: {exc}") from exc
+        r.raise_for_status()
+        return r.json()
+
+    def stats(self) -> dict:
+        """Quotes/versions are now a real store (mock_qms/store.py) -- unlike
+        `probe()`, this is a real authenticated call, same shape as the other
+        4 clients' stats()."""
+        try:
+            r = httpx.get(
+                f"{self._base_url}/admin/stats",
+                headers={"X-API-Key": self._api_key or ""},
+                timeout=self._timeout,
+            )
         except httpx.HTTPError as exc:
             raise QmsUnavailableError(f"QMS unreachable at {self._base_url}: {exc}") from exc
         r.raise_for_status()

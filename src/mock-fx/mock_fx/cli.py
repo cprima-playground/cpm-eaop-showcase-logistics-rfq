@@ -1,59 +1,73 @@
-"""mock-fx CLI -- reset/get-rate/serve on top of rfq_common's base Typer app.
-Lets a coding agent drive the backend deterministically. reset/get-rate go
-through the same masterdata-backed currency validation as the API (ADR-010:
-masterdata must be consumed via API -- no CLI bypass)."""
+"""mock-fx CLI -- serve + an HTTP-client CLI for exchange rates/convert. Every
+command except `serve` talks to a *running* mock-fx process (see
+rfq_common.http_cli's docstring / mock_tms/cli.py -- same treatment)."""
 
 from __future__ import annotations
 
+import os
+
+import httpx
 import typer
 
 from rfq_common.cli import create_cli
+from rfq_common.http_cli import print_response
 
-from . import api
-from .store import FxStore
+from .auth import _expected_key
 
 app = create_cli("mock-fx", version="0.1.0")
 
 
+def _base_url(base_url: str | None) -> str:
+    return base_url or os.environ.get("FX_URL", "http://127.0.0.1:8001")
+
+
+def _headers() -> dict:
+    return {"X-API-Key": _expected_key()}
+
+
 @app.command()
-def reset() -> None:
-    """Reload FX fixtures from disk (the deterministic baseline)."""
-    store = FxStore(api._fixtures_dir(), api._masterdata_client())
-    typer.echo(f"reset: loaded {len(store._rates)} rate snapshot(s) from {api._fixtures_dir()}")
+def reset(base_url: str = typer.Option(None)) -> None:
+    """POST /admin/reset -- reloads the running server's rates (live-anchor
+    refresh if FX_LIVE_ANCHOR is on -- re-fetches ECB fresh, not just at boot)."""
+    print_response(httpx.post(f"{_base_url(base_url)}/admin/reset", headers=_headers()))
+
+
+@app.command(name="list-rates")
+def list_rates(base_url: str = typer.Option(None)) -> None:
+    """GET /exchange-rates -- the latest rate for every known pair."""
+    print_response(httpx.get(f"{_base_url(base_url)}/exchange-rates", headers=_headers()))
 
 
 @app.command(name="get-rate")
-def get_rate(base: str, quote: str, effective_at: str = typer.Option(None, "--effective-at")) -> None:
-    """Print the rate for BASE/QUOTE at an optional point in time (ISO 8601)."""
-    store = FxStore(api._fixtures_dir(), api._masterdata_client())
-    rate = store.get(base, quote, effective_at=effective_at)
-    if rate is None:
-        typer.echo(f"no rate for {base}/{quote}", err=True)
-        raise typer.Exit(code=1)
-    typer.echo(rate.model_dump_json())
+def get_rate(base: str, quote: str, effective_at: str = typer.Option(None, "--effective-at"), base_url: str = typer.Option(None)) -> None:
+    """GET /exchange-rates/{base}/{quote} at an optional point in time (ISO 8601)."""
+    params = {"effectiveAt": effective_at} if effective_at else {}
+    print_response(httpx.get(f"{_base_url(base_url)}/exchange-rates/{base}/{quote}", headers=_headers(), params=params))
 
 
 @app.command()
-def convert(amount: str, from_currency: str, to_currency: str) -> None:
-    """Convert AMOUNT from FROM_CURRENCY to TO_CURRENCY (correctly rounded per
-    the target currency's minor_unit -- e.g. 0 decimals for JPY)."""
-    from decimal import Decimal
+def history(base: str, quote: str, days: int = typer.Option(None), base_url: str = typer.Option(None)) -> None:
+    """GET /exchange-rates/{base}/{quote}/history."""
+    params = {"days": days} if days is not None else {}
+    print_response(httpx.get(f"{_base_url(base_url)}/exchange-rates/{base}/{quote}/history", headers=_headers(), params=params))
 
-    from .convert import convert_amount
 
-    store = FxStore(api._fixtures_dir(), api._masterdata_client())
-    target_minor_unit = store.minor_unit(to_currency)
-    rate = store.get(from_currency, to_currency)
-    inverse = False
-    if rate is None:
-        rate = store.get(to_currency, from_currency)
-        inverse = True
-    if rate is None:
-        typer.echo(f"no rate for {from_currency}/{to_currency}", err=True)
-        raise typer.Exit(code=1)
-    effective_rate = (1 / rate.rate) if inverse else rate.rate
-    converted = convert_amount(Decimal(amount), effective_rate, target_minor_unit=target_minor_unit)
-    typer.echo(f"{converted} {to_currency}")
+@app.command()
+def convert(
+    amount: str, from_currency: str, to_currency: str,
+    effective_at: str = typer.Option(None, "--effective-at"), base_url: str = typer.Option(None),
+) -> None:
+    """GET /convert -- correctly rounded per the target currency's minor_unit."""
+    params = {"amount": amount, "from_currency": from_currency, "to_currency": to_currency}
+    if effective_at:
+        params["effectiveAt"] = effective_at
+    print_response(httpx.get(f"{_base_url(base_url)}/convert", headers=_headers(), params=params))
+
+
+@app.command()
+def stats(base_url: str = typer.Option(None)) -> None:
+    """GET /admin/stats -- memory-pressure metadata for the running server's store."""
+    print_response(httpx.get(f"{_base_url(base_url)}/admin/stats", headers=_headers()))
 
 
 @app.command()
@@ -61,7 +75,8 @@ def serve(host: str = "127.0.0.1", port: int = 8001) -> None:
     """Run the REST API (Swagger UI at /swagger)."""
     import uvicorn
 
-    uvicorn.run(api.build_app(), host=host, port=port)
+    from .api import build_app
+    uvicorn.run(build_app(), host=host, port=port)
 
 
 def main() -> None:

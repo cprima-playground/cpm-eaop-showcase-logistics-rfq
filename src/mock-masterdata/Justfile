@@ -1,0 +1,22 @@
+# mock-masterdata -- convenience wrapper over `uv run mock-masterdata ...` /
+# pytest. `serve` boots the process; every other command except `domains`/
+# `test` talks to a *running* one over HTTP (see mock_masterdata/cli.py's
+# docstring for why).
+
+default:
+    @just --list
+
+serve:
+    uv run mock-masterdata serve
+
+test:
+    uv run pytest
+
+reset:
+    uv run mock-masterdata reset
+
+domains:
+    uv run mock-masterdata domains
+
+stats:
+    uv run mock-masterdata stats

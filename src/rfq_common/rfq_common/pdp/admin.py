@@ -11,7 +11,11 @@ import httpx
 
 
 def _base_url() -> str:
-    return os.environ.get("CEDAR_AGENT_URL", "http://localhost:8180")
+    # 8280, not 8180 -- cpm-eaop already runs its own cedar-agent on :8180 for
+    # unrelated work; this project's own instance (rfq-showcase-cedar-agent,
+    # spikes/repricing/policy-evaluation/docker-compose.yml) is deliberately
+    # on a different port so the two never collide.
+    return os.environ.get("CEDAR_AGENT_URL", "http://localhost:8280")
 
 
 class _Store:

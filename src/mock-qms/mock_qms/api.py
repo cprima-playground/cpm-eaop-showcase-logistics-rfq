@@ -1,12 +1,16 @@
 """Quote Management System (QMS) -- every documented path is a REAL FastAPI
-route: null-op (501 Not Implemented) since there's no Quote store, R1-R6
-pricing math, or Cedar wiring yet (business/qms-pricing-rules.md), but the
-route/request/response SHAPES are real, and every x-domain-action/x-gap/
-x-consults annotation lives in `openapi_extra` on the operation itself --
-migrated from the former interfaces/api/qms.openapi.yaml (deleted: a
-hand-authored file duplicating what /openapi.json now generates for real
-was a drift risk, not a second source of truth worth keeping). See git
-history for that file if you want the pre-migration draft framing.
+route. Quotes/Versions (search, create, read, supersede, timeline) are now
+backed by a real in-memory store (mock_qms/store.py) -- an append-only
+QuoteVersion history per quote, the one genuinely different in-memory shape
+in this codebase (every other mock system reloads a static fixture; QMS
+starts empty and grows via POST). Everything else (pricing/R1-R6, Cedar
+authz, documents, customer response) stays null-op (501) -- no pricing math
+or policy wiring exists yet (business/qms-pricing-rules.md). Every route's
+x-domain-action/x-gap/x-consults annotation lives in `openapi_extra` on the
+operation itself -- migrated from the former interfaces/api/qms.openapi.yaml
+(deleted: a hand-authored file duplicating what /openapi.json now generates
+for real was a drift risk, not a second source of truth worth keeping). See
+git history for that file if you want the pre-migration draft framing.
 
 A REAL DISCOVERY surfaced while drafting this: D16's own wording is "may the
 commercial agent create a quote version FROM THIS RECOMMENDATION" -- that
@@ -19,22 +23,42 @@ current_status."""
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException
 
 from rfq_common.app import create_app
+from rfq_common.masterdata_client import MasterdataClient
+from rfq_common.secrets import SecretsClient
 from rfq_common.theme import load_theme
 
 from rfq_common import models as m
 
+from .auth import require_api_key
+from .store import QmsStore, UnknownCustomerError, UnknownQuoteError, VersionConflictError
+
 RFQ_ROOT = Path(__file__).resolve().parents[3]
+INVENTORY_PATH = RFQ_ROOT / "identity" / "credentials-inventory.yaml"
+DEFAULT_FIXTURES_DIR = RFQ_ROOT / "systems" / "qms" / "fixtures"
 
 _NOT_IMPLEMENTED = "not implemented -- design-stage contract, see this operation's x-gap in /openapi.json"
 
 
 def _stub():
     raise HTTPException(status_code=501, detail=_NOT_IMPLEMENTED)
+
+
+def _fixtures_dir() -> Path:
+    return Path(os.environ.get("QMS_FIXTURES_DIR", str(DEFAULT_FIXTURES_DIR)))
+
+
+def _masterdata_client() -> MasterdataClient:
+    api_key = os.environ.get("MASTERDATA_API_KEY")
+    if not api_key:
+        api_key = SecretsClient("dev", inventory_path=INVENTORY_PATH).get("masterdata-api-key")
+    base_url = os.environ.get("MASTERDATA_URL", "http://localhost:8003")
+    return MasterdataClient(base_url=base_url, api_key=api_key)
 
 
 def build_app() -> FastAPI:
@@ -44,17 +68,28 @@ def build_app() -> FastAPI:
     except Exception:
         pass  # theme is cosmetic; never block boot on it
 
+    masterdata = None
+    try:
+        masterdata = _masterdata_client()
+    except Exception:
+        pass  # optional at boot -- store validates lazily per create_quote/reload call
+    store = QmsStore(_fixtures_dir(), masterdata)
+
     app = create_app("Quote Management System (QMS)", system_id="qms", theme_pack=theme_pack)
+    app.state.qms_store = store
 
     # --------------------------------------------------------------- Quotes
     @app.get(
         "/quotes", tags=["Quotes"], response_model=list[m.Quote],
         summary="Operational search/list, not generic database search.",
         openapi_extra={"x-domain-action": "quote.read", "x-resource-type": "Quote"},
+        dependencies=[Depends(require_api_key)],
     )
     def search_quotes(customerId: str | None = None, rfqId: str | None = None,
                        status: str | None = None, validAt: str | None = None):
-        _stub()
+        # validAt not implemented -- point-in-time search needs per-version
+        # valid_until comparison, out of scope for this minimal slice.
+        return [q.model_dump(mode="json") for q in store.search(customer_id=customerId, rfq_id=rfqId, status=status)]
 
     @app.post(
         "/quotes", tags=["Quotes"], response_model=m.QuoteVersion, status_code=201,
@@ -75,9 +110,14 @@ def build_app() -> FastAPI:
                 "it has no assignment to. Not modeled in decisions.md yet."
             ),
         },
+        dependencies=[Depends(require_api_key)],
     )
     def create_quote(body: m.CreateQuoteRequest):
-        _stub()
+        try:
+            version = store.create_quote(body)
+        except UnknownCustomerError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+        return version.model_dump(mode="json")
 
     @app.get(
         "/quotes/{quoteId}", tags=["Quotes"], response_model=m.Quote,
@@ -91,17 +131,24 @@ def build_app() -> FastAPI:
                 "customer-facing view, see GET .../customer-view) rather than one read/no-read boolean."
             ),
         },
+        dependencies=[Depends(require_api_key)],
     )
     def get_quote(quoteId: str):
-        _stub()
+        quote = store.get_quote(quoteId)
+        if quote is None:
+            raise HTTPException(status_code=404, detail=f"no quote {quoteId!r}")
+        return quote.model_dump(mode="json")
 
     @app.get(
         "/quotes/{quoteId}/versions", tags=["Quotes"], response_model=list[m.QuoteVersion],
         summary="Every version of a quote, oldest first (the full revision history).",
         openapi_extra={"x-domain-action": "quote.read", "x-resource-type": "Quote"},
+        dependencies=[Depends(require_api_key)],
     )
     def list_quote_versions(quoteId: str):
-        _stub()
+        if store.get_quote(quoteId) is None:
+            raise HTTPException(status_code=404, detail=f"no quote {quoteId!r}")
+        return [v.model_dump(mode="json") for v in store.list_versions(quoteId)]
 
     @app.post(
         "/quotes/{quoteId}/versions", tags=["Quotes", "Revisions"], response_model=m.QuoteVersion, status_code=201,
@@ -123,17 +170,31 @@ def build_app() -> FastAPI:
                 "make a retry loop look forbidden when it's actually just stale."
             ),
         },
+        dependencies=[Depends(require_api_key)],
     )
     def create_next_quote_version(quoteId: str, body: m.CreateNextVersionRequest, idempotency_key: str = Header(alias="Idempotency-Key")):
-        _stub()
+        # Idempotency-Key is accepted (real header contract) but not yet used to
+        # dedupe retries -- expected_latest_version already rejects a stale
+        # precondition (409); true idempotent-replay is a separate, unbuilt piece.
+        try:
+            version = store.create_next_version(quoteId, body)
+        except UnknownQuoteError as exc:
+            raise HTTPException(status_code=404, detail=str(exc))
+        except VersionConflictError as exc:
+            raise HTTPException(status_code=409, detail=str(exc))
+        return version.model_dump(mode="json")
 
     @app.get(
         "/quotes/{quoteId}/versions/{version}", tags=["Quotes"], response_model=m.QuoteVersion,
         summary="Read one specific, immutable quote version (internal representation).",
         openapi_extra={"x-domain-action": "quote.read", "x-resource-type": "Quote"},
+        dependencies=[Depends(require_api_key)],
     )
     def get_quote_version(quoteId: str, version: int):
-        _stub()
+        qv = store.get_version(quoteId, version)
+        if qv is None:
+            raise HTTPException(status_code=404, detail=f"no version {version} for quote {quoteId!r}")
+        return qv.model_dump(mode="json")
 
     @app.post(
         "/quotes/{quoteId}/versions/{version}/revise", tags=["Revisions"], response_model=m.QuoteVersion,
@@ -177,9 +238,12 @@ def build_app() -> FastAPI:
         "/quotes/{quoteId}/timeline", tags=["Audit"], response_model=list[m.TimelineEntry],
         summary="Status transitions across every version, in order.",
         openapi_extra={"x-domain-action": "quote.read", "x-resource-type": "Quote"},
+        dependencies=[Depends(require_api_key)],
     )
     def get_quote_timeline(quoteId: str):
-        _stub()
+        if store.get_quote(quoteId) is None:
+            raise HTTPException(status_code=404, detail=f"no quote {quoteId!r}")
+        return [t.model_dump(mode="json") for t in store.timeline(quoteId)]
 
     @app.get(
         "/quotes/{quoteId}/audit-events", tags=["Audit"], response_model=list[m.AuditEvent],
@@ -587,6 +651,15 @@ def build_app() -> FastAPI:
     )
     def list_carrier_rates(laneId: str, customerId: str | None = None):
         _stub()
+
+    @app.post("/admin/reset", dependencies=[Depends(require_api_key)])
+    def reset() -> dict:
+        store.reload()
+        return {"status": "reset"}
+
+    @app.get("/admin/stats", dependencies=[Depends(require_api_key)])
+    def stats() -> dict:
+        return store.stats()
 
     return app
 

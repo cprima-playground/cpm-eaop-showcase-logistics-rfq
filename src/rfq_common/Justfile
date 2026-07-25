@@ -1,0 +1,7 @@
+# rfq_common -- shared library, no `serve` (nothing runs standalone).
+
+default:
+    @just --list
+
+test:
+    uv run pytest

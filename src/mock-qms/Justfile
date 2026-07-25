@@ -1,0 +1,18 @@
+# mock-qms -- convenience wrapper over `uv run mock-qms ...` / pytest.
+# `serve` boots the process; every other command (except test) talks to a
+# *running* one over HTTP (see mock_qms/cli.py's docstring for why).
+
+default:
+    @just --list
+
+serve:
+    uv run mock-qms serve
+
+test:
+    uv run pytest
+
+reset:
+    uv run mock-qms reset
+
+stats:
+    uv run mock-qms stats
