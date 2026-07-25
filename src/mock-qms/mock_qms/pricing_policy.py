@@ -28,6 +28,9 @@ from decimal import ROUND_CEILING, Decimal
 
 from pydantic import BaseModel
 
+from .pricing.exceptions import InvalidMarginError
+from .pricing.money import Money
+
 POLICY_REF = "demo-cost-plus-margin-v1"
 
 
@@ -64,19 +67,25 @@ def target_margin_pct_x10(profile: PricingProfile, *, fx_over_threshold: bool) -
     return min(profile.base_margin_pct_x10 + adjustment, profile.max_target_margin_pct_x10)
 
 
-def calculate_sell_price(total_cost_eur_cents: int, target_margin_pct_x10: int) -> int:
-    if total_cost_eur_cents < 0:
-        raise ValueError("total cost cannot be negative")
+def calculate_sell_price(total_cost: Money, target_margin_pct_x10: int) -> Money:
+    """total_cost can never be negative -- Money.__post_init__ already
+    makes that structurally unconstructable, so no redundant guard here."""
     if not 0 <= target_margin_pct_x10 < 1000:
-        raise ValueError("target margin must be between 0% and 99.9%")
+        raise InvalidMarginError("target margin must be between 0% and 99.9%")
     margin = Decimal(target_margin_pct_x10) / Decimal(1000)
-    raw_sell_price = Decimal(total_cost_eur_cents) / (Decimal(1) - margin)
-    return int(raw_sell_price.quantize(Decimal("1"), rounding=ROUND_CEILING))
+    raw_sell_price = Decimal(total_cost.amount_minor) / (Decimal(1) - margin)
+    amount_minor = int(raw_sell_price.quantize(Decimal("1"), rounding=ROUND_CEILING))
+    return Money(amount_minor, total_cost.currency, total_cost.minor_unit)
 
 
-def commercial_round_up(cents: int) -> int:
+def commercial_round_up(money: Money) -> Money:
     """Under €1,000 -> nearest €5. €1,000-9,999 -> nearest €10. >=€10,000 ->
-    nearest €50. A customer-facing price, not the raw mathematical minimum."""
+    nearest €50. A customer-facing price, not the raw mathematical minimum.
+    Band thresholds are expressed in minor units assuming a 2-decimal
+    currency (matches every currency this demo policy is actually
+    exercised against -- EUR); would need generalizing via minor_unit if a
+    0-decimal currency like JPY were ever priced through this policy."""
+    cents = money.amount_minor
     if cents < 100_000:
         band = 500
     elif cents < 1_000_000:
@@ -84,16 +93,18 @@ def commercial_round_up(cents: int) -> int:
     else:
         band = 5_000
     remainder = cents % band
-    return cents if remainder == 0 else cents + (band - remainder)
+    rounded = cents if remainder == 0 else cents + (band - remainder)
+    return Money(rounded, money.currency, money.minor_unit)
 
 
-def calculate_margin_pct_x10(total_cost_eur_cents: int, proposed_sell_price_eur_cents: int) -> int:
+def calculate_margin_pct_x10(total_cost: Money, proposed_sell_price: Money) -> int:
     """The ACTUAL margin after commercial rounding -- R1 evaluates this,
-    not the pre-rounding target."""
-    if proposed_sell_price_eur_cents <= 0:
-        raise ValueError("sell price must be positive")
+    not the pre-rounding target. Returns a plain int (a ratio, not an
+    amount) -- no Money involved on the way out."""
+    if proposed_sell_price.amount_minor <= 0:
+        raise InvalidMarginError("sell price must be positive")
     margin = (
-        Decimal(proposed_sell_price_eur_cents - total_cost_eur_cents)
-        / Decimal(proposed_sell_price_eur_cents)
+        Decimal(proposed_sell_price.amount_minor - total_cost.amount_minor)
+        / Decimal(proposed_sell_price.amount_minor)
     )
     return int((margin * Decimal(1000)).quantize(Decimal("1"), rounding=ROUND_CEILING))

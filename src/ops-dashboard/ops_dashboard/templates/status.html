@@ -83,7 +83,10 @@
         {% if s.openapi_url %}
         <a href="{{ s.openapi_url }}" target="_blank" rel="noopener noreferrer" class="underline accent ml-2">OpenAPI</a>
         {% endif %}
-        {% if not (s.swagger_url or s.redoc_url or s.openapi_url) %}
+        {% if s.rapidoc_url %}
+        <a href="{{ s.rapidoc_url }}" target="_blank" rel="noopener noreferrer" class="underline accent ml-2">RapiDoc</a>
+        {% endif %}
+        {% if not (s.swagger_url or s.redoc_url or s.openapi_url or s.rapidoc_url) %}
         —
         {% endif %}
       </td>

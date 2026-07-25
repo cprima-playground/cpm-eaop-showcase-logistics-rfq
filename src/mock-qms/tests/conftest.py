@@ -11,11 +11,16 @@ TEST_API_KEY = "test-qms-key"
 # matches systems/masterdata/fixtures/parties.jsonl
 _KNOWN_PARTIES = {"ACME": "customer", "COSCO": "carrier", "MAERSK": "carrier"}
 
+# matches systems/masterdata/fixtures/currencies.jsonl (minor_unit values only)
+_KNOWN_CURRENCIES = {"EUR": 2, "CNY": 2, "USD": 2, "GBP": 2, "JPY": 0}
+
 
 class StubMasterdataClient:
     def get(self, domain: str, code: str):
         if domain == "parties" and code in _KNOWN_PARTIES:
             return {"party_id": code, "kind": _KNOWN_PARTIES[code]}
+        if domain == "currencies" and code in _KNOWN_CURRENCIES:
+            return {"code": code, "minor_unit": _KNOWN_CURRENCIES[code]}
         return None
 
     def list(self, domain: str):

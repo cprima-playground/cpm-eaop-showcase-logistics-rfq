@@ -204,6 +204,7 @@ def _check_cedar(name: str, base_url: str) -> dict:
     result = {
         "name": name, "kind": "api", "base_url": base_url, "frontend_url": None,
         "swagger_url": f"{base_url}/swagger-ui/", "redoc_url": None, "openapi_url": f"{base_url}/v1/openapi.json",
+        "rapidoc_url": f"{base_url}/rapidoc/",  # cedar-agent ships both docs UIs out of the box
         "status": "fail", "reachable": False, "authenticated": False,
         "reachable_basis": f"GET {base_url}/v1/policies",
         "auth_basis": "at least one policy is actually loaded (a reachable-but-empty agent silently denies everything)",

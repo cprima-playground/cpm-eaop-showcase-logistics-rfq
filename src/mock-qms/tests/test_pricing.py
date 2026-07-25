@@ -70,8 +70,10 @@ def test_price_computes_real_total_cost_and_honest_rule_results():
     body = r.json()
     assert body["status"] == "priced"
 
-    # 42000 + 5100 = 47100 CNY-cents = 471.00 CNY -> * 0.13 (stub fx rate) = 61.23 EUR = 6123 EUR-cents
-    assert body["total_cost_eur_cents"] == 6123
+    # base_cost/surcharges are MAJOR currency units (cost-model.md: "SHA-HAM-MUC
+    # ~= 42,000 CNY"), not cents -- 42000 + 5100 = 47100 CNY -> * 0.13 (stub fx
+    # rate) = 6123.0 EUR = 612300 EUR-cents.
+    assert body["total_cost_eur_cents"] == 612300
     assert body["fx_rate_snapshot"] == 0.13
 
     results = {rr["rule_id"]: rr for rr in body["pricing_rule_results"]}
@@ -82,11 +84,13 @@ def test_price_computes_real_total_cost_and_honest_rule_results():
 
     # R1 is real now -- via the versioned, explicitly synthetic demo policy
     # (not fabricated silently: pricing_policy_ref names exactly which one).
-    # cost 6123 -> target 18% (standard profile, FX not over threshold) ->
-    # 6123/0.82 = 7467.07 -> ceiling 7468 -> commercial-rounded up to 7500 (€5 band)
+    # cost 612300 -> target 18% (standard profile, FX not over threshold) ->
+    # 612300/0.82 = 746707.3 -> ceiling 746708 -> commercial-rounded up to
+    # 747000 (>=EUR 10,000 band -> nearest EUR 50; verified via pricing_policy
+    # directly, not hand arithmetic).
     assert body["pricing_policy_ref"] == "demo-cost-plus-margin-v1"
-    assert body["proposed_sell_price_eur_cents"] == 7500
-    assert body["margin_pct_x10"] == 184
+    assert body["proposed_sell_price_eur_cents"] == 747000
+    assert body["margin_pct_x10"] == 181
     assert results["R1"]["result"] == "within_threshold"
     assert "demo policy" in results["R1"]["reason"]
     assert "standard" in results["R1"]["reason"]
