@@ -1,0 +1,56 @@
+# Authenticated MCP spike -- local Docker/Keycloak convenience commands.
+#
+# Keycloak is managed by infra/keycloak. The `up` recipe reads the existing
+# qms-web client secret from Terraform output and passes it only to Docker
+# Compose; it is never written to this repository.
+
+set shell := ["pwsh.exe", "-NoLogo", "-NoProfile", "-Command"]
+
+default:
+    @just --list
+
+keycloak:
+    docker compose -f ../../../infra/keycloak/docker-compose.yml up -d --build
+
+keycloak-status:
+    docker compose -f ../../../infra/keycloak/docker-compose.yml ps
+
+up:
+    powershell -NoProfile -File ./run.ps1
+
+infra-up: keycloak caddy
+
+full-up: infra-up up
+
+caddy:
+    docker compose -f ../../../infra/caddy/docker-compose.yml up -d --build
+
+build:
+    docker compose build
+
+start:
+    docker compose start
+
+stop:
+    docker compose stop
+
+restart:
+    docker compose restart
+
+down:
+    docker compose down
+
+ps:
+    docker compose ps
+
+logs:
+    docker compose logs -f mcp-auth-spike
+
+inspect:
+    docker inspect rfq-mcp-auth-spike
+
+config:
+    docker compose config
+
+inspector-info:
+    python ../../../tools/mcp_inspector.py --copy --debug

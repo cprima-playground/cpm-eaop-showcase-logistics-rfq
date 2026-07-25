@@ -1,0 +1,27 @@
+[project]
+name = "rfq-authenticated-mcp-spike"
+version = "0.1.0"
+description = "Standalone authenticated MCP server spike for the RfQ showcase."
+requires-python = ">=3.10"
+dependencies = [
+    "mcp>=1.27,<2",
+    "httpx>=0.27",
+    "pydantic-settings>=2.0",
+    "uvicorn>=0.30",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+]
+
+[tool.uv]
+package = true
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["mcp_auth_spike"]

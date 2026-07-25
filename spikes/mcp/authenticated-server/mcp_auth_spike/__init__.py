@@ -1,0 +1,1 @@
+"""Authenticated MCP server spike."""

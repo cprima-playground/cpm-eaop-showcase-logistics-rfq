@@ -1,0 +1,28 @@
+name: rfq-mcp-auth-spike
+
+services:
+  mcp-auth-spike:
+    build: .
+    container_name: rfq-mcp-auth-spike
+    environment:
+      MCP_HOST: 0.0.0.0
+      MCP_PORT: 8000
+      MCP_PUBLIC_URL: http://localhost:8091/mcp
+      MCP_ISSUER_URL: https://keycloak.rfq-showcase.localhost/realms/rfq
+      MCP_INTROSPECTION_ENDPOINT: https://keycloak.rfq-showcase.localhost/realms/rfq/protocol/openid-connect/token/introspect
+      MCP_CA_CERT: /etc/ssl/certs/rfq-caddy.crt
+      # Set these in an uncommitted .env file if Keycloak requires client auth
+      # for introspection. The server fails closed when introspection is not active.
+      MCP_INTROSPECTION_CLIENT_ID: ${MCP_INTROSPECTION_CLIENT_ID:-}
+      MCP_INTROSPECTION_CLIENT_SECRET: ${MCP_INTROSPECTION_CLIENT_SECRET:-}
+      MCP_REQUIRED_SCOPE: ${MCP_REQUIRED_SCOPE:-}
+      MCP_EXPECTED_AUDIENCE: ${MCP_EXPECTED_AUDIENCE:-}
+      MCP_LOG_LEVEL: ${MCP_LOG_LEVEL:-INFO}
+    ports:
+      - "8091:8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+      - "keycloak.rfq-showcase.localhost:host-gateway"
+    volumes:
+      - ../../../infra/caddy/root.crt:/etc/ssl/certs/rfq-caddy.crt:ro
+    restart: unless-stopped
