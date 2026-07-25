@@ -15,6 +15,9 @@ dependencies = [
 [dependency-groups]
 dev = ["pytest>=8.0"]
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
 [tool.uv.sources]
 rfq-common = { path = "../rfq_common", editable = true }
 

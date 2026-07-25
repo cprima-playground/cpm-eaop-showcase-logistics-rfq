@@ -15,5 +15,6 @@ Distinct from `../business/decisions.md` (that logs *authorization* decisions D1
 | [ADR-008](ADR-008-agent-runtime.md) | Agent runtime: Vertex Agent Engine (ADK); container in dev | accepted |
 | [ADR-009](ADR-009-credential-management.md) | Credential inventory + management: Vault-dev / Secret Manager | accepted |
 | [ADR-010](ADR-010-masterdata-source.md) | Masterdata source (Party/Location/Currency/... — 9 domains), reconciled with ADR-002 | accepted |
+| [ADR-011](ADR-011-commercial-preconditions-vs-authorization.md) | Commercial Preconditions establish feasibility; authorization never substitutes for missing business truth | accepted |
 
-All eight accepted. 001–005 formalize the domain decisions; 006–008 the build/run decisions.
+All eleven accepted. 001–005 formalize the domain decisions; 006–009 the build/run decisions; 010–011 data/business-truth layering.

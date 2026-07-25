@@ -34,7 +34,7 @@ from rfq_common.models import (
 from rfq_common.store_stats import collection_stats, combine_stats
 
 from . import pricing_policy
-from .clients import FxClient, RateClient
+from .clients import FxClient, RateClient, TmsClient
 from .pricing import Money, PriorPricingSnapshot, RateResolution, calculate_pricing
 from .pricing.provenance import FxConversionFact
 
@@ -68,6 +68,14 @@ class ComposeIncompleteError(ValueError):
     pass
 
 
+class RouteUnavailableError(ValueError):
+    """A commercial precondition (ADR-011): TMS is the sole authority on
+    route executability, and reports this route as currently unusable (or
+    has no record of it at all). Distinct from ComposeIncompleteError --
+    this is a state conflict (409), not a malformed/incomplete request."""
+    pass
+
+
 def _timestamp() -> str:
     return now().isoformat().replace("+00:00", "Z")
 
@@ -79,11 +87,13 @@ class QmsStore:
     def __init__(
         self, fixtures_dir: str | Path, masterdata_client: MasterdataClient | None = None,
         *, fx_client: FxClient | None = None, rate_client: RateClient | None = None,
+        tms_client: TmsClient | None = None,
     ):
         self._fixtures_dir = Path(fixtures_dir)
         self._masterdata = masterdata_client
         self._fx = fx_client
         self._rate = rate_client
+        self._tms = tms_client
         self._customer_cache: set[str] = set()
         self._minor_unit_cache: dict[str, int] = {}
         self._quotes: dict[str, Quote] = {}
@@ -253,6 +263,16 @@ class QmsStore:
         self._replace_version(quote_id, version, updated)
         return updated
 
+    def _route_is_pricable(self, state: dict | None) -> bool:
+        # None = TMS has no record for this route -- cannot establish
+        # executability, not "known to be available." Treat the same as
+        # unavailable. limited/degraded are commercially executable states
+        # today (no downstream rule acts on them yet); this is the one
+        # place that changes when one does.
+        if state is None:
+            return False
+        return state["status"] != "unavailable"
+
     def price_version(self, quote_id: str, version: int) -> QuoteVersion:
         """The atomic command (D16): resolve real rate/FX facts, compute
         total cost, evaluate R2 (FX variance, real once a prior snapshot
@@ -261,14 +281,35 @@ class QmsStore:
         decided commercial formula), and write draft -> priced. R3-R5 (need
         a contracted-lane baseline QMS doesn't store) stay `not_evaluated`
         with a real reason -- never silently omitted, never fabricated
-        (see RuleResult's docstring)."""
+        (see RuleResult's docstring).
+
+        This is the Commercial Preconditions checkpoint (ADR-011): the
+        authoritative business facts from external Systems of Record --
+        today Masterdata, Rate, FX, and TMS (route executability) -- that
+        must be successfully resolved before QMS may calculate a commercial
+        quotation. Each System of Record owns Commercial Truth about its
+        own domain (TMS owns route executability, Rate owns carrier
+        pricing, FX owns exchange rates); this method evaluates that truth,
+        it doesn't originate it, and it never attempts recovery -- only
+        whether pricing may proceed. This function is this operation's
+        Policy Enforcement Point in the sense of "the place that stops or
+        allows execution," distinct from Cedar's own PDP role (ADR-004):
+        authorization never substitutes for missing business truth."""
         qv = self._draft_version(quote_id, version)
         if not (qv.recommendation_id and qv.selected_route_id and qv.rate_refs and qv.fx_rate_ref):
             raise ComposeIncompleteError(
                 "route-recommendation and pricing-inputs must both be composed before pricing"
             )
-        if self._rate is None or self._fx is None or self._masterdata is None:
-            raise ComposeIncompleteError("rate/fx/masterdata services are not configured on this QMS instance")
+        if self._rate is None or self._fx is None or self._masterdata is None or self._tms is None:
+            raise ComposeIncompleteError("rate/fx/masterdata/tms services are not configured on this QMS instance")
+
+        state = self._tms.get_route_state(qv.selected_route_id)
+        if not self._route_is_pricable(state):
+            raise RouteUnavailableError(
+                f"QuoteVersion {quote_id}/{version} cannot be priced: commercial precondition "
+                f"'route executable' not established for {qv.selected_route_id!r} "
+                f"({'no record' if state is None else state['status']} per TMS)"
+            )
 
         rate_resolutions: list[RateResolution] = []
         for route_id in qv.rate_refs:

@@ -22,26 +22,20 @@ from rfq_common.verify import fetch_jwks, verify_with_jwks
 
 import mock_qms.config as config
 
+from conftest import service_up
+
 KEYCLOAK_URL = "https://keycloak.rfq-showcase.localhost"  # via infra/caddy -- must match mock_qms.config's issuer
 REALM_URL = f"{KEYCLOAK_URL}/realms/rfq"
 CLIENT_ID = "qms-web"
-RFQ_ROOT = Path(__file__).resolve().parents[3]
+RFQ_ROOT = Path(__file__).resolve().parents[4]
 INVENTORY_PATH = RFQ_ROOT / "identity" / "credentials-inventory.yaml"
 CA_BUNDLE = config.caddy_ca_bundle()
 SSL_CONTEXT = config.caddy_ssl_context()
 
 
-def _keycloak_up() -> bool:
-    try:
-        r = httpx.get(f"{REALM_URL}/.well-known/openid-configuration", timeout=1.0, verify=SSL_CONTEXT)
-        return r.status_code == 200
-    except Exception:
-        return False
-
-
 @pytest.fixture(scope="module")
 def client_secret():
-    if not _keycloak_up():
+    if not service_up(f"{REALM_URL}/.well-known/openid-configuration", verify=SSL_CONTEXT):
         pytest.skip(f"keycloak not running on {KEYCLOAK_URL}")
     try:
         return SecretsClient("dev", inventory_path=INVENTORY_PATH).get("qms-web-client-secret")

@@ -43,12 +43,13 @@ from rfq_common import models as m
 
 from . import config, pricing_policy
 from .auth import require_api_key
-from .clients import FxClient, RateClient
+from .clients import FxClient, RateClient, TmsClient
 from .sso import router as sso_router
 from .store import (
     ComposeIncompleteError,
     InvalidStateError,
     QmsStore,
+    RouteUnavailableError,
     UnknownCustomerError,
     UnknownQuoteError,
     VersionConflictError,
@@ -90,6 +91,13 @@ def _fx_client() -> FxClient:
     if not api_key:
         api_key = SecretsClient("dev", inventory_path=INVENTORY_PATH).get("fx-api-key")
     return FxClient(base_url=os.environ.get("FX_URL", "http://localhost:8001"), api_key=api_key)
+
+
+def _tms_client() -> TmsClient:
+    api_key = os.environ.get("TMS_API_KEY")
+    if not api_key:
+        api_key = SecretsClient("dev", inventory_path=INVENTORY_PATH).get("tms-api-key")
+    return TmsClient(base_url=os.environ.get("TMS_URL", "http://localhost:8004"), api_key=api_key)
 
 
 def _masterdata_client() -> MasterdataClient:
@@ -134,12 +142,16 @@ def build_app() -> FastAPI:
         masterdata = _masterdata_client()
     except Exception:
         pass  # optional at boot -- store validates lazily per create_quote/reload call
-    fx, rate = None, None
+    fx, rate, tms = None, None, None
     try:
         fx, rate = _fx_client(), _rate_client()
     except Exception:
         pass  # optional at boot -- only needed once POST .../price is actually called
-    store = QmsStore(_fixtures_dir(), masterdata, fx_client=fx, rate_client=rate)
+    try:
+        tms = _tms_client()
+    except Exception:
+        pass  # optional at boot -- only needed once POST .../price is actually called
+    store = QmsStore(_fixtures_dir(), masterdata, fx_client=fx, rate_client=rate, tms_client=tms)
 
     app = create_app("Quote Management System (QMS)", system_id="qms", theme_pack=theme_pack)
     app.state.qms_store = store
@@ -557,6 +569,8 @@ def build_app() -> FastAPI:
             raise HTTPException(status_code=409, detail=str(exc))
         except ComposeIncompleteError as exc:
             raise HTTPException(status_code=400, detail=str(exc))
+        except RouteUnavailableError as exc:
+            raise HTTPException(status_code=409, detail=str(exc))
 
     @app.get(
         "/quotes/{quoteId}/versions/{version}/pricing", tags=["Pricing"], response_model=m.PricingResult,
