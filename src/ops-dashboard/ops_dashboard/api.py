@@ -64,7 +64,7 @@ FX_BASE_CURRENCIES = ["USD", "GBP", "JPY", "CNY"]
 MCP_SERVER_BY_SERVICE = {
     "tms": "tms-mcp (TARGET)",
     "rate": "rate-mcp (TARGET)",
-    "qms": "commercial-mcp (TARGET)",
+    "qms": "qms-mcp (TARGET)",
 }
 
 
@@ -204,7 +204,7 @@ def _check_cedar(name: str, base_url: str) -> dict:
     sealed-but-responding)."""
     result = {
         "name": name, "kind": "api", "base_url": base_url, "frontend_url": None,
-        "swagger_url": f"{base_url}/swagger-ui/", "redoc_url": None, "openapi_url": f"{base_url}/openapi.json",
+        "swagger_url": f"{base_url}/swagger-ui/", "redoc_url": None, "openapi_url": f"{base_url}/v1/openapi.json",
         "status": "fail", "reachable": False, "authenticated": False,
         "reachable_basis": f"GET {base_url}/v1/policies",
         "auth_basis": "at least one policy is actually loaded (a reachable-but-empty agent silently denies everything)",
@@ -265,35 +265,6 @@ def _check_frontend(name: str, public_base_url: str, *, authenticated: bool) -> 
     return result
 
 
-def _check_qms_frontend(name: str, base_url: str) -> dict:
-    """QMS is destined to be "the mandatory approval frontend" (build-plan.md),
-    but has no actual UI route today -- only a Swagger-documented API (see
-    mock_qms/api.py). Deliberately does NOT reuse _check_service's /healthz
-    probe: /healthz always answers regardless of whether any frontend exists,
-    which would report "up" for a UI that isn't there. This checks `/`
-    itself -- correctly reports down until a real frontend page exists."""
-    result = {
-        "name": name, "kind": "frontend", "base_url": base_url, "frontend_url": None,
-        "swagger_url": f"{base_url}/swagger", "redoc_url": f"{base_url}/redoc", "openapi_url": f"{base_url}/openapi.json",
-        "status": "fail", "reachable": False, "authenticated": False,
-        "reachable_basis": f"GET {base_url}/ (an actual UI page -- NOT /healthz, which would answer even with no frontend at all)",
-        "auth_basis": "not applicable -- no login exists yet",
-        "latency_ms": None, "detail": None,
-    }
-    t0 = time.monotonic()
-    try:
-        r = httpx.get(base_url, timeout=3)
-    except httpx.HTTPError as exc:
-        result["detail"] = f"unreachable: {exc}"
-        return result
-    result["latency_ms"] = round((time.monotonic() - t0) * 1000)
-    result["reachable"] = r.status_code == 200
-    result["status"] = "pass" if result["reachable"] else "fail"
-    if not result["reachable"]:
-        result["detail"] = f"no frontend page yet (got {r.status_code}) -- API/Swagger only"
-    else:
-        result["frontend_url"] = base_url
-    return result
 
 
 def _check_identity_provider(name: str, issuer_url: str) -> dict:
@@ -567,7 +538,8 @@ def build_app(
                             auth_basis=f"GET {rate.base_url}/rates with our X-API-Key"),
             _check_service("fx", fx.base_url, lambda: fx.get_rate("CNY", "EUR"),
                             auth_basis=f"GET {fx.base_url}/exchange-rates/CNY/EUR with our X-API-Key"),
-            _check_qms_frontend("qms", qms.base_url),
+            _check_service("qms", qms.base_url, lambda: qms.stats(),
+                            auth_basis=f"GET {qms.base_url}/admin/stats with our X-API-Key"),
             _check_vault("vault", os.environ.get("VAULT_ADDR", "http://127.0.0.1:8200")),
             _check_cedar("policy", os.environ.get("CEDAR_AGENT_URL", "http://127.0.0.1:8280")),
         ]

@@ -40,7 +40,7 @@ This is the second of the two correlated boundaries (agent→tool, then tool→A
 | **CRM** | ✓ | ✓ | ✓ `crm-mcp` | human **SSO** + agent client-creds | maybe (RFQ view) | ✓ |
 | **TMS** | ✓ **built** | ✓ **built** | `tms-mcp` (TARGET) | **APIKEY** — **built** | — | ✓ **built** |
 | **Rate** | ✓ **built** | ✓ **built** | `rate-mcp` (TARGET) | **APIKEY** — **built** | — | ✓ **built** |
-| **QMS** | ✓ | ✓ | ✓ `commercial-mcp` | human **SSO** (approval UI) + agent client-creds | ✓ **approval UI** | ✓ |
+| **QMS** | ✓ | ✓ | ✓ `qms-mcp` | human **SSO** (approval UI) + agent client-creds | ✓ **approval UI** | ✓ |
 | **FX** | ✓ **built** | ✓ **built** (REST — the point) | ✗ (deliberately none) | **APIKEY** (machine) — **built** | — | ✓ **built** |
 | **Workflow** | ✓ | ✓ | ✓ `approval-mcp` | human **SSO** | maybe (task inbox) | ✓ |
 | **Ops Dashboard** | — (reads only) | — (not a backend) | ✗ (deliberately none) | human **SSO** — **built** | ✓ **built, read-only** | — |

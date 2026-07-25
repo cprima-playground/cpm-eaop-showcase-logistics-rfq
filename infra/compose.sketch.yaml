@@ -41,7 +41,7 @@ services:
   crm-mcp:        {image: rfq/crm-mcp,        depends_on: [crm],      profiles: [full]}
   tms-mcp:        {image: rfq/tms-mcp,        depends_on: [tms],      profiles: [full]}
   rate-mcp:       {image: rfq/rate-mcp,       depends_on: [rate],     profiles: [full]}
-  commercial-mcp: {image: rfq/commercial-mcp, depends_on: [qms],      profiles: [full]}
+  qms-mcp: {image: rfq/qms-mcp, depends_on: [qms],      profiles: [full]}
   approval-mcp:   {image: rfq/approval-mcp,   depends_on: [workflow], profiles: [full]}
 
   # --- agents (A2A chain: lane -> commercial -> route) ---------------------

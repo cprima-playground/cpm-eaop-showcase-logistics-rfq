@@ -11,7 +11,7 @@
 | `crm/` | Mock CRM | RFQ · ContractedLane (Customer identity → masterdata Party) | crm-mcp (TARGET) |
 | `tms/` | Mock TMS | RouteTopology · FeasibleLane · TransitTime · Capacity | tms-mcp (TARGET) |
 | `rate/` | Mock Rate Service | ContractRate · CarrierSpotRate · LaneSurcharge | rate-mcp (TARGET) |
-| `qms/` | Mock QMS | PricingTerms · MarginFloor · QuoteVersion · **QuoteStatus (human decision)** | commercial-mcp (TARGET) |
+| `qms/` | Mock QMS | PricingTerms · MarginFloor · QuoteVersion · **QuoteStatus (human decision)** | qms-mcp (TARGET) |
 | `fx/` | Corporate FX Service | ExchangeRate | fx-api / REST (TARGET) |
 | `workflow/` | Mock Approval/Workflow | ApprovalTask (mechanism only) | approval-mcp (TARGET) |
 

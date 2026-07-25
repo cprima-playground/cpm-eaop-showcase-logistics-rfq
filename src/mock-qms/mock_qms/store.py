@@ -72,6 +72,7 @@ class QmsStore:
             self._seed_quote(
                 quote_id=entry["quote_id"], rfq_id=entry["rfq_id"],
                 customer_id=entry["customer_id"], currency=entry["currency"],
+                versions=entry.get("versions", 1),
             )
             m = _ID_SUFFIX.match(entry["quote_id"])
             if m:
@@ -84,17 +85,26 @@ class QmsStore:
             raise UnknownCustomerError(f"masterdata has no party for {customer_id!r}")
         self._customer_cache.add(customer_id)
 
-    def _seed_quote(self, *, quote_id: str, rfq_id: str, customer_id: str, currency: str) -> QuoteVersion:
+    def _seed_quote(self, *, quote_id: str, rfq_id: str, customer_id: str, currency: str, versions: int = 1) -> QuoteVersion:
+        """`versions` > 1 seeds a real supersede chain (v1..vN, each with
+        prior_version set) -- baseline fixtures can demonstrate the
+        append-only history feature at rest, not just via live POSTs."""
         self._validate_customer(customer_id)
         ts = _timestamp()
-        version = QuoteVersion(quote_id=quote_id, version=1, status="draft", currency=currency, created_at=ts)
+        version_history = [
+            QuoteVersion(
+                quote_id=quote_id, version=v, prior_version=(v - 1) or None,
+                status="draft", currency=currency, created_at=ts,
+            )
+            for v in range(1, versions + 1)
+        ]
         quote = Quote(
             quote_id=quote_id, rfq_id=rfq_id, customer_id=customer_id,
-            currency=currency, latest_version=1, latest_version_status="draft", created_at=ts,
+            currency=currency, latest_version=versions, latest_version_status="draft", created_at=ts,
         )
         self._quotes[quote_id] = quote
-        self._versions[quote_id] = [version]
-        return version
+        self._versions[quote_id] = version_history
+        return version_history[0]
 
     def create_quote(self, req: CreateQuoteRequest, *, created_by: str | None = None) -> QuoteVersion:
         self._validate_customer(req.customer_id)

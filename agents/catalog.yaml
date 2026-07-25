@@ -39,7 +39,7 @@ agents:
       can_call: [route-decision-agent]
     owned_actions: [fx-rate.read, route-cost.normalize, quote-price.calculate, quote-variance.evaluate]
     api_access: [fx-api]                 # direct HTTP, not MCP
-    mcp_access: [commercial-mcp]
+    mcp_access: [qms-mcp]
     prohibited_actions: [route-deviation.approve, quote.submit-for-approval]  # forbidden auto-submit on FX>2%
     human_escalation: [fx_snapshot_stale]
     source: {path: spikes/repricing/mock-agents/commercial-normalization}

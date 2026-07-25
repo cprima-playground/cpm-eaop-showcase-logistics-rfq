@@ -44,22 +44,19 @@
       <td class="py-2">
         {% if s.kind == "frontend" %}
         <span class="inline-block w-2.5 h-2.5 rounded-full {{ 'bg-green-600' if s.reachable else 'bg-red-600' }}" title="{{ 'up' if s.reachable else 'down' }} -- basis: {{ s.reachable_basis or 'undefined' }}{{ ' -> ' ~ s.detail if s.detail else '' }}"></span>
-        {{ "up" if s.reachable else "down" }}
         {% else %}
-        —
+        <span class="text-gray-600">—</span>
         {% endif %}
       </td>
       <td class="py-2">
         {% if s.kind in ("api", "identity") %}
         <span class="inline-block w-2.5 h-2.5 rounded-full {{ 'bg-green-600' if s.reachable else 'bg-red-600' }}" title="{{ 'up' if s.reachable else 'down' }} -- basis: {{ s.reachable_basis or 'undefined' }}{{ ' -> ' ~ s.detail if s.detail else '' }}"></span>
-        {{ "up" if s.reachable else "down" }}
         {% else %}
-        —
+        <span class="text-gray-600">—</span>
         {% endif %}
       </td>
       <td class="py-2">
         <span class="inline-block w-2.5 h-2.5 rounded-full {{ 'bg-green-600' if s.authenticated else 'bg-red-600' }}" title="{{ 'ok' if s.authenticated else 'failed' }} -- basis: {{ s.auth_basis or 'undefined' }}{{ ' -> ' ~ s.detail if s.detail else '' }}"></span>
-        {{ "ok" if s.authenticated else "failed" }}
       </td>
       <td class="py-2">{{ s.latency_ms ~ " ms" if s.latency_ms is not none else "—" }}</td>
       <td class="py-2 text-gray-600" {% if s.stats %}title="GET {{ s.base_url }}/admin/stats -- {{ s.stats.total.count if s.stats.total is defined else s.stats.count }} items, ~{{ ((s.stats.total.approx_bytes if s.stats.total is defined else s.stats.approx_bytes) / 1024) | round(1) }} KB (sum of each item's serialized JSON size -- an approximation, not a true memory profile)"{% endif %}>
@@ -69,7 +66,13 @@
         —
         {% endif %}
       </td>
-      <td class="py-2 text-gray-600" title="static designation from systems/mock-architecture.md's capability matrix -- no MCP server actually runs anywhere yet, this is not a live check">{{ s.mcp_server or "—" }}</td>
+      <td class="py-2">
+        {% if s.mcp_server %}
+        <span class="inline-block w-2.5 h-2.5 rounded-full bg-gray-400" title="not implemented -- {{ s.mcp_server }} is a design-only TARGET (interfaces/mcp/tools.yaml), no MCP server actually runs anywhere yet, this is not a live check"></span>
+        {% else %}
+        <span class="text-gray-600">—</span>
+        {% endif %}
+      </td>
       <td class="py-2">
         {% if s.swagger_url %}
         <a href="{{ s.swagger_url }}" target="_blank" rel="noopener noreferrer" class="underline accent">Swagger</a>

@@ -6,7 +6,7 @@
 > immutable history of every commercial commitment.
 
 **Owns:** CustomerPricingTerms · MarginFloor · QuoteVersion · **QuoteStatus**.
-**Interface:** `commercial-mcp` (TARGET).
+**Interface:** `qms-mcp` (TARGET).
 
 **System of record for the human decision** — the approval outcome is a
 `Quote.status` transition here (`approval_required → approved | rejected | revise`),

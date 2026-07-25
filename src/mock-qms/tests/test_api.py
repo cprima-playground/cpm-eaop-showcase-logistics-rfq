@@ -163,28 +163,41 @@ def test_timeline_reflects_version_history():
     assert [t["version"] for t in r.json()] == [1, 2]
 
 
+# systems/qms/fixtures/quotes.yaml: 10 quotes, versions sum to 19 (3+1+2+1+4+1+2+1+1+3)
+BASELINE_COUNT = 10 + 19
+
+
 def test_baseline_fixture_is_seeded_at_boot():
     r = client().get("/admin/stats", headers={"X-API-Key": API_KEY})
     assert r.status_code == 200
-    assert r.json()["count"] == 4  # systems/qms/fixtures/quotes.yaml: 2 quotes + 2 v1 versions
+    assert r.json()["count"] == BASELINE_COUNT
 
 
 def test_admin_reset_discards_session_growth_back_to_baseline():
     c = client()
     c.post("/quotes", headers={"X-API-Key": API_KEY}, json={"rfq_id": "RFQ-1", "customer_id": "ACME", "currency": "EUR"})
-    assert c.get("/admin/stats", headers={"X-API-Key": API_KEY}).json()["count"] == 6  # baseline 4 + 1 quote + 1 version
+    assert c.get("/admin/stats", headers={"X-API-Key": API_KEY}).json()["count"] == BASELINE_COUNT + 2  # 1 quote + 1 version
 
     r = c.post("/admin/reset", headers={"X-API-Key": API_KEY})
     assert r.status_code == 200
-    assert c.get("/admin/stats", headers={"X-API-Key": API_KEY}).json()["count"] == 4
+    assert c.get("/admin/stats", headers={"X-API-Key": API_KEY}).json()["count"] == BASELINE_COUNT
 
 
 def test_admin_stats_shape():
     r = client().get("/admin/stats", headers={"X-API-Key": API_KEY})
     assert r.status_code == 200
     body = r.json()
-    assert body["count"] == 4
+    assert body["count"] == BASELINE_COUNT
     assert body["approx_bytes"] > 0
+
+
+def test_baseline_quote_has_a_real_supersede_chain():
+    r = client().get("/quotes/Q-1001/versions", headers={"X-API-Key": API_KEY})
+    assert r.status_code == 200
+    versions = r.json()
+    assert [v["version"] for v in versions] == [1, 2, 3]
+    assert versions[0]["prior_version"] is None
+    assert versions[2]["prior_version"] == 2
 
 
 def test_baseline_quote_is_readable():

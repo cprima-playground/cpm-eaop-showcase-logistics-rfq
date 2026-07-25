@@ -1,14 +1,58 @@
 # Baseline QMS quotes -- deterministic quote_ids (matches routes.yaml/rates.yaml's
-# pinned-id convention), all status=draft (nothing beyond draft is buildable yet --
-# pricing/R1-R6/Cedar wiring don't exist, see mock_qms/api.py's module docstring).
-# customer_id references masterdata Party (ADR-010) -- ACME is the only kind=customer
-# entry in parties.jsonl today, every quote here reuses it.
+# pinned-id convention). customer_id references masterdata Party (ADR-010) --
+# ACME is the only kind=customer entry in parties.jsonl today, every quote here
+# reuses it. rfq_id is a loose reference (RFQ isn't a QMS-owned store, see
+# mock_qms/store.py's docstring) -- not all of these have a matching
+# fixtures/rfqs/*.yaml entry, and that's fine.
+#
+# `versions: N` seeds a real v1..vN supersede chain at boot (see
+# QmsStore._seed_quote) -- a handful of multi-version quotes here demonstrate
+# the append-only history feature in the baseline itself, not just via a live
+# POST .../versions call. All stay status=draft -- nothing beyond draft is
+# buildable yet (pricing/R1-R6/Cedar wiring don't exist).
 quotes:
   - quote_id: Q-1001
     rfq_id: RFQ-1001
     customer_id: ACME
     currency: EUR
+    versions: 3
   - quote_id: Q-1002
     rfq_id: RFQ-1002
     customer_id: ACME
     currency: EUR
+  - quote_id: Q-1003
+    rfq_id: RFQ-1003
+    customer_id: ACME
+    currency: USD
+    versions: 2
+  - quote_id: Q-1004
+    rfq_id: RFQ-1004
+    customer_id: ACME
+    currency: EUR
+  - quote_id: Q-1005
+    rfq_id: RFQ-1005
+    customer_id: ACME
+    currency: GBP
+    versions: 4
+  - quote_id: Q-1006
+    rfq_id: RFQ-1006
+    customer_id: ACME
+    currency: EUR
+  - quote_id: Q-1007
+    rfq_id: RFQ-1007
+    customer_id: ACME
+    currency: CNY
+    versions: 2
+  - quote_id: Q-1008
+    rfq_id: RFQ-1008
+    customer_id: ACME
+    currency: EUR
+  - quote_id: Q-1009
+    rfq_id: RFQ-1009
+    customer_id: ACME
+    currency: USD
+  - quote_id: Q-1010
+    rfq_id: RFQ-1010
+    customer_id: ACME
+    currency: EUR
+    versions: 3

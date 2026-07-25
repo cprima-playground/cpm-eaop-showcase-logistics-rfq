@@ -41,7 +41,7 @@ systems:
   qms:
     name: Mock QMS
     owns: [CustomerPricingTerms, MarginFloor, QuoteVersion, QuoteStatus]
-    interfaces: [MCP]           # commercial-mcp (TARGET)
+    interfaces: [MCP]           # qms-mcp (TARGET)
     note: >
       Also the system of record for the HUMAN DECISION: the approval outcome is a
       Quote.status transition here (approval_required -> approved|rejected|revise),

@@ -18,7 +18,7 @@ traceability:
     domain_action: route-cost.normalize
     actor: commercial-normalization-agent
     system_of_record: {reads: [rate_management], writes: [qms]}
-    interface: [commercial-mcp.store_cost_normalization, rate-mcp.get_carrier_rate]
+    interface: [qms-mcp.store_cost_normalization, rate-mcp.get_carrier_rate]
     authorization_decision: [commercial-may-normalize]         # D2
     scenarios: [fx-flips-lane]
 
@@ -34,7 +34,7 @@ traceability:
     domain_action: quote.submit-for-approval
     actor: commercial-normalization-agent
     system_of_record: {writes: [qms]}
-    interface: [commercial-mcp.get_previous_quote]
+    interface: [qms-mcp.get_previous_quote]
     authorization_decision: [forbid-auto-replace-on-fx, propose-below-floor]  # D4b deny wins; D5 would oblige
     scenarios: [fx-flips-lane]
 

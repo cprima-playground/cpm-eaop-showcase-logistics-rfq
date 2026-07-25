@@ -30,7 +30,7 @@ servers:
       - {name: get_carrier_rate,  action: carrier-rate.read}
       - {name: get_lane_surcharges, action: carrier-rate.read}
 
-  - id: commercial-mcp
+  - id: qms-mcp
     purpose: Expose QMS / commercial capabilities
     tools:
       - {name: get_customer_pricing_terms, action: quote-price.calculate}
