@@ -49,7 +49,8 @@ def test_hamburg_closure_then_reroute_recovers(qms_client, tms_client):
         assert "route" in r.text and "not established" in r.text
         assert "unavailable" in r.text
 
-        # 4. a tagged alternative route recovers pricing.
+        # 4. a route applicable to the current disruption is selected,
+        # allowing Commercial Preconditions to be satisfied again.
         qms_client.put(
             f"/quotes/{quote_id}/versions/2/route-recommendation",
             json={"recommendation_id": "REC-HH-2", "selected_route_id": "SHA-RTM-MUC"},
@@ -63,5 +64,14 @@ def test_hamburg_closure_then_reroute_recovers(qms_client, tms_client):
         )
         r = qms_client.post(f"/quotes/{quote_id}/versions/2/price")
         assert r.status_code == 200
+        # proves the REROUTE is why pricing recovered, not just that some
+        # retry eventually succeeded.
+        assert r.json()["selected_route_id"] == "SHA-RTM-MUC"
+
+        # v1 stays exactly as priced against the original route -- QuoteVersion
+        # is immutable; recovery happened by creating v2, never by mutating v1.
+        v1 = qms_client.get(f"/quotes/{quote_id}/versions/1").json()
+        assert v1["selected_route_id"] == "SHA-HAM-MUC"
+        assert v1["status"] == "priced"
     finally:
         tms_client.post("/admin/reset")
