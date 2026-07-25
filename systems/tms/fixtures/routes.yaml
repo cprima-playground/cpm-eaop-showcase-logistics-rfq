@@ -1,116 +1,157 @@
-# Route topology — STABLE graph of legs (location ids from locations.yaml).
-# 16 complete routes, ~27 legs. Lane CNSHA->DEMUC has 6 alternatives (routes r1..r6).
-# 4 further lanes add geographic diversity beyond the China->Germany corridor:
-# Transpacific (CNSHA-USLAX), Middle-East/Suez (AEJEA-DEHAM, with a Cape-of-
-# Good-Hope alternate), Intra-Europe (NLRTM-ITMIL, single route, no alternative),
-# Transatlantic (DEHAM-USNYC, with Rotterdam + Antwerp alternates).
-# Durations are plausible (ocean slow, rail medium, air fast). Costs are NOT here —
-# they are derived, correlated + seeded (rate/fixtures/cost-model.md).
-routes:
-  - id: SHA-HAM-MUC            # r1 — the CONTRACTED lane
-    lane: CNSHA-DEMUC
-    contracted: true
-    legs:
-      - {from: CNSHA, to: DEHAM, mode: ocean, duration_days: 27}
-      - {from: DEHAM, to: DEMUC, mode: rail,  duration_days: 2}
-
-  - id: SHA-RTM-MUC            # r2 — Rotterdam alternative (via Duisburg, TEN-T)
-    lane: CNSHA-DEMUC
-    legs:
-      - {from: CNSHA, to: NLRTM, mode: ocean, duration_days: 26}
-      - {from: NLRTM, to: DEDUI, mode: rail,  duration_days: 1}
-      - {from: DEDUI, to: DEMUC, mode: rail,  duration_days: 1}
-
-  - id: SHA-ANR-MUC            # r3 — Antwerp alternative
-    lane: CNSHA-DEMUC
-    legs:
-      - {from: CNSHA, to: BEANR, mode: ocean, duration_days: 28}
-      - {from: BEANR, to: DEMUC, mode: rail,  duration_days: 2}
-
-  - id: PVG-FRA-MUC            # r4 — air (fast, expensive)
-    lane: CNSHA-DEMUC
-    legs:
-      - {from: CNPVG, to: DEFRA, mode: air,  duration_days: 2}
-      - {from: DEFRA, to: DEMUC, mode: road, duration_days: 1}
-
-  - id: SHA-PIR-MUC            # r5 — Med gateway (TEN-T Orient/East-Med)
-    lane: CNSHA-DEMUC
-    legs:
-      - {from: CNSHA, to: GRPIR, mode: ocean, duration_days: 22}
-      - {from: GRPIR, to: DEMUC, mode: rail,  duration_days: 5}
-
-  - id: SHA-GOA-MUC            # r6 — Genoa gateway
-    lane: CNSHA-DEMUC
-    legs:
-      - {from: CNSHA, to: ITGOA, mode: ocean, duration_days: 24}
-      - {from: ITGOA, to: DEMUC, mode: rail,  duration_days: 3}
-
-  - id: NGB-HAM-MUC            # r7 — alternative origin (Ningbo)
-    lane: CNNGB-DEMUC
-    legs:
-      - {from: CNNGB, to: DEHAM, mode: ocean, duration_days: 27}
-      - {from: DEHAM, to: DEMUC, mode: rail,  duration_days: 2}
-
-  - id: SHA-GDN-MUC            # r8 — Baltic gateway
-    lane: CNSHA-DEMUC
-    legs:
-      - {from: CNSHA, to: PLGDN, mode: ocean, duration_days: 30}
-      - {from: PLGDN, to: DEMUC, mode: rail,  duration_days: 3}
-
-  - id: TPA-LAX                # Transpacific — primary (Los Angeles)
-    lane: CNSHA-USLAX
-    legs:
-      - {from: CNSHA, to: USLAX, mode: ocean, duration_days: 14}
-
-  - id: TPA-OAK                # Transpacific — alternate (Oakland)
-    lane: CNSHA-USLAX
-    legs:
-      - {from: CNSHA, to: USOAK, mode: ocean, duration_days: 15}
-
-  - id: MEA-SUEZ                # Middle-East — primary, via Suez Canal
-    lane: AEJEA-DEHAM
-    legs:
-      - {from: AEJEA, to: DEHAM, mode: ocean, duration_days: 18}
-
-  - id: MEA-CAPE                # Middle-East — alternate, Cape-of-Good-Hope
-    lane: AEJEA-DEHAM            # reroute (escalation when Suez is blocked)
-    legs:
-      - {from: AEJEA, to: ZADUR, mode: ocean, duration_days: 16}
-      - {from: ZADUR, to: DEHAM, mode: ocean, duration_days: 16}
-
-  - id: EUR-MIL                # Intra-Europe — single route, no alternative
-    lane: NLRTM-ITMIL
-    legs:
-      - {from: NLRTM, to: ITMIL, mode: rail, duration_days: 3}
-
-  - id: TAT-NYC                # Transatlantic — primary (Hamburg)
-    lane: DEHAM-USNYC
-    legs:
-      - {from: DEHAM, to: USNYC, mode: ocean, duration_days: 9}
-
-  - id: TAT-RTM                # Transatlantic — alternate (Rotterdam)
-    lane: DEHAM-USNYC
-    legs:
-      - {from: NLRTM, to: USNYC, mode: ocean, duration_days: 8}
-
-  - id: TAT-ANR                # Transatlantic — alternate (Antwerp)
-    lane: DEHAM-USNYC
-    legs:
-      - {from: BEANR, to: USNYC, mode: ocean, duration_days: 9}
-
-# Alternatives for the important lane CNSHA->DEMUC: r1 (contracted, Hamburg),
-# r2 (Rotterdam), r3 (Antwerp) are the primary three; r4 (air), r5/r6 (Med) are
-# escalation options when the North-Sea gateways are disrupted.
+# Named commercial routes — curated, ordered paths over edges.yaml's
+# reusable directed edge pool. 17 routes, referencing 29 distinct edges
+# (with real reuse, e.g. RAIL-DEHAM-DEMUC used by 3 routes,
+# OCEAN-ZADUR-DEHAM used by 2). `roles` are non-exclusive tags (a route can
+# carry more than one); `applicability.applicable_disruption_tags` marks a
+# route as a valid alternative when that disruption occurs (not "impacted
+# by" it).
 #
-# Three further multi-route lanes: CNSHA-USLAX (Transpacific, LA primary /
-# Oakland alternate), AEJEA-DEHAM (Middle-East, Suez primary / Cape-of-
-# Good-Hope alternate — the escalation option if Suez is blocked), and
-# DEHAM-USNYC (Transatlantic, Hamburg primary / Rotterdam + Antwerp
-# alternates -- same North-Sea-gateway trio as CNSHA-DEMUC, so a blocked
-# Hamburg has two fallbacks, not zero).
-# NLRTM-ITMIL (Intra-Europe) has a single route, no alternative to list.
-lane_alternatives:
-  CNSHA-DEMUC: [SHA-HAM-MUC, SHA-RTM-MUC, SHA-ANR-MUC, PVG-FRA-MUC, SHA-PIR-MUC, SHA-GOA-MUC]
-  CNSHA-USLAX: [TPA-LAX, TPA-OAK]
-  AEJEA-DEHAM: [MEA-SUEZ, MEA-CAPE]
-  DEHAM-USNYC: [TAT-NYC, TAT-RTM, TAT-ANR]
+# Lane CNSHA-DEMUC has 8 routes carrying that lane (SHA-HAM-MUC ..
+# SHA-GDN-MUC, SHA-CPE-MUC). 4 further lanes add geographic diversity:
+# Transpacific (CNSHA-USLAX), Middle-East/Suez (AEJEA-DEHAM, with a
+# Cape-of-Good-Hope alternate), Intra-Europe (NLRTM-ITMIL, single route, no
+# alternative), Transatlantic (DEHAM-USNYC, with Rotterdam + Antwerp
+# alternates).
+#
+# hamburg_ocean_gateway_unavailable means specifically the OCEAN
+# terminal/vessel-call at Hamburg is blocked -- not that Hamburg as a
+# location is entirely inaccessible. SHA-RTM-MUC/SHA-ANR-MUC/TAT-RTM/
+# TAT-ANR all avoid an ocean departure from Hamburg; TAT-RTM/TAT-ANR still
+# legitimately depart Hamburg by rail (an inland movement, not an ocean
+# one) en route to their actual alternate ocean port.
+#
+# Durations are plausible (ocean slow, rail medium, air fast). Costs are
+# NOT here -- they are derived, correlated + seeded (rate/fixtures/cost-model.md).
+routes:
+  - id: SHA-HAM-MUC            # r1 -- the CONTRACTED lane
+    lane_id: CNSHA-DEMUC
+    roles: [primary, contracted]
+    edges:
+      - {edge_id: OCEAN-CNSHA-DEHAM, indicative_duration_days: 27}
+      - {edge_id: RAIL-DEHAM-DEMUC, indicative_duration_days: 2}
+
+  - id: SHA-RTM-MUC            # r2 -- Rotterdam alternative (via Duisburg, TEN-T)
+    lane_id: CNSHA-DEMUC
+    roles: [alternative]
+    applicability:
+      applicable_disruption_tags: [hamburg_ocean_gateway_unavailable]
+    edges:
+      - {edge_id: OCEAN-CNSHA-NLRTM, indicative_duration_days: 26}
+      - {edge_id: RAIL-NLRTM-DEDUI, indicative_duration_days: 1}
+      - {edge_id: RAIL-DEDUI-DEMUC, indicative_duration_days: 1}
+
+  - id: SHA-ANR-MUC            # r3 -- Antwerp alternative
+    lane_id: CNSHA-DEMUC
+    roles: [alternative]
+    applicability:
+      applicable_disruption_tags: [hamburg_ocean_gateway_unavailable]
+    edges:
+      - {edge_id: OCEAN-CNSHA-BEANR, indicative_duration_days: 28}
+      - {edge_id: RAIL-BEANR-DEMUC, indicative_duration_days: 2}
+
+  - id: PVG-FRA-MUC            # r4 -- air (fast, expensive)
+    lane_id: CNSHA-DEMUC
+    roles: [alternative]
+    edges:
+      - {edge_id: AIR-CNPVG-DEFRA, indicative_duration_days: 2}
+      - {edge_id: ROAD-DEFRA-DEMUC, indicative_duration_days: 1}
+
+  - id: SHA-PIR-MUC            # r5 -- Med gateway (TEN-T Orient/East-Med)
+    lane_id: CNSHA-DEMUC
+    roles: [alternative]
+    edges:
+      - {edge_id: OCEAN-CNSHA-GRPIR, indicative_duration_days: 22}
+      - {edge_id: RAIL-GRPIR-DEMUC, indicative_duration_days: 5}
+
+  - id: SHA-GOA-MUC            # r6 -- Genoa gateway
+    lane_id: CNSHA-DEMUC
+    roles: [alternative]
+    edges:
+      - {edge_id: OCEAN-CNSHA-ITGOA, indicative_duration_days: 24}
+      - {edge_id: RAIL-ITGOA-DEMUC, indicative_duration_days: 3}
+
+  - id: NGB-HAM-MUC            # r7 -- alternative origin (Ningbo), own lane
+    lane_id: CNNGB-DEMUC
+    roles: [primary]            # sole route on its lane
+    edges:
+      - {edge_id: OCEAN-CNNGB-DEHAM, indicative_duration_days: 27}
+      - {edge_id: RAIL-DEHAM-DEMUC, indicative_duration_days: 2}
+
+  - id: SHA-GDN-MUC            # r8 -- Baltic gateway
+    lane_id: CNSHA-DEMUC
+    roles: [alternative]
+    edges:
+      - {edge_id: OCEAN-CNSHA-PLGDN, indicative_duration_days: 30}
+      - {edge_id: RAIL-PLGDN-DEMUC, indicative_duration_days: 3}
+
+  - id: SHA-CPE-MUC            # r9 -- Cape of Good Hope escalation (Suez blocked)
+    lane_id: CNSHA-DEMUC
+    roles: [contingency]
+    applicability:
+      applicable_disruption_tags: [suez_unavailable]
+    edges:
+      # explicit ZADUR waypoint, not a single CNSHA->DEHAM edge: a future
+      # graph-based route-finder over edges.yaml would otherwise always
+      # pick the shortest CNSHA->DEHAM path (the Suez route) regardless of
+      # which named route asked for it -- same pattern as MEA-CAPE below.
+      - {edge_id: OCEAN-CNSHA-ZADUR, indicative_duration_days: 24}
+      - {edge_id: OCEAN-ZADUR-DEHAM, indicative_duration_days: 16}
+      - {edge_id: RAIL-DEHAM-DEMUC, indicative_duration_days: 2}
+
+  - id: TPA-LAX                # Transpacific -- primary (Los Angeles)
+    lane_id: CNSHA-USLAX
+    roles: [primary]
+    edges:
+      - {edge_id: OCEAN-CNSHA-USLAX, indicative_duration_days: 14}
+
+  - id: TPA-OAK                # Transpacific -- alternate (Oakland, inland to LA)
+    lane_id: CNSHA-USLAX
+    roles: [alternative]
+    edges:
+      - {edge_id: OCEAN-CNSHA-USOAK, indicative_duration_days: 15}
+      - {edge_id: ROAD-USOAK-USLAX, indicative_duration_days: 1}
+
+  - id: MEA-SUEZ                # Middle-East -- primary, via Suez Canal
+    lane_id: AEJEA-DEHAM
+    roles: [primary]
+    edges:
+      - {edge_id: OCEAN-AEJEA-DEHAM, indicative_duration_days: 18}
+
+  - id: MEA-CAPE                # Middle-East -- alternate, Cape-of-Good-Hope
+    lane_id: AEJEA-DEHAM
+    roles: [contingency]
+    applicability:
+      applicable_disruption_tags: [suez_unavailable]
+    edges:
+      - {edge_id: OCEAN-AEJEA-ZADUR, indicative_duration_days: 16}
+      - {edge_id: OCEAN-ZADUR-DEHAM, indicative_duration_days: 16}
+
+  - id: EUR-MIL                # Intra-Europe -- single route, no alternative
+    lane_id: NLRTM-ITMIL
+    roles: [primary]            # sole route on its lane
+    edges:
+      - {edge_id: RAIL-NLRTM-ITMIL, indicative_duration_days: 3}
+
+  - id: TAT-NYC                # Transatlantic -- primary (Hamburg)
+    lane_id: DEHAM-USNYC
+    roles: [primary]
+    edges:
+      - {edge_id: OCEAN-DEHAM-USNYC, indicative_duration_days: 9}
+
+  - id: TAT-RTM                # Transatlantic -- alternate (Rotterdam, via Hamburg feeder)
+    lane_id: DEHAM-USNYC
+    roles: [alternative]
+    applicability:
+      applicable_disruption_tags: [hamburg_ocean_gateway_unavailable]
+    edges:
+      - {edge_id: RAIL-DEHAM-NLRTM, indicative_duration_days: 1}
+      - {edge_id: OCEAN-NLRTM-USNYC, indicative_duration_days: 8}
+
+  - id: TAT-ANR                # Transatlantic -- alternate (Antwerp, via Hamburg feeder)
+    lane_id: DEHAM-USNYC
+    roles: [alternative]
+    applicability:
+      applicable_disruption_tags: [hamburg_ocean_gateway_unavailable]
+    edges:
+      - {edge_id: RAIL-DEHAM-BEANR, indicative_duration_days: 1}
+      - {edge_id: OCEAN-BEANR-USNYC, indicative_duration_days: 9}

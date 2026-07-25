@@ -22,8 +22,8 @@
     {% for r in routes %}
     <tr class="border-b hover:bg-gray-50">
       <td class="py-2"><a class="underline accent" href="/routes/{{ r.id }}">{{ r.id }}</a></td>
-      <td class="py-2">{{ r.lane }}</td>
-      <td class="py-2">{{ "yes" if r.contracted else "no" }}</td>
+      <td class="py-2">{{ r.lane_id }}</td>
+      <td class="py-2">{{ "yes" if "contracted" in r.roles else "no" }}</td>
       <td class="py-2"><span class="badge-{{ r._availability_status }} px-2 py-0.5 rounded text-xs">{{ r._availability_status }}</span></td>
     </tr>
     {% endfor %}

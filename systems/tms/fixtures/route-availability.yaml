@@ -12,6 +12,7 @@ route_availability:
   - {route_id: SHA-GOA-MUC, status: available}
   - {route_id: NGB-HAM-MUC, status: available}
   - {route_id: SHA-GDN-MUC, status: available}
+  - {route_id: SHA-CPE-MUC, status: available}
   - {route_id: TPA-LAX, status: available}
   - {route_id: TPA-OAK, status: available}
   - {route_id: MEA-SUEZ, status: available}

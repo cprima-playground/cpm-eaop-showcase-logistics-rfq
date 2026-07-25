@@ -55,7 +55,7 @@ def test_reset_command():
 def test_routes_command():
     result = runner.invoke(app, ["routes"])
     assert result.exit_code == 0
-    assert result.output.count('"id":') == 16
+    assert result.output.count('"id":') == 17
 
 
 def test_get_route_command():
@@ -67,7 +67,7 @@ def test_get_route_command():
 def test_feasible_lanes_command():
     result = runner.invoke(app, ["feasible-lanes", "CNSHA-DEMUC"])
     assert result.exit_code == 0
-    assert result.output.count('"id":') == 7
+    assert result.output.count('"id":') == 8
 
 
 def test_set_availability_command():

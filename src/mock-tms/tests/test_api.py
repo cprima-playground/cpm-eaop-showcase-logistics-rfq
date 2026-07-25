@@ -25,14 +25,14 @@ def test_routes_requires_api_key():
 def test_list_routes():
     r = client().get("/routes", headers={"X-API-Key": API_KEY})
     assert r.status_code == 200
-    assert len(r.json()) == 16
+    assert len(r.json()) == 17
 
 
 def test_get_route():
     r = client().get("/routes/SHA-HAM-MUC", headers={"X-API-Key": API_KEY})
     assert r.status_code == 200
-    assert r.json()["contracted"] is True
-    assert r.json()["legs"][0]["from"] == "CNSHA"  # serialized by alias
+    assert "contracted" in r.json()["roles"]
+    assert r.json()["legs"][0]["origin_id"] == "CNSHA"
 
 
 def test_get_unknown_route_404():
@@ -61,14 +61,32 @@ def test_capacity():
 def test_feasible_lanes():
     r = client().get("/feasible-lanes", params={"lane": "CNSHA-DEMUC"}, headers={"X-API-Key": API_KEY})
     assert r.status_code == 200
-    assert len(r.json()) == 7  # all routes on the lane; see test_store.py's note
+    assert len(r.json()) == 8  # all routes on the lane; see test_store.py's note
 
 
 def test_get_new_geography_route():
     r = client().get("/routes/MEA-SUEZ", headers={"X-API-Key": API_KEY})
     assert r.status_code == 200
-    assert r.json()["lane"] == "AEJEA-DEHAM"
-    assert r.json()["legs"][0]["from"] == "AEJEA"
+    assert r.json()["lane_id"] == "AEJEA-DEHAM"
+    assert r.json()["legs"][0]["origin_id"] == "AEJEA"
+
+
+def test_list_edges_returns_deterministic_29_entry_pool():
+    r = client().get("/edges", headers={"X-API-Key": API_KEY})
+    assert r.status_code == 200
+    edges = r.json()
+    assert len(edges) == 29
+    assert [e["id"] for e in edges] == sorted(e["id"] for e in edges)
+
+
+def test_edges_requires_api_key():
+    assert client().get("/edges").status_code == 401
+
+
+def test_route_applicability_tag_present():
+    r = client().get("/routes/SHA-RTM-MUC", headers={"X-API-Key": API_KEY})
+    assert r.status_code == 200
+    assert r.json()["applicability"]["applicable_disruption_tags"] == ["hamburg_ocean_gateway_unavailable"]
 
 
 def test_feasible_lanes_new_geography():

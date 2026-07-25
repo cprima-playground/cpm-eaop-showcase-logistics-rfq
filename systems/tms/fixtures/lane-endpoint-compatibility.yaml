@@ -1,0 +1,12 @@
+# Endpoint interpretation, deliberately kept separate from edges.yaml (edge
+# topology) -- this is about which physical locations count as valid
+# stand-ins for a lane's nominal origin/destination, not about connections
+# between locations.
+#
+# TMS-local by design: rfq_common.models.masterdata.Location has no city/
+# metro-area/commercial-zone concept today, so promoting this into
+# masterdata would mean inventing one from scratch to serve a single
+# exception pair. Promote it there if a SECOND system ever needs the same
+# compatibility concept -- not before.
+lane_endpoint_compatibility:
+  CNSHA: [CNPVG]   # Shanghai seaport lane also accepts Shanghai-Pudong airport (PVG-FRA-MUC's real first leg) as a physical origin

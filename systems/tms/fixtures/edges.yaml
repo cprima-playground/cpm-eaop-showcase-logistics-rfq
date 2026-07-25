@@ -1,0 +1,42 @@
+# Reusable directed transport edges -- pure topology (origin/destination/
+# mode only, no duration: transit time is a per-route planning fact, see
+# routes.yaml's RouteEdgeRef.indicative_duration_days, not intrinsic to the
+# connection itself). Id convention: {MODE}-{ORIGIN}-{DESTINATION}
+# (uppercase mode). Directional only -- a listed A->B edge never implies
+# B->A. Named `Route`s in routes.yaml reference these by id, in order;
+# multiple routes sharing the same edge is real, demonstrated reuse (see
+# RAIL-DEHAM-DEMUC, used by 3 routes; OCEAN-ZADUR-DEHAM, used by 2).
+#
+# This pool + lane-endpoint-compatibility.yaml is groundwork for a future
+# MCP-based route-finder to query adjacency -- no path-finding algorithm
+# lives here or anywhere in this repo yet.
+edges:
+  - {id: OCEAN-CNSHA-DEHAM, origin_id: CNSHA, destination_id: DEHAM, mode: ocean}
+  - {id: RAIL-DEHAM-DEMUC, origin_id: DEHAM, destination_id: DEMUC, mode: rail}
+  - {id: OCEAN-CNSHA-NLRTM, origin_id: CNSHA, destination_id: NLRTM, mode: ocean}
+  - {id: RAIL-NLRTM-DEDUI, origin_id: NLRTM, destination_id: DEDUI, mode: rail}
+  - {id: RAIL-DEDUI-DEMUC, origin_id: DEDUI, destination_id: DEMUC, mode: rail}
+  - {id: OCEAN-CNSHA-BEANR, origin_id: CNSHA, destination_id: BEANR, mode: ocean}
+  - {id: RAIL-BEANR-DEMUC, origin_id: BEANR, destination_id: DEMUC, mode: rail}
+  - {id: AIR-CNPVG-DEFRA, origin_id: CNPVG, destination_id: DEFRA, mode: air}
+  - {id: ROAD-DEFRA-DEMUC, origin_id: DEFRA, destination_id: DEMUC, mode: road}
+  - {id: OCEAN-CNSHA-GRPIR, origin_id: CNSHA, destination_id: GRPIR, mode: ocean}
+  - {id: RAIL-GRPIR-DEMUC, origin_id: GRPIR, destination_id: DEMUC, mode: rail}
+  - {id: OCEAN-CNSHA-ITGOA, origin_id: CNSHA, destination_id: ITGOA, mode: ocean}
+  - {id: RAIL-ITGOA-DEMUC, origin_id: ITGOA, destination_id: DEMUC, mode: rail}
+  - {id: OCEAN-CNNGB-DEHAM, origin_id: CNNGB, destination_id: DEHAM, mode: ocean}
+  - {id: OCEAN-CNSHA-PLGDN, origin_id: CNSHA, destination_id: PLGDN, mode: ocean}
+  - {id: RAIL-PLGDN-DEMUC, origin_id: PLGDN, destination_id: DEMUC, mode: rail}
+  - {id: OCEAN-CNSHA-ZADUR, origin_id: CNSHA, destination_id: ZADUR, mode: ocean}
+  - {id: OCEAN-ZADUR-DEHAM, origin_id: ZADUR, destination_id: DEHAM, mode: ocean}
+  - {id: OCEAN-CNSHA-USLAX, origin_id: CNSHA, destination_id: USLAX, mode: ocean}
+  - {id: OCEAN-CNSHA-USOAK, origin_id: CNSHA, destination_id: USOAK, mode: ocean}
+  - {id: ROAD-USOAK-USLAX, origin_id: USOAK, destination_id: USLAX, mode: road}
+  - {id: OCEAN-AEJEA-DEHAM, origin_id: AEJEA, destination_id: DEHAM, mode: ocean}
+  - {id: OCEAN-AEJEA-ZADUR, origin_id: AEJEA, destination_id: ZADUR, mode: ocean}
+  - {id: RAIL-NLRTM-ITMIL, origin_id: NLRTM, destination_id: ITMIL, mode: rail}
+  - {id: OCEAN-DEHAM-USNYC, origin_id: DEHAM, destination_id: USNYC, mode: ocean}
+  - {id: RAIL-DEHAM-NLRTM, origin_id: DEHAM, destination_id: NLRTM, mode: rail}
+  - {id: OCEAN-NLRTM-USNYC, origin_id: NLRTM, destination_id: USNYC, mode: ocean}
+  - {id: RAIL-DEHAM-BEANR, origin_id: DEHAM, destination_id: BEANR, mode: rail}
+  - {id: OCEAN-BEANR-USNYC, origin_id: BEANR, destination_id: USNYC, mode: ocean}

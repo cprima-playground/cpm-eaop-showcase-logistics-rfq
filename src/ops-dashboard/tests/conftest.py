@@ -17,14 +17,14 @@ class StubTmsClient:
     def __init__(self):
         self._routes = [
             {
-                "id": "SHA-HAM-MUC", "lane": "CNSHA-DEMUC", "contracted": True,
-                "legs": [{"from": "CNSHA", "to": "DEHAM", "mode": "ocean", "duration_days": 27}],
+                "id": "SHA-HAM-MUC", "lane_id": "CNSHA-DEMUC", "roles": ["primary", "contracted"],
+                "legs": [{"origin_id": "CNSHA", "destination_id": "DEHAM", "mode": "ocean", "indicative_duration_days": 27}],
             },
             {
-                "id": "SHA-RTM-MUC", "lane": "CNSHA-DEMUC", "contracted": False,
+                "id": "SHA-RTM-MUC", "lane_id": "CNSHA-DEMUC", "roles": ["alternative"],
                 "legs": [
-                    {"from": "CNSHA", "to": "NLRTM", "mode": "ocean", "duration_days": 26},
-                    {"from": "NLRTM", "to": "DEDUI", "mode": "rail", "duration_days": 1},
+                    {"origin_id": "CNSHA", "destination_id": "NLRTM", "mode": "ocean", "indicative_duration_days": 26},
+                    {"origin_id": "NLRTM", "destination_id": "DEDUI", "mode": "rail", "indicative_duration_days": 1},
                 ],
             },
         ]

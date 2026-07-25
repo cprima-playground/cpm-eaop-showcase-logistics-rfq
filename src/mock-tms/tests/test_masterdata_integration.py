@@ -37,13 +37,21 @@ def masterdata_key():
 def test_tms_store_loads_via_real_masterdata_call(masterdata_key):
     client = MasterdataClient(base_url=MASTERDATA_URL, api_key=masterdata_key)
     store = TmsStore(TMS_FIXTURES_DIR, client)
-    assert len(store.list_routes()) == 16
+    assert len(store.list_routes()) == 17
 
 
 def test_tms_store_rejects_unknown_location(tmp_path, masterdata_key):
-    bad_routes = tmp_path / "routes.yaml"
-    bad_routes.write_text(
-        "routes:\n  - {id: BAD, lane: X-Y, legs: [{from: ZZZZZ, to: DEMUC, mode: rail, duration_days: 1}]}\n",
+    # The bad location code now lives on the edge (Route no longer carries
+    # raw location codes directly -- it references edges by id).
+    (tmp_path / "edges.yaml").write_text(
+        "edges:\n  - {id: RAIL-ZZZZZ-DEMUC, origin_id: ZZZZZ, destination_id: DEMUC, mode: rail}\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "lane-endpoint-compatibility.yaml").write_text(
+        "lane_endpoint_compatibility: {}\n", encoding="utf-8",
+    )
+    (tmp_path / "routes.yaml").write_text(
+        "routes:\n  - {id: BAD, lane_id: ZZZZZ-DEMUC, edges: [{edge_id: RAIL-ZZZZZ-DEMUC, indicative_duration_days: 1}]}\n",
         encoding="utf-8",
     )
     (tmp_path / "route-availability.yaml").write_text(

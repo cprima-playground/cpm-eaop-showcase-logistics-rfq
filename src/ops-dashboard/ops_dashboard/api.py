@@ -323,7 +323,7 @@ def _route_waypoints(route: dict, location_lookup) -> list[list[float]] | None:
     legs = route.get("legs") or []
     if not legs:
         return None
-    codes = [legs[0]["from"]] + [leg["to"] for leg in legs]
+    codes = [legs[0]["origin_id"]] + [leg["destination_id"] for leg in legs]
     points = [location_lookup(code) for code in codes]
     if any(p is None for p in points):
         return None
@@ -432,7 +432,7 @@ def build_app(
         if waypoints is not None:
             route_json = json.dumps([{
                 "id": route["id"],
-                "lane": route["lane"],
+                "lane": route["lane_id"],
                 "status": (availability or {}).get("status", "unknown"),
                 "points": waypoints,
             }])
@@ -510,7 +510,7 @@ def build_app(
             avail = tms.get_availability(r["id"]) or {}
             map_routes.append({
                 "id": r["id"],
-                "lane": r["lane"],
+                "lane": r["lane_id"],
                 "status": avail.get("status", "unknown"),
                 "points": points,
             })

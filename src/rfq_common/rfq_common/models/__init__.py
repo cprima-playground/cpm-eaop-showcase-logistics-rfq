@@ -62,7 +62,16 @@ from .qms import (
 )
 from .rate import CarrierRate
 from .repricing import ApprovalTask, RouteOption, RouteRecommendation, TriggeredThreshold
-from .tms import Route, RouteAvailability, RouteAvailabilityStatus, RouteLeg, TransportMode
+from .tms import (
+    Route,
+    RouteApplicability,
+    RouteAvailability,
+    RouteAvailabilityStatus,
+    RouteEdge,
+    RouteEdgeRef,
+    RouteRole,
+    TransportMode,
+)
 
 __all__ = [
     "RFQ",
@@ -101,12 +110,15 @@ __all__ = [
     "QuoteVersion",
     "RfqStatus",
     "Route",
+    "RouteApplicability",
     "RouteAvailability",
     "RouteAvailabilityStatus",
-    "RouteLeg",
+    "RouteEdge",
+    "RouteEdgeRef",
     "RouteOption",
     "RouteRecommendation",
     "RouteRecommendationInput",
+    "RouteRole",
     "RuleResult",
     "TimelineEntry",
     "TransportMode",
