@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-4">QMS Dashboard</h1>
+<div class="grid grid-cols-2 gap-4 max-w-md">
+  <div class="border rounded p-4">
+    <div class="text-3xl font-semibold accent">{{ open_quotes_count }}</div>
+    <div class="text-sm text-gray-600">Open quotes</div>
+  </div>
+  <div class="border rounded p-4">
+    <div class="text-3xl font-semibold accent">{{ approval_required_count }}</div>
+    <div class="text-sm text-gray-600">Awaiting approval</div>
+  </div>
+</div>
+{% endblock %}

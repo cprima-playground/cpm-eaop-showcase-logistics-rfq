@@ -1,12 +1,14 @@
 """Base FastAPI app factory -- every mock system builds on this (ADR-006).
-Health endpoint + theme CSS endpoint + a SHOWCASE banner header, common to all
-systems; each system mounts its own routes on top."""
+Health endpoint + theme CSS endpoint + a SHOWCASE banner header + a
+correlation-id header, common to all systems; each system mounts its own
+routes on top."""
 
 from __future__ import annotations
 
+import uuid
 from urllib.parse import quote
 
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, Request, Response
 
 from .clock import now
 from .theme import ThemePack, render_css_vars
@@ -43,6 +45,13 @@ def create_app(name: str, *, system_id: str | None = None,
             # HTTP header values are latin-1 only; percent-encode losslessly
             # (banner text may contain non-ASCII, e.g. an em dash).
             response.headers["X-Showcase-Banner"] = quote(pack.banner.text)
+        return response
+
+    @app.middleware("http")
+    async def _correlation_id(request: Request, call_next):
+        request.state.correlation_id = str(uuid.uuid4())
+        response = await call_next(request)
+        response.headers["X-Correlation-Id"] = request.state.correlation_id
         return response
 
     return app

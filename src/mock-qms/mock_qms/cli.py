@@ -79,6 +79,48 @@ def supersede(
     _print(r)
 
 
+@app.command(name="compose-route-recommendation")
+def compose_route_recommendation(
+    quote_id: str, version: int, recommendation_id: str, selected_route_id: str,
+    base_url: str = typer.Option(None),
+) -> None:
+    """PUT .../route-recommendation against the running server."""
+    r = httpx.put(
+        f"{_base_url(base_url)}/quotes/{quote_id}/versions/{version}/route-recommendation", headers=_headers(),
+        json={"recommendation_id": recommendation_id, "selected_route_id": selected_route_id},
+    )
+    _print(r)
+
+
+@app.command(name="compose-pricing-inputs")
+def compose_pricing_inputs(
+    quote_id: str, version: int, fx_rate_ref: str, pricing_terms_ref: str, margin_floor_ref: str,
+    rate_ref: list[str] = typer.Option([], help="Repeatable -- one per carrier rate (route_id)"),
+    base_url: str = typer.Option(None),
+) -> None:
+    """PUT .../pricing-inputs against the running server."""
+    r = httpx.put(
+        f"{_base_url(base_url)}/quotes/{quote_id}/versions/{version}/pricing-inputs", headers=_headers(),
+        json={
+            "fx_rate_ref": fx_rate_ref, "rate_refs": rate_ref,
+            "pricing_terms_ref": pricing_terms_ref, "margin_floor_ref": margin_floor_ref,
+        },
+    )
+    _print(r)
+
+
+@app.command()
+def price(quote_id: str, version: int, base_url: str = typer.Option(None)) -> None:
+    """POST .../price -- draft -> priced (real total_cost + honest R1-R5, see store.py)."""
+    _print(httpx.post(f"{_base_url(base_url)}/quotes/{quote_id}/versions/{version}/price", headers=_headers()))
+
+
+@app.command(name="submit-for-approval")
+def submit_for_approval(quote_id: str, version: int, base_url: str = typer.Option(None)) -> None:
+    """POST .../submit-for-approval -- priced -> approval_required."""
+    _print(httpx.post(f"{_base_url(base_url)}/quotes/{quote_id}/versions/{version}/submit-for-approval", headers=_headers()))
+
+
 @app.command()
 def search(
     customer_id: str = typer.Option(None), rfq_id: str = typer.Option(None),

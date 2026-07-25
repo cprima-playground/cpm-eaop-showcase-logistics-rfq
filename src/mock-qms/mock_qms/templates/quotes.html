@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}Quotes{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-4">Quotes</h1>
+
+<form method="get" class="flex gap-2 mb-4 text-sm">
+  <input type="text" name="customerId" placeholder="Customer ID" value="{{ filters.customerId or '' }}" class="border rounded px-2 py-1">
+  <input type="text" name="rfqId" placeholder="RFQ ID" value="{{ filters.rfqId or '' }}" class="border rounded px-2 py-1">
+  <input type="text" name="status" placeholder="Status" value="{{ filters.status or '' }}" class="border rounded px-2 py-1">
+  <button type="submit" class="border rounded px-3 py-1 accent">Search</button>
+  <a href="/app/quotes" class="text-gray-500 self-center underline">clear</a>
+</form>
+
+{% if quotes %}
+<div class="overflow-x-auto">
+<table class="text-sm border-collapse w-full">
+  <thead>
+    <tr class="text-left border-b">
+      <th class="py-2 pr-4">Quote ID</th>
+      <th class="py-2 pr-4">RFQ ID</th>
+      <th class="py-2 pr-4">Customer</th>
+      <th class="py-2 pr-4">Currency</th>
+      <th class="py-2 pr-4">Version</th>
+      <th class="py-2 pr-4">Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for q in quotes %}
+    <tr class="border-b hover:bg-gray-50 cursor-pointer" onclick="window.location='/app/quotes/{{ q.quote_id }}'">
+      <td class="py-2 pr-4"><a href="/app/quotes/{{ q.quote_id }}" class="underline accent">{{ q.quote_id }}</a></td>
+      <td class="py-2 pr-4">{{ q.rfq_id }}</td>
+      <td class="py-2 pr-4">{{ q.customer_id }}</td>
+      <td class="py-2 pr-4">{{ q.currency }}</td>
+      <td class="py-2 pr-4">v{{ q.latest_version }}</td>
+      <td class="py-2 pr-4">{{ m.lifecycle_badge(q.latest_version_status) }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+<p class="text-gray-500">No quotes match this search.</p>
+{% endif %}
+{% endblock %}

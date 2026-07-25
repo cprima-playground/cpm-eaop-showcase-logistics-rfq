@@ -14,13 +14,16 @@
   </div>
   <header class="flex items-center justify-between px-6 py-3 border-b">
     <nav class="flex items-center gap-4">
-      <a href="/" class="text-lg font-semibold accent">{{ system_title|default('Dashboard') }}</a>
+      <a href="{{ home_url|default('/') }}" class="text-lg font-semibold accent">{{ system_title|default('Dashboard') }}</a>
       {% for label, href in nav_links|default([]) %}
       <a href="{{ href }}" class="text-sm underline">{{ label }}</a>
       {% endfor %}
     </nav>
     <div class="flex items-center gap-4 text-sm">
       {% if principal %}
+        {% if principal.approval_limit_eur_cents %}
+        <span class="px-2 py-0.5 rounded bg-yellow-100 text-yellow-800 text-xs" title="delegated commercial approval limit (D6)">Your approval limit: &euro;{{ "{:,}".format(principal.approval_limit_eur_cents // 100) }}</span>
+        {% endif %}
         <span>{{ principal.id }} ({{ principal.roles|join(', ') if principal.roles else 'no roles' }})</span>
         <a href="/logout" class="underline">Logout</a>
       {% else %}

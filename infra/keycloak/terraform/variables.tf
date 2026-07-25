@@ -32,3 +32,18 @@ variable "ops_dashboard_redirect_uris" {
     "https://ops-dashboard.rfq-showcase.localhost/callback",
   ]
 }
+
+variable "enable_test_password_grant" {
+  type        = bool
+  description = "Enables direct_access_grants_enabled (ROPC/password grant) on the human-SSO clients, ONLY so their skip-gated live integration tests can mint a token without driving a real browser through the PKCE redirect dance. Never true for a client backing a real deployment -- surfaced as a variable (not hardcoded) so a prod-like environment can't accidentally inherit the default."
+  default     = true
+}
+
+variable "qms_redirect_uris" {
+  type        = list(string)
+  description = "Valid redirect URIs for the qms-web Auth-Code+PKCE client -- direct (:8007, same process as the QMS API) and via the local Caddy edge (preferred)"
+  default = [
+    "http://localhost:8007/callback",
+    "https://qms.rfq-showcase.localhost/callback",
+  ]
+}

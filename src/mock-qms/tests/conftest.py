@@ -37,3 +37,48 @@ def _qms_api_key(monkeypatch):
 def _stub_masterdata(monkeypatch):
     monkeypatch.setattr(api_module, "_masterdata_client", lambda: StubMasterdataClient())
     yield
+
+
+# matches systems/rate/fixtures/rates.yaml's real SHA-HAM-MUC entry
+class StubRateClient:
+    def get_rate(self, route_id: str):
+        if route_id == "SHA-HAM-MUC":
+            return {"route_id": route_id, "carrier_id": "COSCO", "currency": "CNY", "base_cost": 42000, "surcharges": 5100}
+        if route_id == "SHA-RTM-MUC":
+            return {"route_id": route_id, "carrier_id": "MAERSK", "currency": "EUR", "base_cost": 565000, "surcharges": 48000}
+        return None
+
+
+class StubFxClient:
+    """Deterministic fixed rate per call -- test controls it via a class
+    attribute so a test can simulate the rate moving between two price()
+    calls (the FX-breakout scenario)."""
+
+    rate = 0.13
+
+    def convert(self, amount: str, from_currency: str, to_currency: str) -> dict:
+        converted = round(float(amount) * self.rate, 2)
+        return {
+            "amount": amount, "from_currency": from_currency, "to_currency": to_currency,
+            "rate": self.rate, "rate_ref": "FX-TEST", "converted_amount": str(converted), "minor_unit": 2,
+        }
+
+
+@pytest.fixture(autouse=True)
+def _stub_rate_fx(monkeypatch):
+    StubFxClient.rate = 0.13  # reset between tests
+    monkeypatch.setattr(api_module, "_rate_client", lambda: StubRateClient())
+    monkeypatch.setattr(api_module, "_fx_client", lambda: StubFxClient())
+    yield
+
+
+TEST_SESSION_SECRET = "test-qms-session-secret"
+
+
+@pytest.fixture(autouse=True)
+def _qms_session_secret(monkeypatch):
+    monkeypatch.setenv("QMS_SESSION_SECRET", TEST_SESSION_SECRET)
+    import mock_qms.config as config_module
+    config_module._cached_session_secret = None
+    yield
+    config_module._cached_session_secret = None

@@ -22,8 +22,21 @@ def vault_seeded_key(monkeypatch):
     monkeypatch.delenv("FX_API_KEY", raising=False)  # force the Vault path
     auth_module._cached_key = None
     value = "vault-sourced-fx-key"
+    # This overwrites the REAL dev Vault's rfq/fx-api-key -- every other live
+    # mock-fx process (and every other skip-gated live test in this repo)
+    # reads that same shared path. Must restore the original value on
+    # teardown, or every subsequent live run/process gets a stale-key 401
+    # until someone happens to rerun seed.py -- previously missing, and the
+    # actual root cause of several "stale key" incidents this session.
+    original = None
+    try:
+        original = VaultReader(VAULT_URL).get("rfq/fx-api-key")
+    except Exception:
+        pass  # nothing to restore if it wasn't set yet
     VaultAdmin(VAULT_URL).put("rfq/fx-api-key", {"value": value})
     yield value
+    if original is not None:
+        VaultAdmin(VAULT_URL).put("rfq/fx-api-key", {"value": original})
     auth_module._cached_key = None
 
 

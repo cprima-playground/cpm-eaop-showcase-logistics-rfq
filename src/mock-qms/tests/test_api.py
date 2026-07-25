@@ -44,9 +44,9 @@ def test_openapi_schema_is_fastapi_generated_from_real_routes():
 
 
 def test_still_undocumented_endpoint_returns_501_not_implemented():
-    """Pricing (D16, R1-R6 math) genuinely isn't built -- distinct from the
-    Quotes/Versions CRUD below, which now is."""
-    r = client().post("/quotes/Q-9999/versions/1/price", headers={"X-API-Key": API_KEY})
+    """Publication/documents/customer-response genuinely aren't built --
+    distinct from Quotes/Versions/pricing CRUD, which now is."""
+    r = client().get("/quotes/Q-9999/versions/1/pricing-breakdown", headers={"X-API-Key": API_KEY})
     assert r.status_code == 501
 
 

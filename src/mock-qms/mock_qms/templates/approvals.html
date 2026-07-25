@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}Approvals{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-4">Task inbox — quotes awaiting approval</h1>
+<p class="text-sm text-gray-600 mb-4">Real query against <code>status=approval_required</code> -- currently always empty, correctly: nothing in this codebase can reach that status yet (POST .../price and .../submit-for-approval are still stub).</p>
+{% if quotes %}
+<table class="text-sm border-collapse w-full max-w-2xl">
+  <thead><tr class="text-left border-b">
+    <th class="py-2 pr-4">Quote ID</th><th class="py-2 pr-4">Customer</th><th class="py-2 pr-4">Version</th>
+  </tr></thead>
+  <tbody>
+    {% for q in quotes %}
+    <tr class="border-b">
+      <td class="py-2 pr-4"><a href="/app/quotes/{{ q.quote_id }}" class="underline accent">{{ q.quote_id }}</a></td>
+      <td class="py-2 pr-4">{{ q.customer_id }}</td>
+      <td class="py-2 pr-4">v{{ q.latest_version }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="text-gray-500">No quotes awaiting approval.</p>
+{% endif %}
+{% endblock %}

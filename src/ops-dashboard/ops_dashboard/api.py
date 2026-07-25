@@ -10,7 +10,6 @@ from __future__ import annotations
 import json
 import os
 import time
-import uuid
 from pathlib import Path
 
 import httpx
@@ -380,12 +379,8 @@ def build_app(
 
     templates = Jinja2Templates(directory=[str(TEMPLATES_DIR), str(SHARED_TEMPLATES_DIR)])
 
-    @app.middleware("http")
-    async def _correlation_id(request: Request, call_next):
-        request.state.correlation_id = str(uuid.uuid4())
-        response = await call_next(request)
-        response.headers["X-Correlation-Id"] = request.state.correlation_id
-        return response
+    # correlation-id middleware lives in rfq_common.app.create_app() now --
+    # request.state.correlation_id is set there, before build_app() even runs.
 
     def _ctx(request: Request, **extra) -> dict:
         return {
@@ -540,6 +535,10 @@ def build_app(
                             auth_basis=f"GET {fx.base_url}/exchange-rates/CNY/EUR with our X-API-Key"),
             _check_service("qms", qms.base_url, lambda: qms.stats(),
                             auth_basis=f"GET {qms.base_url}/admin/stats with our X-API-Key"),
+            # QMS combines API + its own frontend in one process (unlike
+            # ops-dashboard); frontend_url set separately here since
+            # _check_service's own probe is the API's /admin/stats, not a
+            # UI page -- see status.html's frontend_url link rendering.
             _check_vault("vault", os.environ.get("VAULT_ADDR", "http://127.0.0.1:8200")),
             _check_cedar("policy", os.environ.get("CEDAR_AGENT_URL", "http://127.0.0.1:8280")),
         ]
@@ -549,13 +548,18 @@ def build_app(
             s["stats"] = None
             client = stats_clients.get(s["name"])
             if client is not None:
-                # Not gated on s["authenticated"]: for qms that flag tracks
-                # frontend SSO (there's no UI yet), not the X-API-Key this
-                # call actually uses -- the try/except is the real safety net.
+                # Not gated on s["authenticated"]: that flag tracks the
+                # X-API-Key auth_probe above, an independent signal from
+                # whether this stats call itself succeeds -- the try/except
+                # is the real safety net.
                 try:
                     s["stats"] = client.stats()
                 except Exception:
                     pass  # stats is metadata, not a health signal -- never fail the page over it
+            if s["name"] == "qms":
+                # QMS combines API + its own frontend in one process
+                # (unlike ops-dashboard) -- /app is real now, link it.
+                s["frontend_url"] = "https://qms.rfq-showcase.localhost/app"
         overall = "pass" if all(s["status"] == "pass" for s in services) else (
             "fail" if any(s["status"] == "fail" for s in services) else "warn"
         )

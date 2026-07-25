@@ -18,7 +18,7 @@ resource "keycloak_openid_client" "ops_dashboard_web" {
   access_type                   = "CONFIDENTIAL"
   standard_flow_enabled         = true
   service_accounts_enabled      = false
-  direct_access_grants_enabled  = true # see deviation note above -- test-only
+  direct_access_grants_enabled  = var.enable_test_password_grant # see deviation note above -- test-only
   valid_redirect_uris            = var.ops_dashboard_redirect_uris
   valid_post_logout_redirect_uris = ["http://localhost:8006", "https://ops-dashboard.rfq-showcase.localhost"]
   web_origins                    = ["http://localhost:8006", "https://ops-dashboard.rfq-showcase.localhost"]

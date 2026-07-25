@@ -136,6 +136,21 @@ class CreateNextVersionRequest(BaseModel):
     copy_from_prior: bool = Field(default=True, description="Whether composed draft fields (shipment/commercial-terms/etc.) carry forward or must be re-supplied.")
 
 
+class RuleResult(BaseModel):
+    """One of R1-R6's evaluated outcomes (business/qms-pricing-rules.md).
+    `not_evaluated` is a real, distinct outcome -- not a placeholder -- for
+    a rule whose formula needs data QMS genuinely doesn't have (e.g. R1
+    needs a sell price, whose origin is explicitly unresolved; see
+    QuoteVersion.proposed_sell_price_eur_cents). A rule that can't run must
+    say so, never silently omit itself or report a fabricated pass/fail."""
+
+    rule_id: str
+    actual_pct_x10: int | None = None
+    threshold_pct_x10: int | None = None
+    result: Literal["within_threshold", "below_floor", "over_threshold", "not_evaluated"]
+    reason: str | None = Field(default=None, description="Required in practice when result=not_evaluated.")
+
+
 class QuoteVersion(BaseModel):
     """The human-in-the-loop decision IS `status` here -- not a separate
     workflow record (business/decisions.md, ADR-005). `status`'s terminal
@@ -154,11 +169,19 @@ class QuoteVersion(BaseModel):
     currency: str | None = Field(default=None, json_schema_extra=_computes())
     total_cost_eur_cents: int | None = Field(default=None, json_schema_extra=_computes(), description="Null until priced.")
     proposed_sell_price_eur_cents: int | None = Field(
-        default=None, json_schema_extra=_computes(owner=None),
-        description="x-owner left null on purpose -- see mock_qms/api.py's POST .../price x-gap on sell-price origin.",
+        default=None, json_schema_extra=_computes(owner="qms-pricing-policy"),
+        description="Computed by a versioned, explicitly synthetic demo policy (see pricing_policy_ref, mock_qms/pricing_policy.py) -- not a decided commercial formula. No real pricing-terms source exists yet (see business/decisions.md).",
     )
-    margin_pct_x10: int | None = Field(default=None, json_schema_extra=_computes(), description="R1 -- (sell - cost) / sell * 1000")
+    pricing_policy_ref: str | None = Field(
+        default=None, json_schema_extra=_owns(),
+        description="Which versioned pricing policy computed proposed_sell_price_eur_cents/margin_pct_x10 -- makes the demo formula auditable/replaceable instead of silent.",
+    )
+    margin_pct_x10: int | None = Field(default=None, json_schema_extra=_computes(), description="R1 -- (sell - cost) / sell * 1000, evaluated AFTER commercial rounding")
     fx_variance_pct_x10: int | None = Field(default=None, json_schema_extra=_computes(), description="R2, only once compared against a later current rate")
+    fx_rate_snapshot: float | None = Field(
+        default=None, json_schema_extra=_computes(),
+        description="The actual FX rate resolved (via mock-fx /convert) when this version was priced -- captured so a LATER version's R2 can compare against it without a live re-fetch (qms-pricing-rules.md's own rule: 'never a live re-fetch').",
+    )
     valid_until: str | None = Field(default=None, json_schema_extra=_owns())
     created_at: str | None = Field(default=None, json_schema_extra=_owns())
     created_by: str | None = Field(default=None, json_schema_extra=_owns(), description="Principal id (agent or human).")
@@ -166,20 +189,14 @@ class QuoteVersion(BaseModel):
         default_factory=list, json_schema_extra=_owns(),
         description="determining_policies from every Cedar call this version triggered -- rfq_common.pdp.AuthorizationDecision.determining_policies.",
     )
-    pricing_rule_results: list[str] = Field(default_factory=list, json_schema_extra=_owns(), description="Which of R1-R6 fired and their computed values.")
+    pricing_rule_results: list[RuleResult] = Field(default_factory=list, json_schema_extra=_owns(), description="Every one of R1-R6's evaluated outcomes -- including not_evaluated ones, never silently omitted.")
     recommendation_id: str | None = Field(default=None, json_schema_extra=_ref("agent_state"))
+    selected_route_id: str | None = Field(default=None, json_schema_extra=_ref("agent_state"), description="Which TMS route the recommendation resolved to -- needed to actually price against it.")
     rate_refs: list[str] = Field(default_factory=list, json_schema_extra=_ref("rate_management"))
     fx_rate_ref: str | None = Field(default=None, json_schema_extra=_ref("fx_service"))
     pricing_terms_ref: str | None = Field(default=None, json_schema_extra=_ref("qms"))
     margin_floor_ref: str | None = Field(default=None, json_schema_extra=_ref("qms"))
     trigger_event_ref: str | None = Field(default=None, json_schema_extra=_ref("varies"))
-
-
-class RuleResult(BaseModel):
-    rule_id: str
-    actual_pct_x10: int
-    threshold_pct_x10: int
-    result: Literal["within_threshold", "below_floor", "over_threshold"]
 
 
 class PricingResult(BaseModel):

@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}{{ quote.quote_id }} — Customer View{% endblock %}
+{% block content %}
+<a href="/app/quotes/{{ quote.quote_id }}" class="underline text-sm">&larr; back to {{ quote.quote_id }}</a>
+<h1 class="text-2xl font-semibold my-4">Customer-facing view — {{ quote.quote_id }}</h1>
+<p class="text-sm text-gray-600 mb-4">The D18-governed filtered projection (excludes buy rates, confidential margins, policy diagnostics, rejected alternatives, internal comments) -- see <code>CustomerQuoteView</code>.</p>
+{{ m.empty_state("GET .../customer-view is stub -- nothing has been priced/published yet") }}
+{% endblock %}

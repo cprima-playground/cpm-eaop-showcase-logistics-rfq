@@ -24,13 +24,21 @@
     }
 }
 
-# ops-dashboard: the only frontend built so far. Proxies to the app running
-# on the host (uv run ops-dashboard serve, :8006) -- host.docker.internal is
-# Docker Desktop's route from a container back to the host. When more
-# frontends exist (QMS etc.) they get their own subdomain block here.
+# ops-dashboard: read-only cross-cutting dashboard. Proxies to the app
+# running on the host (uv run ops-dashboard serve, :8006) --
+# host.docker.internal is Docker Desktop's route from a container back to
+# the host.
 https://ops-dashboard.rfq-showcase.localhost {
     import friendly_errors
     reverse_proxy host.docker.internal:8006
+}
+
+# QMS: API + its own frontend in one process (uv run mock-qms serve, :8007)
+# -- unlike ops-dashboard, not a separate reader; the UI lives at /app on
+# the same port as the JSON API.
+https://qms.rfq-showcase.localhost {
+    import friendly_errors
+    reverse_proxy host.docker.internal:8007
 }
 
 # Keycloak (dev IdP) -- fronted here too so the OIDC issuer is a stable name,

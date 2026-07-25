@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}{{ quote.quote_id }}{% endblock %}
+{% block content %}
+<a href="/app/quotes" class="underline text-sm">&larr; all quotes</a>
+
+<div class="flex items-center gap-3 my-4">
+  <h1 class="text-2xl font-semibold">{{ quote.quote_id }}</h1>
+  {{ m.lifecycle_badge(quote.latest_version_status) }}
+</div>
+
+<dl class="grid grid-cols-4 gap-4 text-sm mb-6 max-w-2xl">
+  <div><dt class="text-gray-500">RFQ</dt><dd>{{ quote.rfq_id }}</dd></div>
+  <div><dt class="text-gray-500">Customer</dt><dd>{{ quote.customer_id }}</dd></div>
+  <div><dt class="text-gray-500">Currency</dt><dd>{{ quote.currency }}</dd></div>
+  <div><dt class="text-gray-500">Latest version</dt><dd>v{{ quote.latest_version }}</dd></div>
+</dl>
+
+<h2 class="text-lg font-semibold mt-8 mb-2">Version history</h2>
+<table class="text-sm border-collapse w-full max-w-2xl mb-6">
+  <thead><tr class="text-left border-b">
+    <th class="py-2 pr-4">Version</th><th class="py-2 pr-4">Prior</th>
+    <th class="py-2 pr-4">Status</th><th class="py-2 pr-4">Occurred</th>
+  </tr></thead>
+  <tbody>
+    {% for t in timeline %}
+    <tr class="border-b">
+      <td class="py-2 pr-4">v{{ t.version }}</td>
+      <td class="py-2 pr-4">{{ versions[loop.index0].prior_version or "—" }}</td>
+      <td class="py-2 pr-4">{{ m.lifecycle_badge(t.status) }}</td>
+      <td class="py-2 pr-4 text-gray-500">{{ t.occurred_at }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<p class="text-xs text-gray-500 mb-6">Changes / audit-events views are collapsing candidates with this timeline per api.py's own x-gap — not built separately yet.</p>
+
+<h2 class="text-lg font-semibold mt-8 mb-2">Draft composition</h2>
+{% if latest and latest.recommendation_id %}
+<dl class="grid grid-cols-2 gap-2 text-sm max-w-xl mb-2">
+  <div><dt class="text-gray-500">Recommendation</dt><dd>{{ latest.recommendation_id }}</dd></div>
+  <div><dt class="text-gray-500">Selected route</dt><dd>{{ latest.selected_route_id }}</dd></div>
+  <div><dt class="text-gray-500">Rate refs</dt><dd>{{ latest.rate_refs|join(', ') if latest.rate_refs else '—' }}</dd></div>
+  <div><dt class="text-gray-500">FX rate ref</dt><dd>{{ latest.fx_rate_ref or '—' }}</dd></div>
+</dl>
+<p class="text-xs text-gray-500 mb-6">shipment/commercial-terms/assumptions/exclusions are still undesigned (empty).</p>
+{% else %}
+{{ m.empty_state("route-recommendation/pricing-inputs have a real shape but nothing has composed them yet on this version; shipment/commercial-terms/assumptions/exclusions are undesigned") }}
+{% endif %}
+
+<h2 class="text-lg font-semibold mt-8 mb-2">Decision evidence</h2>
+{% if latest and latest.status in ("priced", "approval_required", "approved", "rejected", "revise") %}
+<table class="text-sm border-collapse w-full max-w-2xl mb-2">
+  <tbody>
+    <tr class="border-b">
+      <td class="py-2 pr-4 text-gray-700">Converted total cost</td>
+      <td class="py-2 pr-4">&euro;{{ "%.2f"|format(latest.total_cost_eur_cents / 100) }}</td>
+    </tr>
+    <tr class="border-b">
+      <td class="py-2 pr-4 text-gray-700">FX rate used</td>
+      <td class="py-2 pr-4">{{ latest.fx_rate_snapshot if latest.fx_rate_snapshot is not none else "n/a -- rate_refs already in EUR" }}</td>
+    </tr>
+    {% for rr in latest.pricing_rule_results %}
+    <tr class="border-b">
+      <td class="py-2 pr-4 text-gray-700">{{ rr.rule_id }}</td>
+      <td class="py-2 pr-4">
+        {% if rr.result == "not_evaluated" %}
+        <span class="inline-block w-2 h-2 rounded-full bg-gray-400 mr-2"></span>
+        <span class="text-gray-500">not evaluated — {{ rr.reason }}</span>
+        {% else %}
+        <span class="inline-block w-2 h-2 rounded-full {{ 'bg-red-500' if rr.result == 'over_threshold' or rr.result == 'below_floor' else 'bg-green-500' }} mr-2"></span>
+        {{ rr.result }} ({{ rr.actual_pct_x10 / 10 }}% vs {{ rr.threshold_pct_x10 / 10 }}% threshold)
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    <tr class="border-b">
+      <td class="py-2 pr-4 text-gray-700">Sell price / margin</td>
+      <td class="py-2 pr-4">
+        {% if latest.proposed_sell_price_eur_cents is not none %}
+        &euro;{{ "%.2f"|format(latest.proposed_sell_price_eur_cents / 100) }} / {{ latest.margin_pct_x10 / 10 }}%
+        <span class="text-xs text-gray-500">(policy: {{ latest.pricing_policy_ref }})</span>
+        {% else %}
+        <span class="inline-block w-2 h-2 rounded-full bg-gray-400 mr-2"></span>
+        <span class="text-gray-500">not available — priced under an older build before the demo pricing policy existed; reprice to populate</span>
+        {% endif %}
+      </td>
+    </tr>
+  </tbody>
+</table>
+{% if latest.status == "approval_required" %}
+<p class="text-xs text-yellow-800 bg-yellow-50 border border-yellow-200 rounded p-2 mb-6 max-w-2xl">Approval reason: routed for human review under the demo pricing policy -- R3-R5 (route/transit/lane risk) couldn't be evaluated (no contracted-lane baseline stored), so this quote's full risk picture is incomplete even though R1/R2 are real.</p>
+{% endif %}
+{% else %}
+<table class="text-sm border-collapse w-full max-w-2xl mb-2">
+  <tbody>
+    {% for label in [
+      "Baseline vs recommended vs alternative lane",
+      "Original carrier currencies",
+      "FX source + timestamp",
+      "Converted costs",
+      "Prior vs current FX",
+      "Margin impact",
+      "Transit delta",
+      "Triggered thresholds",
+      "Agent recommendation",
+    ] %}
+    <tr class="border-b">
+      <td class="py-2 pr-4 text-gray-700">{{ label }}</td>
+      <td class="py-2 pr-4 text-gray-400">
+        <span class="inline-block w-2 h-2 rounded-full bg-gray-400 mr-2"></span>not available yet
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<p class="text-xs text-gray-500 mb-6">Populated once POST .../price runs -- see business/process.md's "Human intervention" list.</p>
+{% endif %}
+
+<h2 class="text-lg font-semibold mt-8 mb-2">Decision actions</h2>
+{% if can_decide %}
+<div class="flex flex-wrap gap-2 mb-6">
+  <button disabled title="POST .../decisions -- D19-candidate, not yet modeled (x-domain-action: None)" class="border rounded px-3 py-1 text-sm opacity-50 cursor-not-allowed">Approve</button>
+  <button disabled title="POST .../decisions -- D19-candidate, not yet modeled (x-domain-action: None)" class="border rounded px-3 py-1 text-sm opacity-50 cursor-not-allowed">Reject</button>
+  <button disabled title="POST .../decisions -- D19-candidate, not yet modeled (x-domain-action: None)" class="border rounded px-3 py-1 text-sm opacity-50 cursor-not-allowed">Request revision</button>
+  <button disabled title="PUT .../route-recommendation -- no decision governs composing a draft yet" class="border rounded px-3 py-1 text-sm opacity-50 cursor-not-allowed">Choose another lane</button>
+  <button disabled title="PUT .../route-recommendation -- no decision governs composing a draft yet" class="border rounded px-3 py-1 text-sm opacity-50 cursor-not-allowed">Request new route search</button>
+  <button disabled title="PUT .../pricing-inputs -- no decision governs composing a draft yet" class="border rounded px-3 py-1 text-sm opacity-50 cursor-not-allowed">Require fresh FX snapshot</button>
+  <button disabled title="commercial-terms -- field shape entirely undesigned, not a real contract yet" class="border rounded px-3 py-1 text-sm opacity-50 cursor-not-allowed">Adjust margin</button>
+  <button disabled title="commercial-terms -- field shape entirely undesigned, not a real contract yet" class="border rounded px-3 py-1 text-sm opacity-50 cursor-not-allowed">Reject carrier rate</button>
+</div>
+{% else %}
+<p class="text-sm text-gray-500 mb-6">Decision actions require the commercial-manager role.</p>
+{% endif %}
+
+<h2 class="text-lg font-semibold mt-8 mb-2">Documents</h2>
+{{ m.empty_state("GET/POST .../documents are stub -- no document TYPE or template ownership designed yet") }}
+
+<p class="mt-6"><a href="/app/quotes/{{ quote.quote_id }}/customer-view" class="underline accent text-sm">Customer-facing view (D18) &rarr;</a></p>
+{% endblock %}

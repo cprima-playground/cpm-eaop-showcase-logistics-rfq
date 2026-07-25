@@ -10,21 +10,48 @@
 #     the agent registry (agents/catalog.yaml caller_identity.keycloak_client).
 
 actors:
-  # --- Humans ---------------------------------------------------------------
+  # --- Humans -----------------------------------------------------------
+  # `id` stays unchanged from earlier fixtures on purpose -- it's a live
+  # Cedar entity uid (Principal::"mona.commercial") asserted against by
+  # src/rfq_common/tests/test_pdp_integration.py and referenced by several
+  # scenarios/*.yaml + traceability.yaml + claims-contract.md; renaming it
+  # would break real passing tests for no benefit. `name` is the new field
+  # -- the full name the QMS frontend's org chart (systems/mock-
+  # architecture.md) actually displays.
+  - id: diane.delgado
+    name: Diane Delgado
+    kind: human
+    persona: RegionalDirector
+    region: EMEA
+    # Oversees both EMEA teams below; not itself a Cedar-policy-gated role
+    # today (no decision references a "director" principal yet).
+
   - id: mona.commercial
+    name: Mona Caldwell
     kind: human
     persona: CommercialManager
     member_of: [rfq-commercial-emea]     # -> department/BU via group path
+    manager: diane.delgado
     approval_limit:
       currency: EUR
       amount_cents: 1000000              # 10,000 EUR delegated commercial limit
     region: EMEA
 
   - id: sam.pricing
+    name: Marek Petrov
     kind: human
     persona: PricingManager
     member_of: [rfq-pricing-emea]
+    manager: diane.delgado
     region: EMEA
+
+  - id: aiden.ashford
+    name: Aiden Ashford
+    kind: human
+    persona: PlatformAdministrator
+    region: EMEA
+    # Not part of the commercial/pricing reporting line -- owns QMS's
+    # /admin/reset action, no Cedar policy references this persona yet.
 
   # --- Agents (kind=agent; see agents/catalog.yaml) -------------------------
   - id: agent.lane-evaluation

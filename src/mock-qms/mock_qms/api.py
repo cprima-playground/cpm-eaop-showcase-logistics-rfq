@@ -26,17 +26,42 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from starlette.middleware.sessions import SessionMiddleware
 
 from rfq_common.app import create_app
+from rfq_common.identity import Principal
 from rfq_common.masterdata_client import MasterdataClient
 from rfq_common.secrets import SecretsClient
 from rfq_common.theme import load_theme
+from rfq_common.webapp import SHARED_STATIC_DIR, SHARED_TEMPLATES_DIR, install_error_handlers
 
 from rfq_common import models as m
 
+from . import config, pricing_policy
 from .auth import require_api_key
-from .store import QmsStore, UnknownCustomerError, UnknownQuoteError, VersionConflictError
+from .clients import FxClient, RateClient
+from .sso import router as sso_router
+from .store import (
+    ComposeIncompleteError,
+    InvalidStateError,
+    QmsStore,
+    UnknownCustomerError,
+    UnknownQuoteError,
+    VersionConflictError,
+)
+
+TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
+
+SYSTEM_TITLE = "Quote Management System (QMS)"
+BANNER_TEXT = "SHOWCASE — dev environment, QMS approval UI"
+NAV_LINKS = [
+    ("Quotes", "/app/quotes"), ("Approvals", "/app/approvals"),
+    ("Pricing Config", "/app/pricing-config"), ("Org Chart", "/app/org"),
+]
 
 RFQ_ROOT = Path(__file__).resolve().parents[3]
 INVENTORY_PATH = RFQ_ROOT / "identity" / "credentials-inventory.yaml"
@@ -53,12 +78,48 @@ def _fixtures_dir() -> Path:
     return Path(os.environ.get("QMS_FIXTURES_DIR", str(DEFAULT_FIXTURES_DIR)))
 
 
+def _rate_client() -> RateClient:
+    api_key = os.environ.get("RATE_API_KEY")
+    if not api_key:
+        api_key = SecretsClient("dev", inventory_path=INVENTORY_PATH).get("rate-api-key")
+    return RateClient(base_url=os.environ.get("RATE_URL", "http://localhost:8005"), api_key=api_key)
+
+
+def _fx_client() -> FxClient:
+    api_key = os.environ.get("FX_API_KEY")
+    if not api_key:
+        api_key = SecretsClient("dev", inventory_path=INVENTORY_PATH).get("fx-api-key")
+    return FxClient(base_url=os.environ.get("FX_URL", "http://localhost:8001"), api_key=api_key)
+
+
 def _masterdata_client() -> MasterdataClient:
     api_key = os.environ.get("MASTERDATA_API_KEY")
     if not api_key:
         api_key = SecretsClient("dev", inventory_path=INVENTORY_PATH).get("masterdata-api-key")
     base_url = os.environ.get("MASTERDATA_URL", "http://localhost:8003")
     return MasterdataClient(base_url=base_url, api_key=api_key)
+
+
+def _current_principal(request: Request) -> Principal | None:
+    raw = request.session.get("principal")
+    return Principal.model_validate(raw) if raw else None
+
+
+def _require_role(request: Request, role: str) -> Principal:
+    """Redirect to login if anonymous; 403 if logged in but missing `role`.
+    View-level check, not a FastAPI Depends -- same convention as
+    ops_dashboard/api.py, keeps the redirect-vs-403 distinction explicit.
+    Module-level (not a build_app() closure) so offline tests can
+    monkeypatch it directly, same as ops-dashboard's tests do. `role` is a
+    QMS client role (reader/commercial-manager/pricing-manager/
+    administrator), UI-gating only -- see keycloak-qms.tf's header note on
+    why these aren't the Cedar authorization mechanism."""
+    principal = _current_principal(request)
+    if principal is None:
+        raise HTTPException(status_code=303, headers={"Location": "/login"})
+    if not principal.has_role(role):
+        raise HTTPException(status_code=403, detail=f"role {role!r} required")
+    return principal
 
 
 def build_app() -> FastAPI:
@@ -73,10 +134,95 @@ def build_app() -> FastAPI:
         masterdata = _masterdata_client()
     except Exception:
         pass  # optional at boot -- store validates lazily per create_quote/reload call
-    store = QmsStore(_fixtures_dir(), masterdata)
+    fx, rate = None, None
+    try:
+        fx, rate = _fx_client(), _rate_client()
+    except Exception:
+        pass  # optional at boot -- only needed once POST .../price is actually called
+    store = QmsStore(_fixtures_dir(), masterdata, fx_client=fx, rate_client=rate)
 
     app = create_app("Quote Management System (QMS)", system_id="qms", theme_pack=theme_pack)
     app.state.qms_store = store
+    app.add_middleware(SessionMiddleware, secret_key=config.session_secret())
+    app.include_router(sso_router)
+    app.mount("/static-shared", StaticFiles(directory=str(SHARED_STATIC_DIR)), name="static_shared")
+
+    templates = Jinja2Templates(directory=[str(TEMPLATES_DIR), str(SHARED_TEMPLATES_DIR)])
+
+    def _ctx(request: Request, **extra) -> dict:
+        return {
+            "request": request,
+            "principal": _current_principal(request),
+            "correlation_id": request.state.correlation_id,
+            "system_title": SYSTEM_TITLE,
+            "banner_text": BANNER_TEXT,
+            "nav_links": NAV_LINKS,
+            "home_url": "/app",
+            **extra,
+        }
+
+    install_error_handlers(app, templates, _ctx)
+
+    @app.get("/app", response_class=HTMLResponse)
+    def ui_dashboard(request: Request):
+        _require_role(request, "reader")
+        open_quotes = store.search()
+        approval_required = store.search(status="approval_required")
+        return templates.TemplateResponse(
+            request, "dashboard.html",
+            _ctx(request, open_quotes_count=len(open_quotes), approval_required_count=len(approval_required)),
+        )
+
+    @app.get("/app/quotes", response_class=HTMLResponse)
+    def ui_quotes(request: Request, customerId: str | None = None, rfqId: str | None = None, status: str | None = None):
+        _require_role(request, "reader")
+        quotes = store.search(customer_id=customerId, rfq_id=rfqId, status=status)
+        return templates.TemplateResponse(
+            request, "quotes.html",
+            _ctx(request, quotes=quotes, filters={"customerId": customerId, "rfqId": rfqId, "status": status}),
+        )
+
+    @app.get("/app/quotes/{quoteId}", response_class=HTMLResponse)
+    def ui_quote_detail(request: Request, quoteId: str):
+        principal = _require_role(request, "reader")
+        quote = store.get_quote(quoteId)
+        if quote is None:
+            raise HTTPException(status_code=404, detail=f"no quote {quoteId!r}")
+        versions = store.list_versions(quoteId)
+        timeline = store.timeline(quoteId)
+        latest = versions[-1] if versions else None
+        return templates.TemplateResponse(
+            request, "quote_detail.html",
+            _ctx(request, quote=quote, versions=versions, timeline=timeline, latest=latest,
+                 can_decide=principal.has_role("commercial-manager")),
+        )
+
+    @app.get("/app/quotes/{quoteId}/customer-view", response_class=HTMLResponse)
+    def ui_quote_customer_view(request: Request, quoteId: str):
+        _require_role(request, "reader")
+        quote = store.get_quote(quoteId)
+        if quote is None:
+            raise HTTPException(status_code=404, detail=f"no quote {quoteId!r}")
+        return templates.TemplateResponse(request, "customer_view.html", _ctx(request, quote=quote))
+
+    @app.get("/app/pricing-config", response_class=HTMLResponse)
+    def ui_pricing_config(request: Request):
+        _require_role(request, "pricing-manager")
+        return templates.TemplateResponse(
+            request, "pricing_config.html",
+            _ctx(request, profiles=list(pricing_policy.PROFILES.values())),
+        )
+
+    @app.get("/app/approvals", response_class=HTMLResponse)
+    def ui_approvals(request: Request):
+        _require_role(request, "commercial-manager")
+        quotes = store.search(status="approval_required")
+        return templates.TemplateResponse(request, "approvals.html", _ctx(request, quotes=quotes))
+
+    @app.get("/app/org", response_class=HTMLResponse)
+    def ui_org(request: Request):
+        _require_role(request, "reader")
+        return templates.TemplateResponse(request, "org.html", _ctx(request))
 
     # --------------------------------------------------------------- Quotes
     @app.get(
@@ -296,9 +442,15 @@ def build_app() -> FastAPI:
         summary="Attach the RouteRecommendation this draft is being priced against.",
         description="This is what makes recommendation_id known -- the precondition for D16 to later apply at POST .../price.",
         openapi_extra=_COMPOSE_DRAFT_EXTRA,
+        dependencies=[Depends(require_api_key)],
     )
     def put_quote_route_recommendation(quoteId: str, version: int, body: m.RouteRecommendationInput):
-        _stub()
+        try:
+            return store.compose_route_recommendation(quoteId, version, body)
+        except UnknownQuoteError as exc:
+            raise HTTPException(status_code=404, detail=str(exc))
+        except InvalidStateError as exc:
+            raise HTTPException(status_code=409, detail=str(exc))
 
     @app.put(
         "/quotes/{quoteId}/versions/{version}/commercial-terms", tags=["Draft Composition"], response_model=m.QuoteVersion,
@@ -312,9 +464,15 @@ def build_app() -> FastAPI:
         "/quotes/{quoteId}/versions/{version}/pricing-inputs", tags=["Draft Composition"], response_model=m.QuoteVersion,
         summary="Attach the references R1-R6 will be evaluated against.",
         openapi_extra=_COMPOSE_DRAFT_EXTRA,
+        dependencies=[Depends(require_api_key)],
     )
     def put_quote_pricing_inputs(quoteId: str, version: int, body: m.PricingInputs):
-        _stub()
+        try:
+            return store.compose_pricing_inputs(quoteId, version, body)
+        except UnknownQuoteError as exc:
+            raise HTTPException(status_code=404, detail=str(exc))
+        except InvalidStateError as exc:
+            raise HTTPException(status_code=409, detail=str(exc))
 
     @app.put(
         "/quotes/{quoteId}/versions/{version}/validity", tags=["Draft Composition", "Validity"], response_model=m.QuoteVersion,
@@ -342,14 +500,15 @@ def build_app() -> FastAPI:
 
     # ---------------------------------------------------------------- Pricing
     @app.post(
-        "/quotes/{quoteId}/versions/{version}/price", tags=["Pricing"], response_model=m.PricingResult,
-        summary="draft -> priced. THE atomic command -- resolve, compute R1-R6, authorize D16, write.",
+        "/quotes/{quoteId}/versions/{version}/price", tags=["Pricing"], response_model=m.QuoteVersion,
+        summary="draft -> priced. Resolves real rate/FX facts, computes what's honestly computable, writes.",
         description=(
             "Requires route-recommendation and pricing-inputs to already be composed (400 if not). "
-            "Atomic: resolve referenced facts -> validate freshness/applicability -> calculate "
-            "charges -> normalize currencies -> total cost -> derive sell price -> margin -> "
-            "evaluate R1-R6 -> build Cedar context -> evaluate D16 -> write. On deny, the draft is "
-            "untouched (still draft, not partially priced)."
+            "Real: resolves rate_refs via mock-rate, converts to EUR via mock-fx, sums total_cost_eur_cents; "
+            "evaluates R2 (FX variance) when a prior priced version's snapshot exists. R1 (needs a sell "
+            "price -- unresolved, see QuoteVersion.proposed_sell_price_eur_cents) and R3-R5 (need a "
+            "contracted-lane baseline route QMS doesn't store) are always recorded `not_evaluated` with a "
+            "real reason -- never a fabricated pass/fail. No Cedar D16 gate wired in yet (see x-gap)."
         ),
         openapi_extra={
             "x-domain-action": "quote.create-version",  # -> D16. This IS where D16 belongs now.
@@ -367,9 +526,17 @@ def build_app() -> FastAPI:
                 "See QuoteVersion.proposed_sell_price_eur_cents' x-owner: null."
             ),
         },
+        dependencies=[Depends(require_api_key)],
     )
     def price_quote_version(quoteId: str, version: int):
-        _stub()
+        try:
+            return store.price_version(quoteId, version)
+        except UnknownQuoteError as exc:
+            raise HTTPException(status_code=404, detail=str(exc))
+        except InvalidStateError as exc:
+            raise HTTPException(status_code=409, detail=str(exc))
+        except ComposeIncompleteError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
 
     @app.get(
         "/quotes/{quoteId}/versions/{version}/pricing", tags=["Pricing"], response_model=m.PricingResult,
@@ -403,9 +570,15 @@ def build_app() -> FastAPI:
             "x-resource-type": "Quote",
             "x-authz-context": ["fx_variance_pct_x10", "margin_pct_x10"],
         },
+        dependencies=[Depends(require_api_key)],
     )
     def submit_quote_version_for_approval(quoteId: str, version: int):
-        _stub()
+        try:
+            return store.submit_for_approval(quoteId, version)
+        except UnknownQuoteError as exc:
+            raise HTTPException(status_code=404, detail=str(exc))
+        except InvalidStateError as exc:
+            raise HTTPException(status_code=409, detail=str(exc))
 
     @app.get(
         "/quotes/{quoteId}/versions/{version}/approval-requirements", tags=["Approvals"], response_model=list[dict],
@@ -600,15 +773,24 @@ def build_app() -> FastAPI:
     @app.get(
         "/customers/{customerId}/margin-floor", tags=["Pricing Configuration"], response_model=dict,
         summary="Current effective margin floor for a customer.",
-        openapi_extra={"x-domain-action": "margin-floor.read", "x-resource-type": "MarginFloor", "x-gap": "Not in decisions.md."},
+        description="Real, backed by the demo pricing_policy's profile registry -- no per-customer profile assignment table exists yet, so every customer resolves to the default profile until one is built.",
+        openapi_extra={"x-domain-action": "margin-floor.read", "x-resource-type": "MarginFloor", "x-gap": "Per-customer profile assignment not in decisions.md -- returns the default demo profile for every customer."},
     )
     def get_customer_margin_floor(customerId: str):
-        _stub()
+        profile = pricing_policy.PROFILES[pricing_policy.DEFAULT_PROFILE_ID]
+        return {
+            "customer_id": customerId, "policy_ref": pricing_policy.POLICY_REF,
+            "note": "no per-customer profile assignment modeled yet -- returns the default demo profile",
+            **profile.model_dump(),
+        }
 
     @app.get(
         "/pricing-terms/{pricingTermsId}", tags=["Pricing Configuration"], response_model=dict,
         summary="One pricing-terms revision by id (for margin_floor_ref/pricing_terms_ref resolution).",
-        openapi_extra={"x-domain-action": "pricing-terms.read", "x-resource-type": "CustomerPricingTerms"},
+        openapi_extra={
+            "x-domain-action": "pricing-terms.read", "x-resource-type": "CustomerPricingTerms",
+            "x-gap": "Payment terms/incoterms etc. are a genuinely different, still-undesigned concept from margin governance (see /margin-floors/{id}, which IS real) -- not implemented.",
+        },
     )
     def get_pricing_terms_by_id(pricingTermsId: str):
         _stub()
@@ -616,10 +798,14 @@ def build_app() -> FastAPI:
     @app.get(
         "/margin-floors/{marginFloorId}", tags=["Pricing Configuration"], response_model=dict,
         summary="One margin-floor revision by id.",
+        description="Real -- marginFloorId is a pricing_policy profile_id (e.g. 'standard', 'strategic-account'); this is exactly what QuoteVersion.margin_floor_ref governs which policy prices a version.",
         openapi_extra={"x-domain-action": "margin-floor.read", "x-resource-type": "MarginFloor"},
     )
     def get_margin_floor_by_id(marginFloorId: str):
-        _stub()
+        profile = pricing_policy.PROFILES.get(marginFloorId)
+        if profile is None:
+            raise HTTPException(status_code=404, detail=f"no margin-floor profile {marginFloorId!r}; known: {list(pricing_policy.PROFILES)}")
+        return {"margin_floor_id": marginFloorId, "policy_ref": pricing_policy.POLICY_REF, **profile.model_dump()}
 
     # ------------------------------------------------------- legacy narrow-slice reads
     @app.get(

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Org Chart{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-4">Org Chart</h1>
+
+{% if principal %}
+<div class="border rounded p-4 mb-6 max-w-md text-sm">
+  <div class="font-semibold mb-1">Signed in as</div>
+  <div>{{ principal.id }}</div>
+  <div class="text-gray-600">roles: {{ principal.roles|join(', ') if principal.roles else '—' }}</div>
+  <div class="text-gray-600">manager: {{ principal.manager or '—' }}</div>
+  <div class="text-gray-600">approval limit: {{ '€%d'|format(principal.approval_limit_eur_cents / 100) if principal.approval_limit_eur_cents else '—' }}</div>
+</div>
+{% endif %}
+
+<p class="text-sm text-gray-600 mb-4">identity/actors.yaml's org chart -- naming mnemonic: first-name initial = tier (D=Director, M=Manager, A=Admin), surname initial = function (D=Director, C=Commercial, P=Pricing, A=Admin/Platform).</p>
+
+<ul class="text-sm space-y-1">
+  <li>&#128100; <strong>Diane Delgado</strong> — Regional Director, EMEA <span class="text-gray-500">(diane.delgado, role: reader)</span></li>
+  <li class="ml-6">&#8627; &#128100; <strong>Mona Caldwell</strong> — Commercial Manager, EMEA <span class="text-gray-500">(mona.commercial, role: commercial-manager, limit €10,000, group rfq-commercial-emea)</span></li>
+  <li class="ml-6">&#8627; &#128100; <strong>Marek Petrov</strong> — Pricing Manager, EMEA <span class="text-gray-500">(sam.pricing, role: pricing-manager, group rfq-pricing-emea)</span></li>
+  <li>&#128100; <strong>Aiden Ashford</strong> — Platform Administrator <span class="text-gray-500">(aiden.ashford, role: administrator, group rfq-qms-platform — not part of the commercial/pricing line)</span></li>
+</ul>
+{% endblock %}
