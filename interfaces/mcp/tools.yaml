@@ -42,16 +42,23 @@ servers:
   - id: approval-mcp
     purpose: Expose workflow / approval capabilities
     tools:
-      # approval.request: INVALID as an agent-facing tool, not merely stale
-      # (capability-profile review Finding 2, business/capability-profiles/
-      # offer-to-execution-domain-review.md). ApprovalTask creation is a
-      # system-internal consequence of quote.submit-for-approval, not an
-      # agent command. When the workflow-side trigger is implemented, this
-      # tool must be REMOVED from the agent-facing MCP surface (or redefined
-      # as an internal-only workflow capability, never callable by business
-      # agents) -- do not leave it advertised here once a real trigger
-      # exists, or the interface catalog contradicts the domain model.
-      - {name: create_approval_task, action: approval.request, side_effects: [creates_human_task]}
-      - {name: get_approval_status,  action: approval.request}
+      # approval.request the ACTION no longer exists in business/actions.yaml
+      # at all (Finding 2, now actually executed, not just agent-ownership-
+      # removed -- capability-profile review flagged the earlier fix as
+      # incomplete). Both tools below are currently UNMAPPED to any Cedar
+      # action, not merely agent-restricted:
+      #   - create_approval_task: system-internal consequence of
+      #     quote.submit-for-approval's QMS state transition, never an
+      #     agent-invokable action. Remove from the agent-facing MCP surface
+      #     entirely once the workflow-side trigger is implemented (or
+      #     redefine as an internal-only capability) -- do not leave it
+      #     advertised with a stale `action:` reference.
+      #   - get_approval_status: a legitimate read, but has no backing Cedar
+      #     action today -- was previously conflated with approval.request's
+      #     generic action, which is now gone. Needs its own read-only
+      #     action if this tool stays agent-accessible (not modeled yet,
+      #     out of this fix's scope -- flagged, not silently invented).
+      - {name: create_approval_task, side_effects: [creates_human_task]}
+      - {name: get_approval_status}
       - {name: record_recommendation, action: route-deviation.propose}
       - {name: resume_route_decision, action: route.recommend}

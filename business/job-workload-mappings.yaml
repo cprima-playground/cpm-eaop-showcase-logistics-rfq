@@ -1,0 +1,55 @@
+# Authored bridge between job responsibilities and automated workloads.
+#
+# This is intentionally separate from job-titles.yaml and agents/catalog.yaml:
+# the job description and the workload inventory are each authoritative in
+# their own domain. This file records the changing business interpretation of
+# which responsibility is supported by which workload.
+
+schema_version: 1
+
+mappings:
+  - job_title_id: transport-planner
+    responsibility: Create optimized shipment routes (distance, time, traffic, customer requirements)
+    workloads:
+      - {workload_id: agent.lane-evaluation, relationship: performs}
+
+  - job_title_id: transport-planner
+    responsibility: Identify lowest freight cost and best mode to maximize efficiency
+    workloads:
+      - {workload_id: agent.lane-evaluation, relationship: performs}
+      - {workload_id: workload.rate-mcp, relationship: accesses}
+
+  - job_title_id: transport-planner
+    responsibility: Plan, tender, and route daily shipments to meet cost/service parameters
+    workloads:
+      - {workload_id: agent.route-decision, relationship: performs}
+
+  - job_title_id: commercial-pricing-specialist
+    responsibility: Prepare freight quotations for Air, Sea (FCL/LCL), and Land
+    workloads:
+      - {workload_id: agent.commercial-normalization, relationship: performs}
+      - {workload_id: workload.qms-mcp, relationship: accesses}
+
+  - job_title_id: commercial-pricing-specialist
+    responsibility: Analyze market trends and freight rate fluctuations
+    workloads:
+      - {workload_id: agent.commercial-normalization, relationship: performs}
+      - {workload_id: system.fx-api, relationship: accesses}
+
+  - job_title_id: commercial-pricing-specialist
+    responsibility: Ensure quotations comply with company policy and service capability
+    workloads:
+      - {workload_id: agent.commercial-normalization, relationship: supports}
+      - {workload_id: workload.qms-mcp, relationship: accesses}
+      - {workload_id: policy.control-panel-pep, relationship: governs}
+
+  - job_title_id: pricing-manager
+    responsibility: Lead pricing governance -- standardized practices, discounting policy, approval protocols
+    workloads:
+      - {workload_id: policy.control-panel-pep, relationship: governs}
+
+  - job_title_id: pricing-manager
+    responsibility: Lead pricing reviews, internal approvals, proposal pricing milestones
+    workloads:
+      - {workload_id: system.qms-api, relationship: records}
+      - {workload_id: policy.control-panel-pep, relationship: governs}

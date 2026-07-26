@@ -34,16 +34,164 @@ permit(
   principal.trust_domain == resource.trust_domain
 };
 
-// ---- D10: an active agent may check route capacity (read-only, informational) --
-@id("agent-may-check-capacity")
+// ---- M3.5: an active agent may delegate to a callee in its can_call list ----
+@id("agent-may-delegate-per-catalog")
 @version("1")
+@owner("platform")
+@description("An active agent may hand off to another agent named in its can_call list (agents/catalog.yaml).")
+permit(
+  principal,
+  action == Agentic::Action::"agent.delegate",
+  resource
+) when {
+  principal.active == true &&
+  resource.active == true &&
+  resource has canonical_id &&
+  principal has can_call &&
+  principal.can_call.contains(resource.canonical_id)
+};
+
+// ---- M4a second checkpoint: delegated route.recommend must stay within
+// the executing agent's delegatable_actions -- a FORBID, not a permit, so
+// non-delegated calls (no context.delegated_by) are completely unaffected
+// by this rule; only present-but-out-of-scope delegation is blocked.
+@id("forbid-delegation-outside-scope")
+@version("1")
+@owner("platform")
+@description("A delegated route.recommend call must be within the executing agent's delegatable_actions.")
+// Cedar's strict validator requires `has` to directly guard the attribute
+// access (no flow-sensitive narrowing across ||) -- `principal has
+// delegatable_actions` is a REQUIRED conjunct, not a fallback: an agent
+// entity with no delegatable_actions attribute at all would NOT be caught
+// by this forbid. Not a live gap -- tools/identity/gen_cedar_entities.py
+// always populates it (empty list, never absent) for every real agent --
+// but a real one if an entity were ever manually seeded without it.
+forbid(
+  principal,
+  action == Agentic::Action::"route.recommend",
+  resource
+) when {
+  context has delegated_by &&
+  principal has delegatable_actions &&
+  !(principal.delegatable_actions.contains("route.recommend"))
+};
+
+// ---- D10: an active agent, within the internal trust domain, may check
+// route capacity (read-only, informational). Trust-domain condition added
+// M6a (Integration Checkpoint 1's deny leg) -- route capacity is internal
+// operational data, not something an external-trust-domain caller should
+// read regardless of what it owns. Same has-guard shape as
+// agent-may-connect-same-trust-domain above (required conjunct, not a
+// flow-sensitive fallback).
+@id("agent-may-check-capacity")
+@version("2")
 @owner("routing")
-@description("An active agent principal may check capacity on any route option.")
+@description("An active internal-trust-domain agent principal may check capacity on any route option.")
 permit(
   principal,
   action == Agentic::Action::"capacity.check",
   resource
-) when { principal.active == true };
+) when {
+  principal.active == true &&
+  principal has trust_domain &&
+  principal.trust_domain == "internal"
+};
+
+// ---- M6: an active internal-trust-domain agent may read a carrier rate
+// (read-only, informational). Same has-guard/trust_domain shape as
+// agent-may-check-capacity above (D10) -- carrier rate data is internal
+// commercial data, not something an external-trust-domain caller should
+// read regardless of what it owns.
+@id("agent-may-read-carrier-rate")
+@version("1")
+@owner("routing")
+@description("An active internal-trust-domain agent principal may read a carrier rate on any route option.")
+permit(
+  principal,
+  action == Agentic::Action::"carrier-rate.read",
+  resource
+) when {
+  principal.active == true &&
+  principal has trust_domain &&
+  principal.trust_domain == "internal"
+};
+
+// ---- M6 (qms-mcp): pricing may only be calculated against a DRAFT quote
+// version -- mirrors mock-qms's own real precondition (store.py's
+// _draft_version: price_version raises InvalidStateError for anything
+// else). NOT a blanket "active internal agent" permit like D10/D11 --
+// resource.status is a LIVE fact fetched from mock-qms per request and
+// supplied via additional_entities (rfq_common.pdp.entities.entity()),
+// never pre-loaded into the persisted entity store. A priced/approval_
+// required/approved/rejected version has nothing left to (re)calculate;
+// recalculation on an existing priced version is create_next_quote_
+// version's job (a different, unmapped-to-MCP operation today), not
+// this action's.
+@id("agent-may-calculate-quote-price-when-draft")
+@version("1")
+@owner("commercial")
+@description("An active internal-trust-domain agent may calculate a quote's price only while its version is still draft.")
+permit(
+  principal,
+  action == Agentic::Action::"quote-price.calculate",
+  resource
+) when {
+  principal.active == true &&
+  principal has trust_domain &&
+  principal.trust_domain == "internal" &&
+  resource has status &&
+  resource.status == "draft"
+};
+
+// ---- M6 (qms-mcp): variance can only be evaluated once a version has
+// actually been PRICED -- there is nothing to compare against on a
+// draft (mock-qms's own price_version computes R2/FX-variance only
+// against a prior PRICED snapshot, per its own docstring: "evaluates R2
+// (FX variance) when a prior priced version's snapshot exists"). Same
+// additional_entities mechanism as agent-may-calculate-quote-price-when-
+// draft above -- resource.status is a live fact, not a stored one.
+@id("agent-may-evaluate-quote-variance-when-priced")
+@version("1")
+@owner("commercial")
+@description("An active internal-trust-domain agent may evaluate a quote's FX/price variance only once its version has been priced (or later).")
+permit(
+  principal,
+  action == Agentic::Action::"quote-variance.evaluate",
+  resource
+) when {
+  principal.active == true &&
+  principal has trust_domain &&
+  principal.trust_domain == "internal" &&
+  resource has status &&
+  resource.status != "draft"
+};
+
+// ---- M6 (approval-mcp): a route deviation may only be RECORDED against a
+// quote version that's still draft -- mirrors mock-qms's own real
+// precondition for attaching a RouteRecommendation (store.py's
+// compose_route_recommendation: _draft_version-gated). Same additional_
+// entities mechanism as qms-mcp's quote-price.calculate/quote-variance.
+// evaluate above -- the underlying QuoteVersion's live status is fetched
+// per request, never pre-loaded into the persisted store. NOT a blanket
+// D10/D11-style check: once a version has moved past draft (priced,
+// submitted, decided), there's nothing left to record a deviation
+// against -- recording belongs to the NEXT version (quote.supersede),
+// not a mutation of this one.
+@id("agent-may-record-route-deviation-when-draft")
+@version("1")
+@owner("routing")
+@description("An active internal-trust-domain agent may record a route deviation only while the referenced quote version is still draft.")
+permit(
+  principal,
+  action == Agentic::Action::"route-deviation.propose",
+  resource
+) when {
+  principal.active == true &&
+  principal has trust_domain &&
+  principal.trust_domain == "internal" &&
+  resource has quote_status &&
+  resource.quote_status == "draft"
+};
 
 // ---- D11: an active agent may evaluate lane options (read-only, informational) --
 @id("agent-may-evaluate-lane")

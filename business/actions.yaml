@@ -19,6 +19,18 @@ actions:
     principals: [AgentPrincipal]
     resources: [Workload]
 
+  # --- A2A delegation (M3.5, can_call projection deferred from ADR-001) -----
+  # May this agent hand off to that agent at all (transport-level, like
+  # mcp.connect -- independent of which specific action the callee then
+  # performs). agents/catalog.yaml's `can_call` graph is the source of the
+  # allow-list, materialized into each AgentPrincipal's `can_call` attribute
+  # by tools/identity/gen_cedar_entities.py.
+  agent.delegate:
+    principals: [AgentPrincipal]
+    resources: [AgentPrincipal]
+    context:
+      skill: {type: String, required: false}   # M5a: A2A skill id being invoked (informational -- can_call is the enforced fact, not the skill name)
+
   # --- Lane Evaluation Agent ------------------------------------------------
   # executing_workload/tool (ADR-001): optional context carried on every
   # action interfaces/mcp/tools.yaml maps a tool to, so an MCP-mediated call
@@ -92,6 +104,11 @@ actions:
       non_contracted_lane: Boolean
       executing_workload: {type: String, required: false}
       tool: {type: String, required: false}
+      # delegated_by (M4a second checkpoint): the human who delegated this
+      # call to the executing agent, if any -- accountability context, NOT
+      # a principal swap (Cedar's principal stays the agent, per ADR-001
+      # decision #3; this names who's accountable, it doesn't act as them).
+      delegated_by: {type: String, required: false}
 
   route-deviation.propose:
     principals: [AgentPrincipal]
@@ -107,12 +124,13 @@ actions:
       fx_variance_pct_x10: Long
       margin_pct_x10: Long
 
-  approval.request:
-    principals: [AgentPrincipal]
-    resources: [ApprovalTask]
-    context:
-      executing_workload: {type: String, required: false}
-      tool: {type: String, required: false}
+  # approval.request: REMOVED (Finding 2, capability-profile review;
+  # actually executed now -- the earlier fix removed agent OWNERSHIP in
+  # agents/catalog.yaml but left this action definition in place, a real
+  # gap flagged in review). ApprovalTask creation is a system-internal
+  # consequence of quote.submit-for-approval's QMS state transition, not
+  # an independently agent-authorizable action. Do not re-add without a
+  # new ADR reversing Finding 2 -- see test_approval_request_stays_removed.
 
   # --- Human ----------------------------------------------------------------
   route-deviation.approve:

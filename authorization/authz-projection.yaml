@@ -33,6 +33,23 @@ entities:
       kind: String
       active: Boolean
       trust_domain: {type: String, required: false}
+      # canonical_id/can_call (M3.5, can_call projection deferred from
+      # ADR-001/decision #10): Cedar has no native "compare to my own uid
+      # string" or Set<Entity> support in this repo's schema generator
+      # (tools/identity/../schema_gen.py's _cedar_type handles only
+      # String/Boolean/Long + Set of those) -- can_call is modeled as a
+      # Set<String> of callee canonical ids, compared against the callee's
+      # own denormalized canonical_id attribute, not the entity uid itself.
+      canonical_id: {type: String, required: false}
+      can_call: {type: Set<String>, required: false}
+      # delegatable_actions (M4a second checkpoint): the subset of this
+      # agent's own owned_actions (agents/catalog.yaml) it may execute WHEN
+      # acting under a human delegation (context.delegated_by). Currently
+      # identical to owned_actions -- no narrower delegation scope than an
+      # agent's own normal authority is modeled yet, but kept as a distinct
+      # attribute (not reusing can_call, a different relationship) so a
+      # future narrower delegation scope doesn't require a schema change.
+      delegatable_actions: {type: Set<String>, required: false}
 
   Workload:                       # MCP servers (ADR-001) — no default group membership
     ontology: null
@@ -73,6 +90,10 @@ entities:
     ontology: null
     attributes:
       non_contracted_lane: {type: Boolean, required: false}
+      quote_status: {type: String, required: false}   # M6 (approval-mcp): the referenced
+        # QuoteVersion's live status, supplied per request via additional_entities
+        # -- never pre-loaded into the persisted store. See
+        # agent-may-record-route-deviation-when-draft (authorization/policies.cedar).
 
   ApprovalTask:
     ontology: null
