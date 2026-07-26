@@ -272,7 +272,7 @@ flowchart LR
     options[Compare feasible<br/>route options]
     fit{ }
     planner[Transport Planner<br/>review and accept plan]
-    approval{Commercial<br/>approval needed?}
+    approval{ }
     quote[/Quotation system<br/>quote and approval state/]
     options -->|Fits cost and service needs?| fit --> planner -->|Commercial approval needed?| approval
     approval -->|Yes| quote
@@ -321,55 +321,6 @@ flowchart LR
 These activities remain part of the Transport Planner’s job throughout the
 process. They are the responsibilities the company will later examine for
 carefully bounded support.
-
-## What is enhanced by agents?
-
-The company assigns selected parts of the job to specialist software workers:
-
-The human process remains the reference process. The enhancement is that
-selected research and preparation steps can now be performed by specialist
-workers, while the planner continues to review the evidence and own the
-operational decision.
-
-```mermaid
-flowchart LR
-    responsibility[Transport Planner<br/>responsibility]
-    lane[Lane Evaluation Agent<br/>find feasible options]
-    policy[Policy engine<br/>check permitted action]
-    tms[/TMS<br/>route and capacity facts/]
-    rates[/Rate system<br/>carrier-rate facts/]
-    options[/Route options<br/>and evidence/]
-    decision[Route Decision Agent<br/>prepare recommendation]
-    handoff[Agent hand-off<br/>request capacity evidence]
-    planner[Transport Planner<br/>review recommendation]
-
-    responsibility --> lane
-    lane -->|controlled service| policy
-    policy --> tms
-    policy --> rates
-    tms --> options
-    rates --> options
-    options --> decision
-    decision --> handoff --> planner
-
-    classDef human fill:#e8f1ff,stroke:#3566a8,color:#111;
-    classDef agent fill:#eaf7ea,stroke:#3b7d3b,color:#111;
-    classDef system fill:#fff4d6,stroke:#a87800,color:#111;
-    classDef decision fill:#f5eaff,stroke:#7542a5,color:#111,font-size:10px;
-    class responsibility,planner human;
-    class lane,decision,handoff agent;
-    class policy,tms,rates,options system;
-```
-
-| Planner responsibility | Company support | What the support does |
-| --- | --- | --- |
-| Create optimized shipment routes | Lane Evaluation Agent | Builds and compares valid route alternatives. |
-| Check the lowest freight cost and best mode | Lane Evaluation Agent plus rate service | Compares route options using carrier-rate evidence. |
-| Prepare a route recommendation | Route Decision Agent | Produces a recommendation and identifies exceptions. |
-
-The important boundary is that these workers support a responsibility; they do
-not become the owner of the job, the shipment, or the company’s operational
-truth.
 
 ## The agents are specialist colleagues
 
@@ -594,7 +545,9 @@ The Transport Planner still:
 The agent is a bounded colleague for selected analytical and preparatory work.
 It is not a digital replacement for the complete job.
 
-## Source projection
+## Appendix
+
+### Source projection
 
 This example is based on the generated projection:
 
@@ -603,3 +556,190 @@ This example is based on the generated projection:
 - [job-workload-mappings.yaml](../../business/job-workload-mappings.yaml)
 - [agents/catalog.yaml](../../agents/catalog.yaml)
 - [policies](../../authorization/policies.cedar)
+
+### How the planner performs the work with agents
+
+The human process in the main story remains the reference process. This
+appendix shows the agent-supported variation in more detail. Each diagram makes
+the policy boundary visible: an agent requests a business action, the control
+panel asks the policy engine whether that action is permitted, and only then can
+the agent use a controlled company service or hand work to another agent.
+
+The agents support selected responsibilities. They do not own the shipment,
+change the systems of record, or receive the planner’s human approval rights.
+In the diagrams, blue nodes are the human-in-the-loop: the planner reviews the
+agent’s work, and authorized commercial managers approve changes to the company’s
+commitment.
+
+#### 1. Confirm the shipment need
+
+The Transport Planner confirms the customer’s requirements and resolves
+anything unclear. The planner then asks the Lane Evaluation Agent to investigate
+feasible options. The policy `agent-may-evaluate-lane` limits that request to an
+active, approved agent.
+
+```mermaid
+flowchart LR
+    planner[Transport Planner<br/>human confirmation]
+    brief[/Shipment brief<br/>customer requirements/]
+    lane[Lane Evaluation Agent<br/>request lane evaluation]
+    pep[Control panel<br/>check agent action]
+    policy[Policy engine<br/>agent-may-evaluate-lane]
+    permitted{ }
+    refused(( ))
+
+    planner --> brief --> lane --> pep --> policy -->|Permitted?| permitted
+    permitted -->|No| refused
+
+    classDef human fill:#e8f1ff,stroke:#3566a8,color:#111;
+    classDef agent fill:#eaf7ea,stroke:#3b7d3b,color:#111;
+    classDef system fill:#fff4d6,stroke:#a87800,color:#111;
+    classDef decision fill:#f5eaff,stroke:#7542a5,color:#111,font-size:10px;
+    classDef event fill:#ffffff,stroke:#666666,color:#111,font-size:10px;
+    class planner human;
+    class lane agent;
+    class brief,pep,policy system;
+    class permitted decision;
+    class refused event;
+```
+
+#### 2. Find feasible transport options
+
+The Lane Evaluation Agent checks route alternatives and capacity through
+controlled company services. The policies `agent-may-check-capacity` and
+`agent-may-read-carrier-rate` limit which agent requests may reach the TMS and
+rate system. MCP provides the controlled access; the existing system APIs
+remain underneath.
+
+```mermaid
+flowchart LR
+    lane[Lane Evaluation Agent<br/>evaluate route options]
+    pep[Control panel<br/>check requested tools]
+    policy[Policy engine<br/>capacity and rate policies]
+    tms[/TMS<br/>route and capacity facts/]
+    rates[/Rate system<br/>carrier-rate facts/]
+    options[/Route options<br/>capacity and rate evidence/]
+    planner[Transport Planner<br/>human review of options]
+
+    lane --> pep --> policy
+    policy -->|MCP over existing API| tms
+    policy -->|MCP over existing API| rates
+    tms --> options
+    rates --> options --> planner
+
+    classDef human fill:#e8f1ff,stroke:#3566a8,color:#111;
+    classDef agent fill:#eaf7ea,stroke:#3b7d3b,color:#111;
+    classDef system fill:#fff4d6,stroke:#a87800,color:#111;
+    classDef decision fill:#f5eaff,stroke:#7542a5,color:#111,font-size:10px;
+    class lane agent;
+    class pep,policy,tms,rates,options system;
+    class planner human;
+```
+
+#### 3. Prepare a route recommendation
+
+The Lane Evaluation Agent hands the route options to the Route Decision Agent.
+The policy `agent-may-delegate-per-catalog` limits that A2A hand-off to an
+approved specialist. The Route Decision Agent prepares a recommendation; it
+does not approve the recommendation.
+
+```mermaid
+flowchart LR
+    options[/Route options<br/>alternatives and evidence/]
+    lane[Lane Evaluation Agent<br/>request specialist work]
+    pep[Control panel<br/>check delegation]
+    policy[Policy engine<br/>agent-may-delegate-per-catalog]
+    decision[Route Decision Agent<br/>prepare recommendation]
+    planner[Transport Planner<br/>human review and decision]
+
+    options --> lane -->|A2A request| pep --> policy -->|Approved specialist| decision
+    decision --> planner
+
+    classDef human fill:#e8f1ff,stroke:#3566a8,color:#111;
+    classDef agent fill:#eaf7ea,stroke:#3b7d3b,color:#111;
+    classDef system fill:#fff4d6,stroke:#a87800,color:#111;
+    classDef decision fill:#f5eaff,stroke:#7542a5,color:#111,font-size:10px;
+    class options,pep,policy system;
+    class lane,decision agent;
+    class planner human;
+```
+
+#### 4. Consider cost and mode together
+
+The Commercial Normalization Agent makes route costs comparable across modes,
+currencies, and carrier-rate inputs. Its access is limited by the same
+controlled-service policies. If the result crosses a business threshold, the
+policies `recommend-high-cost-variance` or `recommend-slower-transit` require
+additional review rather than automatic acceptance.
+
+```mermaid
+flowchart LR
+    decision[Route Decision Agent<br/>compare recommendation]
+    normalize[Commercial Normalization Agent<br/>normalize route costs]
+    pep[Control panel<br/>check agent action]
+    policy[Policy engine<br/>cost and service policies]
+    rates[/Rate system<br/>carrier-rate facts/]
+    comparison[/Comparable route costs<br/>and service evidence/]
+    planner[Transport Planner<br/>human review of business fit]
+    approval{ }
+    pricing[Pricing Manager<br/>human approval up to EUR 10,000]
+    director[Regional Commercial Director<br/>human escalation]
+
+    decision --> normalize --> pep --> policy
+    policy -->|Controlled service| rates --> comparison --> planner
+    planner -->|Commitment changed?| approval
+    approval -->|No| planner
+    approval -->|Yes| pricing
+    pricing -->|Above delegated limit?| director
+
+    classDef human fill:#e8f1ff,stroke:#3566a8,color:#111;
+    classDef agent fill:#eaf7ea,stroke:#3b7d3b,color:#111;
+    classDef system fill:#fff4d6,stroke:#a87800,color:#111;
+    classDef decision fill:#f5eaff,stroke:#7542a5,color:#111,font-size:10px;
+    class decision,normalize agent;
+    class pep,policy,rates,comparison system;
+    class planner,pricing,director human;
+    class approval decision;
+```
+
+#### 5. Respond when the situation changes
+
+When an exchange rate moves, a route becomes unavailable, or capacity changes,
+the process requests fresh analysis. The policy `forbid-inactive` ensures that
+an inactive agent cannot restart the work. The planner remains responsible for
+deciding how the updated recommendation affects the customer commitment.
+
+```mermaid
+flowchart LR
+    interruption(( ))
+    lane[Lane Evaluation Agent<br/>re-check route and capacity]
+    pep[Control panel<br/>check active agent]
+    policy[Policy engine<br/>forbid-inactive]
+    tms[/TMS<br/>current capacity facts/]
+    decision[Route Decision Agent<br/>prepare updated recommendation]
+    planner[Transport Planner<br/>human decision on next step]
+    approval{ }
+    pricing[Pricing Manager<br/>human approval up to EUR 10,000]
+    director[Regional Commercial Director<br/>human escalation]
+
+    interruption -->|Business conditions changed| lane --> pep --> policy
+    policy -->|Permitted| tms --> decision --> planner --> approval
+    approval -->|No| planner
+    approval -->|Yes| pricing
+    pricing -->|Above delegated limit?| director
+
+    classDef human fill:#e8f1ff,stroke:#3566a8,color:#111;
+    classDef agent fill:#eaf7ea,stroke:#3b7d3b,color:#111;
+    classDef system fill:#fff4d6,stroke:#a87800,color:#111;
+    classDef decision fill:#f5eaff,stroke:#7542a5,color:#111,font-size:10px;
+    classDef event fill:#ffffff,stroke:#666666,color:#111,font-size:10px;
+    class interruption event;
+    class lane,decision agent;
+    class pep,policy,tms system;
+    class planner,pricing,director human;
+    class approval decision;
+```
+
+The agents shorten the path from interruption to useful evidence. The policy
+engine limits what each agent can do, the systems of record remain authoritative,
+and the planner remains accountable for the business decision.
