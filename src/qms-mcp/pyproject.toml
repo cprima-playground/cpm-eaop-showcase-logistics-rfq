@@ -1,0 +1,31 @@
+[project]
+name = "qms-mcp"
+version = "0.1.0"
+description = "M6: third authenticated MCP server, and the first with resource/state-sensitive authorization (not blanket active-internal-agent). Three tools: calculate_quote_price (quote-price.calculate, gated on live QuoteVersion.status=='draft'), evaluate_quote_variance (quote-variance.evaluate, gated on live status != 'draft'), normalize_route_cost (route-cost.normalize, gated on live FX freshness via D2). Built directly on M5.5's shared settings/descriptor/self-check contract."
+requires-python = ">=3.10"
+dependencies = [
+    "rfq-common",
+    "uvicorn>=0.30",
+    "httpx>=0.27",
+]
+
+[dependency-groups]
+dev = ["pytest>=8.0", "mock-qms", "mock-fx"]
+
+[tool.uv.sources]
+rfq-common = { path = "../rfq_common", editable = true }
+mock-qms = { path = "../mock-qms", editable = true }
+mock-fx = { path = "../mock-fx", editable = true }
+
+[tool.uv]
+package = true
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["qms_mcp"]
+
+[project.scripts]
+qms-mcp = "qms_mcp.cli:main"

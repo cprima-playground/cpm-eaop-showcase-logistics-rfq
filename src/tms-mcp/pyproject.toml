@@ -1,0 +1,30 @@
+[project]
+name = "tms-mcp"
+version = "0.1.0"
+description = "M6a: first authenticated MCP server -- one tool (check_lane_capacity), OAuth-authenticated agent-to-MCP access with distributed Cedar enforcement, calling mock-tms with its own workload credential."
+requires-python = ">=3.10"
+dependencies = [
+    "rfq-common",
+    "uvicorn>=0.30",
+    "httpx>=0.27",
+]
+
+[dependency-groups]
+dev = ["pytest>=8.0", "mock-tms"]
+
+[tool.uv.sources]
+rfq-common = { path = "../rfq_common", editable = true }
+mock-tms = { path = "../mock-tms", editable = true }
+
+[tool.uv]
+package = true
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["tms_mcp"]
+
+[project.scripts]
+tms-mcp = "tms_mcp.cli:main"
