@@ -213,6 +213,16 @@ services:
     environment:
       <<: [*vault-env, *keycloak-env, *cedar-env]
       SERVICE_PUBLIC_URL: https://mission-control.rfq-showcase.localhost
+      # Registry roster (M8.2) -- the ONE place in this repo that
+      # legitimately resolves every peer service's endpoint (ADR-002: no
+      # other agent/MCP server gets a registry of every other service).
+      LANE_EVALUATION_AGENT_URL: http://lane-evaluation-agent:8204
+      ROUTE_DECISION_AGENT_URL: http://route-decision-agent:8205
+      COMMERCIAL_NORMALIZATION_AGENT_URL: http://commercial-normalization-agent:8206
+      TMS_MCP_URL: http://tms-mcp:8104
+      RATE_MCP_URL: http://rate-mcp:8105
+      QMS_MCP_URL: http://qms-mcp:8106
+      APPROVAL_MCP_URL: http://approval-mcp:8107
     networks: [rfq-showcase]
     restart: unless-stopped
     profiles: [control-plane, full]

@@ -100,6 +100,10 @@ agents:
     name: Trust Boundary Fixture Agent
     platform: TARGET
     description: Test/demo identity only -- exercises Cedar's trust_domain boundary for D10 (capacity.check). Not a modeled business role.
+    fixture: true  # M8: explicit marker, not id pattern-matching -- consumers
+                   # (e.g. mission-control-api's registry roster) must exclude
+                   # this entry the same mechanical way, not by string-matching
+                   # "trust-boundary-fixture" against every future addition.
     endpoint: {TARGET: true}
     auth: {mechanism: oauth2-client-credentials}
     caller_identity:
