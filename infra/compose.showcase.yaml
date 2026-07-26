@@ -13,10 +13,14 @@
 # service-mesh hairpin).
 #
 # Profiles (pass more than one --profile flag to combine):
-#   core   -- the 6 mock backends
-#   mcp    -- + the 4 MCP servers (need `core` too, for their backend calls)
-#   agents -- + the 3 A2A agents (need `core`+`mcp` too, for their calls)
-#   full   -- everything
+#   core           -- the 6 mock backends
+#   mcp            -- + the 4 MCP servers (need `core` too, for their backend calls)
+#   agents         -- + the 3 A2A agents (need `core`+`mcp` too, for their calls)
+#   control-plane  -- + mission-control-api (M8, read-only; polls every
+#                      service's own /descriptor -- no write ops, no
+#                      dependency other than reaching its peers' /descriptor
+#                      endpoints and cedar-agent's live policy list)
+#   full           -- everything
 #
 # Run (support stack must already be up):
 #   docker compose -f infra/compose.support.yaml -f infra/compose.showcase.yaml --profile core up -d --build
@@ -201,3 +205,14 @@ services:
     networks: [rfq-showcase]
     restart: unless-stopped
     profiles: [agents, full]
+
+  # --------------------------------------------------------- control plane
+  mission-control-api:
+    build: {context: .., dockerfile: src/mission-control-api/Dockerfile}
+    image: rfq-showcase-mission-control-api
+    environment:
+      <<: [*vault-env, *keycloak-env, *cedar-env]
+      SERVICE_PUBLIC_URL: https://mission-control.rfq-showcase.localhost
+    networks: [rfq-showcase]
+    restart: unless-stopped
+    profiles: [control-plane, full]

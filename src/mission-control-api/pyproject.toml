@@ -1,0 +1,29 @@
+[project]
+name = "mission-control-api"
+version = "0.1.0"
+description = "M8: read-only Mission Control control-plane API -- aggregates real, already-existing read models (registry, topology, health, policy, identity, identity-drift, traces) via /api/v1. Never a source of truth, never makes an authorization decision. Built directly on M5.5's shared settings/descriptor/self-check contract."
+requires-python = ">=3.10"
+dependencies = [
+    "rfq-common",
+    "uvicorn>=0.30",
+    "httpx>=0.27",
+]
+
+[dependency-groups]
+dev = ["pytest>=8.0"]
+
+[tool.uv.sources]
+rfq-common = { path = "../rfq_common", editable = true }
+
+[tool.uv]
+package = true
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["mission_control_api"]
+
+[project.scripts]
+mission-control-api = "mission_control_api.cli:main"

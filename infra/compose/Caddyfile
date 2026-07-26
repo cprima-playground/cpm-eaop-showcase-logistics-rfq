@@ -90,3 +90,8 @@ https://approval-mcp.rfq-showcase.localhost {
     import friendly_errors
     reverse_proxy approval-mcp:8107
 }
+
+https://mission-control.rfq-showcase.localhost {
+    import friendly_errors
+    reverse_proxy mission-control-api:8300
+}
