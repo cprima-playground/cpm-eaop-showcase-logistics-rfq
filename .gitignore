@@ -3,6 +3,12 @@
 __pycache__/
 *.pyc
 
+# Local env overrides (e.g. DOCKER_BUILDCACHE_DIR) -- machine-specific, not shared config
+.env
+
+# BuildKit cache_to export target, default location when DOCKER_BUILDCACHE_DIR unset
+infra/.buildcache/
+
 # Terraform (infra/keycloak/terraform) -- state is local dev state, not IaC
 # source; the CA cert path in config.py's caddy_ca_bundle() docstring is the
 # same story: extracted per-machine via `docker cp`, not committed.
