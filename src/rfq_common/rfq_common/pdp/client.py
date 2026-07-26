@@ -28,11 +28,23 @@ class PDPClient:
         self._timeout = timeout
 
     def authorize(self, principal: str, action: str, resource: str,
-                  context: dict | None = None) -> AuthorizationDecision:
+                  context: dict | None = None, *,
+                  additional_entities: list[dict] | None = None) -> AuthorizationDecision:
         """principal/action/resource are Cedar entity uids, e.g.
-        `Agentic::Principal::"alice"`, `Agentic::Action::"agent.invoke"`."""
+        `Agentic::Principal::"alice"`, `Agentic::Action::"agent.invoke"`.
+
+        `additional_entities` (optional): request-scoped entity records
+        (rfq_common.pdp.entities.entity()'s shape) supplied ONLY for this
+        one call -- cedar-agent's own `/v1/is_authorized` supports this
+        directly (verified against the real running sidecar), distinct
+        from the persisted entity store DataAdmin.put() writes to. Use
+        this for a resource fact that changes per request (e.g. a Quote's
+        current status, fetched live from mock-qms) -- never push such
+        facts into the persisted store from request-handling code."""
         body = {"principal": principal, "action": action, "resource": resource,
                 "context": context or {}}
+        if additional_entities:
+            body["additional_entities"] = additional_entities
         r = httpx.post(self._url, json=body, timeout=self._timeout)
         r.raise_for_status()
         data = r.json()

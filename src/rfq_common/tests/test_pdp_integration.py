@@ -8,6 +8,7 @@ Skips (not fails) if the isolated cedar-agent isn't up: `docker compose up -d` i
 spikes/repricing/policy-evaluation/.
 """
 
+import sys
 from pathlib import Path
 
 import httpx
@@ -18,6 +19,8 @@ from rfq_common.pdp import DataAdmin, PDPClient, PolicyAdmin, PolicyBundle, Sche
 
 RFQ_ROOT = Path(__file__).resolve().parents[3]
 CEDAR_URL = "http://localhost:8280"
+
+sys.path.insert(0, str(RFQ_ROOT))  # tools/identity isn't an installed dependency of rfq_common
 
 
 def _sidecar_up() -> bool:
@@ -43,7 +46,8 @@ def pdp():
     PolicyAdmin(CEDAR_URL).put(bundle.policies())
     DataAdmin(CEDAR_URL).put([
         {"uid": uid("AgentPrincipal", "commercial-normalization-agent"),
-         "attrs": {"kind": "agent", "active": True, "trust_domain": "internal"}, "parents": []},
+         "attrs": {"kind": "agent", "active": True, "trust_domain": "internal",
+                    "canonical_id": "agent.commercial-normalization"}, "parents": []},
         {"uid": uid("Principal", "mona.commercial"),
          "attrs": {"kind": "human", "active": True}, "parents": [uid("Group", "rfq-commercial-emea")]},
         {"uid": uid("Group", "rfq-commercial-emea"), "attrs": {}, "parents": []},
@@ -51,6 +55,10 @@ def pdp():
          "attrs": {"kind": "workload", "active": True, "system": "tms", "trust_domain": "internal"}, "parents": []},
         {"uid": uid("Workload", "workload.external-mcp"),
          "attrs": {"kind": "workload", "active": True, "system": "external", "trust_domain": "external"}, "parents": []},
+        {"uid": uid("AgentPrincipal", "agent.lane-evaluation"),
+         "attrs": {"kind": "agent", "active": True, "trust_domain": "internal",
+                    "canonical_id": "agent.lane-evaluation",
+                    "can_call": ["agent.commercial-normalization"]}, "parents": []},
     ])
     return bundle
 
@@ -137,6 +145,32 @@ def test_agent_denied_connect_to_workload_in_different_trust_domain(pdp):
     assert decision.effect == "deny"
 
 
+def test_agent_may_delegate_to_can_call_entry(pdp):
+    """M3.5: agent.delegate permits lane-evaluation -> commercial-
+    normalization, matching agents/catalog.yaml's can_call edge."""
+    client = PDPClient(CEDAR_URL)
+    decision = client.authorize(
+        principal=ref("AgentPrincipal", "agent.lane-evaluation"),
+        action=action_ref("agent.delegate"),
+        resource=ref("AgentPrincipal", "commercial-normalization-agent"),
+        context={},
+    )
+    assert decision.effect == "allow"
+    assert decision.determining_policies == ["agent-may-delegate-per-catalog"]
+
+
+def test_agent_denied_delegate_to_non_can_call_entry(pdp):
+    """No can_call edge from lane-evaluation to itself -- default deny."""
+    client = PDPClient(CEDAR_URL)
+    decision = client.authorize(
+        principal=ref("AgentPrincipal", "agent.lane-evaluation"),
+        action=action_ref("agent.delegate"),
+        resource=ref("AgentPrincipal", "agent.lane-evaluation"),
+        context={},
+    )
+    assert decision.effect == "deny"
+
+
 def test_manager_may_approve_quote_within_limit(pdp):
     """D19 (Finding 3, capability-profile review): quote.approve, distinct
     from D6's route-deviation.approve -- resource is Quote, not
@@ -205,3 +239,45 @@ def test_manager_approval_within_limit(pdp):
     )
     assert decision.effect == "allow"
     assert decision.determining_policies == ["manager-may-approve-within-limit"]
+
+
+def test_gen_cedar_entities_real_directory_can_call_edge(pdp):
+    """M3.5 verification bullet, done for real: load the ACTUAL identity/
+    actors.yaml + agents/catalog.yaml directory (not ad hoc fixture data)
+    through tools.identity.gen_cedar_entities, and confirm a real can_call
+    edge resolves allow via rfq_common's own PDPClient.
+
+    MUST STAY LAST in this file: DataAdmin.put() replaces the cedar-agent's
+    entity data wholesale, overwriting the ad hoc fixture data every other
+    test in this module depends on.
+    """
+    from tools.identity.gen_cedar_entities import generate_cedar_entities
+    from tools.identity.validator import validate_identity
+
+    model = validate_identity(
+        RFQ_ROOT / "identity" / "actors.yaml",
+        RFQ_ROOT / "identity" / "groups.yaml",
+        RFQ_ROOT / "business" / "departments.yaml",
+        RFQ_ROOT / "business" / "job-titles.yaml",
+    )
+    entities = generate_cedar_entities(model, RFQ_ROOT / "agents" / "catalog.yaml")
+    DataAdmin(CEDAR_URL).put(entities)
+
+    client = PDPClient(CEDAR_URL)
+
+    allowed = client.authorize(
+        principal=ref("AgentPrincipal", "agent.lane-evaluation"),
+        action=action_ref("agent.delegate"),
+        resource=ref("AgentPrincipal", "agent.commercial-normalization"),
+        context={},
+    )
+    assert allowed.effect == "allow"
+    assert allowed.determining_policies == ["agent-may-delegate-per-catalog"]
+
+    denied = client.authorize(
+        principal=ref("AgentPrincipal", "agent.commercial-normalization"),
+        action=action_ref("agent.delegate"),
+        resource=ref("AgentPrincipal", "agent.lane-evaluation"),
+        context={},
+    )
+    assert denied.effect == "deny"

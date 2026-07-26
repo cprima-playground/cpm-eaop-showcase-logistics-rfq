@@ -8,6 +8,18 @@ implemented -- no agent authenticates via SSO here, only via
 client-credentials (a separate, already-proven path). A caller that isn't
 human resolves to kind="service", not "agent" -- narrower than the full
 contract, sufficient for what actually calls this today.
+
+HARD RULE (identity/README.md): `roles` here is a Keycloak client-role
+claim (qms-web's UI-gating roles -- reader/commercial-manager/pricing-
+manager/administrator, see infra/keycloak/terraform/keycloak-qms.tf's
+header comment) -- application-local UI entitlement, NOT a canonical
+authorization fact. Cedar authorizes on canonical principal id + GROUP
+membership (Agentic::Group::"rfq-commercial-emea"), never on this field.
+Do not use `Principal.roles`/`has_role()` for an authorization decision
+anywhere in the request path -- that would silently reintroduce the
+Keycloak-role-as-authorization-model this project deliberately separated
+out. UI-gating ("does this session show the approve button") is the only
+legitimate use.
 """
 
 from __future__ import annotations
@@ -33,6 +45,8 @@ class Principal(BaseModel):
     approval_limit_eur_cents: int | None = None
 
     def has_role(self, role: str) -> bool:
+        """UI-gating only ("does this session show the approve button") --
+        NEVER an authorization check. See module docstring's HARD RULE."""
         return self.roles is not None and role in self.roles
 
 

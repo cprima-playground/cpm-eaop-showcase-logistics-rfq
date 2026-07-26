@@ -9,8 +9,10 @@ import uuid
 from urllib.parse import quote
 
 from fastapi import FastAPI, Request, Response
+from opentelemetry import baggage, context as otel_context, trace
 
 from .clock import now
+from .observability import instrument_app
 from .theme import ThemePack, render_css_vars
 
 
@@ -49,9 +51,27 @@ def create_app(name: str, *, system_id: str | None = None,
 
     @app.middleware("http")
     async def _correlation_id(request: Request, call_next):
-        request.state.correlation_id = str(uuid.uuid4())
-        response = await call_next(request)
+        # Reuse an inbound id (header, or OTel baggage carried by an
+        # upstream hop's instrumented httpx call) so the SAME journey id
+        # survives multi-hop A2A/MCP chains; only the true entry point
+        # generates a fresh one.
+        inbound = request.headers.get("x-correlation-id") or baggage.get_baggage("correlation_id")
+        request.state.correlation_id = inbound or str(uuid.uuid4())
+        # Enrichment, NOT replacement (M5.9) -- request.state/X-Correlation-Id
+        # above is unchanged; this just joins the SAME id onto whatever span
+        # FastAPIInstrumentor already started for this request (a no-op,
+        # non-recording span if OTel isn't configured -- always safe to call).
+        trace.get_current_span().set_attribute("correlation_id", request.state.correlation_id)
+        # Propagate via baggage so HTTPXClientInstrumentor auto-injects it
+        # on every outbound call this request makes, with zero per-call-site
+        # changes at any A2A/MCP client -- same mechanism as W3C traceparent.
+        ctx = baggage.set_baggage("correlation_id", request.state.correlation_id)
+        token = otel_context.attach(ctx)
+        try:
+            response = await call_next(request)
+        finally:
+            otel_context.detach(token)
         response.headers["X-Correlation-Id"] = request.state.correlation_id
         return response
 
-    return app
+    return instrument_app(app)
