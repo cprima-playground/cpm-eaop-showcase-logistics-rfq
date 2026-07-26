@@ -32,7 +32,7 @@ class VerifiedToken:
     audience: str
 
 
-def verify_with_jwks(token: str, jwks: dict, *, issuer: str, audience: str) -> VerifiedToken:
+def verify_with_jwks(token: str, jwks: dict, *, issuer: str, audience: str | None = None) -> VerifiedToken:
     """Verify signature/issuer/audience/expiry against an in-hand JWKS document
     (no network) -- what golden-fixture tests use."""
     if token.count(".") != 2:
@@ -64,7 +64,7 @@ def _jwks_client(jwks_uri: str) -> PyJWKClient:
     return _jwks_clients[jwks_uri]
 
 
-def verify(token: str, *, jwks_uri: str, issuer: str, audience: str) -> VerifiedToken:
+def verify(token: str, *, jwks_uri: str, issuer: str, audience: str | None = None) -> VerifiedToken:
     """Verify against a live JWKS endpoint (Keycloak realm / Entra tenant)."""
     signing_key = _jwks_client(jwks_uri).get_signing_key_from_jwt(token)
     try:

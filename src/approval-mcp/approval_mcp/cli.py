@@ -27,7 +27,7 @@ def main() -> None:
         canonical_id=settings.EXPECTED_CANONICAL_ID, kind="workload",
         client_id=settings.KEYCLOAK_CLIENT_ID, secret_name="approval-mcp-svc-client-secret",
     )
-    asyncio.run(run_startup_self_check(identity, keycloak_url=settings.keycloak_url(), root=RFQ_ROOT))
+    asyncio.run(run_startup_self_check(identity, oidc_issuer_url=settings.oidc_issuer_url(), root=RFQ_ROOT))
 
     instance_id = new_instance_id()
     configure_observability(

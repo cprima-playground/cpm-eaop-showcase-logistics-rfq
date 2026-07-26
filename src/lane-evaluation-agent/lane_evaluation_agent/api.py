@@ -58,7 +58,13 @@ def _agent_card(public_url: str) -> AgentCard:
         supported_interfaces=[
             AgentInterface(
                 protocol_binding="JSONRPC",
-                protocol_version="1.0",
+                # protocol_version deliberately left unset (empty), not "1.0"
+                # -- a2a-sdk's to_compat_agent_card() only backfills the
+                # legacy top-level `url` field (still required by some
+                # clients, e.g. a2a-inspector) for interfaces with NO
+                # protocol_version or a legacy (0.3) one; an explicit "1.0"
+                # opts OUT of that compat path entirely. See
+                # skills/a2a-agent-card/SKILL.md for the full root cause.
                 url=f"{public_url}/a2a/jsonrpc",
             ),
         ],

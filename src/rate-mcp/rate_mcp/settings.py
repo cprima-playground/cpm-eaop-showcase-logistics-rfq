@@ -23,8 +23,8 @@ KEYCLOAK_CLIENT_ID = "rate-mcp-svc"  # identity/projections/keycloak.yaml: workl
 EXPECTED_CANONICAL_ID = "workload.rate-mcp"
 
 
-def keycloak_url() -> str:
-    return ResourceServerSettings.from_env().keycloak_base_url
+def oidc_issuer_url() -> str:
+    return ResourceServerSettings.from_env().oidc_issuer_url
 
 
 def introspection_endpoint() -> str:

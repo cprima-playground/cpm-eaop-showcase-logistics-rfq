@@ -1,5 +1,5 @@
 """M5.5: built on rfq_common.settings's shared composable classes instead
-of hand-rolled keycloak_url()/cedar_url()/client_secret() duplicated per
+of hand-rolled oidc_issuer_url()/cedar_url()/client_secret() duplicated per
 service. Same public functions as before this migration (api.py/cli.py
 are unchanged) -- this file is now a thin, service-specific adapter over
 the shared model, not an independent implementation.
@@ -26,14 +26,14 @@ KEYCLOAK_CLIENT_ID = "tms-mcp-svc"  # identity/projections/keycloak.yaml: worklo
 EXPECTED_CANONICAL_ID = "workload.tms-mcp"
 
 __all__ = [
-    "CredentialUnavailableError", "keycloak_url", "introspection_endpoint",
+    "CredentialUnavailableError", "oidc_issuer_url", "introspection_endpoint",
     "introspection_client_secret", "tms_api_key", "tms_base_url", "cedar_url",
     "KEYCLOAK_CLIENT_ID", "EXPECTED_CANONICAL_ID",
 ]
 
 
-def keycloak_url() -> str:
-    return ResourceServerSettings.from_env().keycloak_base_url
+def oidc_issuer_url() -> str:
+    return ResourceServerSettings.from_env().oidc_issuer_url
 
 
 def introspection_endpoint() -> str:

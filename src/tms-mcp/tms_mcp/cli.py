@@ -22,12 +22,12 @@ def main() -> None:
     from . import settings
     from .api import RFQ_ROOT, build_app
 
-    keycloak_url = settings.keycloak_url()
+    oidc_issuer_url = settings.oidc_issuer_url()
     identity = MachineIdentity(
         canonical_id=settings.EXPECTED_CANONICAL_ID, kind="workload",
         client_id=settings.KEYCLOAK_CLIENT_ID, secret_name="tms-mcp-svc-client-secret",
     )
-    asyncio.run(run_startup_self_check(identity, keycloak_url=keycloak_url, root=RFQ_ROOT))
+    asyncio.run(run_startup_self_check(identity, oidc_issuer_url=oidc_issuer_url, root=RFQ_ROOT))
 
     # Same instance_id feeds BOTH this process's spans/metrics AND its
     # /descriptor endpoint (M5.5) -- one identity, two projections.

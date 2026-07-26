@@ -1,8 +1,11 @@
 # Agent catalog — repricing subprocess (three agents).
 #
 # MIRRORS cpm-eaop data/agents/hello-agent-*.yaml. The load-bearing field is
-# `caller_identity.keycloak_client` — identity resolution scans it, and any azp in
+# `caller_identity.oidc_client_id` — identity resolution scans it, and any azp in
 # that set resolves to kind=agent with a populated AgentIdentity (else kind=service).
+# Provider-neutral name (was `keycloak_client`) -- the value is just a client_id
+# string, meaningful for whichever OIDC provider issued the token (Keycloak
+# today, Entra in test/prod -- see tmp/oidc-identity-unification-plan.md).
 # `can_call` declares the allowed A2A edges (governed by agent.delegate).
 #
 # Fields beyond the cpm-eaop card (owned_actions, mcp_access, prohibited_actions,
@@ -17,7 +20,7 @@ agents:
     endpoint: {TARGET: true}
     auth: {mechanism: oauth2-client-credentials}
     caller_identity:
-      keycloak_client: lane-evaluation-agent-svc
+      oidc_client_id: lane-evaluation-agent-svc
       audience_asserted: repricing-agent-api
       can_call: [commercial-normalization-agent]     # A2A handoff
     owned_actions: [lane.evaluate, lane.option.create, capacity.check, carrier-rate.read]
@@ -34,7 +37,7 @@ agents:
     endpoint: {TARGET: true}
     auth: {mechanism: oauth2-client-credentials}
     caller_identity:
-      keycloak_client: commercial-normalization-agent-svc
+      oidc_client_id: commercial-normalization-agent-svc
       audience_asserted: repricing-agent-api
       can_call: [route-decision-agent]
     owned_actions: [fx-rate.read, route-cost.normalize, quote-price.calculate, quote-variance.evaluate, quote.submit-for-approval]
@@ -63,9 +66,13 @@ agents:
     endpoint: {TARGET: true}
     auth: {mechanism: oauth2-client-credentials}
     caller_identity:
-      keycloak_client: route-decision-agent-svc
+      oidc_client_id: route-decision-agent-svc
       audience_asserted: repricing-agent-api
-      can_call: []
+      # M5a: real A2A edge -- route-decision re-checks capacity via lane-
+      # evaluation-agent's evaluate-lane-capacity skill before finalizing a
+      # recommendation, rather than calling tms-mcp itself (that would be
+      # MCP again, not A2A delegation).
+      can_call: [lane-evaluation-agent]
     owned_actions: [route.recommend, route-deviation.propose]
     mcp_access: [approval-mcp]
     # Finding 1: quote.submit-for-approval moved to commercial-normalization-
@@ -84,6 +91,26 @@ agents:
     prohibited_actions: [route-deviation.approve, quote.submit-for-approval, quote.approve, quote.reject]   # recommends, never approves or submits
     human_escalation: [threshold_exceeded]
     source: {path: spikes/repricing/mock-agents/route-decision}
+    status: design
+
+  # M6a Integration Checkpoint 1 trust-boundary FIXTURE (identity/actors.yaml's
+  # matching comment) -- not a business persona. Proves D10 denies a real,
+  # validly-authenticated agent whose trust_domain != internal. Owns nothing.
+  - id: trust-boundary-fixture-agent
+    name: Trust Boundary Fixture Agent
+    platform: TARGET
+    description: Test/demo identity only -- exercises Cedar's trust_domain boundary for D10 (capacity.check). Not a modeled business role.
+    endpoint: {TARGET: true}
+    auth: {mechanism: oauth2-client-credentials}
+    caller_identity:
+      oidc_client_id: trust-boundary-fixture-agent-svc
+      audience_asserted: repricing-agent-api
+      can_call: []
+    owned_actions: []
+    mcp_access: []
+    prohibited_actions: []
+    human_escalation: []
+    source: {path: N/A -- Cedar/identity test fixture, no mock-agent implementation}
     status: design
 
 # Note: no agent "owns" the RFQ or Quote — it owns EXECUTION of an action; the

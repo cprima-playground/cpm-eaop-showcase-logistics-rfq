@@ -1,0 +1,49 @@
+# Identity override: point every workload/agent auth-consuming service at
+# the test Entra tenant (infra/entra/) instead of the default local Keycloak.
+# Keycloak stays the implicit default (compose.support.yaml/compose.showcase.
+# yaml, unchanged) -- there's no separate compose.identity.keycloak.yaml
+# no-op file (a file that changes nothing isn't worth the extra layer).
+#
+# Scope, precisely (not "every service" -- only the ones that actually read
+# OIDC_ISSUER_URL today): the 4 MCP servers + 3 A2A agents build a
+# TokenVerifier from ResourceServerSettings.oidc_issuer_url via
+# build_token_verifier(). mock-qms/ops-dashboard's human-SSO login flow is
+# separate, Keycloak-specific code (sso.py) not touched by this pass --
+# applying this override there would set an env var with no real effect
+# yet (see tmp/oidc-identity-unification-plan.md's "out of scope").
+#
+# Issuer shape verified against a REAL minted token during this pass: the
+# infra/entra/ app registrations issue v1.0-endpoint tokens (no
+# `api { requested_access_token_version = 2 }` set), issuer
+# `https://sts.windows.net/{tenant}/` -- NOT the `login.microsoftonline.com/
+# .../v2.0` shape a v2-token assumption would use. Both a real .well-known/
+# openid-configuration document.
+#
+# ${ENTRA_TEST_TENANT_ID} sourced from a local, uncommitted .env -- matches
+# how Vault-backed secrets already never get hardcoded into compose.
+#
+# Run (support stack must already be up):
+#   docker compose --env-file .env.identity.entra-test \
+#     -f infra/compose.support.yaml -f infra/compose.showcase.yaml \
+#     -f infra/compose.identity.entra-test.yaml --profile mcp --profile agents up -d --build
+name: rfq-showcase-showcase
+
+x-entra-test-env: &entra-test-env
+  OIDC_ISSUER_URL: https://sts.windows.net/${ENTRA_TEST_TENANT_ID}/
+  MCP_AUTH_VERIFICATION_MODE: jwks
+
+services:
+  tms-mcp:
+    environment: {<<: *entra-test-env}
+  rate-mcp:
+    environment: {<<: *entra-test-env}
+  qms-mcp:
+    environment: {<<: *entra-test-env}
+  approval-mcp:
+    environment: {<<: *entra-test-env}
+  lane-evaluation-agent:
+    environment: {<<: *entra-test-env}
+  route-decision-agent:
+    environment: {<<: *entra-test-env}
+  commercial-normalization-agent:
+    environment: {<<: *entra-test-env}

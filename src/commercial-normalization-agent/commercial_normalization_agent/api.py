@@ -52,7 +52,9 @@ def _agent_card(public_url: str) -> AgentCard:
         supported_interfaces=[
             AgentInterface(
                 protocol_binding="JSONRPC",
-                protocol_version="1.0",
+                # protocol_version deliberately left unset -- see
+                # skills/a2a-agent-card/SKILL.md for why an explicit "1.0"
+                # breaks the served card's legacy `url` field.
                 url=f"{public_url}/a2a/jsonrpc",
             ),
         ],
