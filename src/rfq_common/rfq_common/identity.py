@@ -50,6 +50,32 @@ class Principal(BaseModel):
         return self.roles is not None and role in self.roles
 
 
+def _canonical_human_id(claims: dict) -> str:
+    """`sub` is NOT a stable, readable canonical id for a human on either
+    provider -- Keycloak's `sub` is its own internal user UUID; Entra v2
+    tokens default to a "pairwise" `sub`, a privacy-preserving identifier
+    opaque per (app, tenant). Verified against REAL tokens from both IdPs
+    for the same human (M7 live-login checkpoint): neither `sub` matched
+    identity/actors.yaml's canonical id ("diane.delgado") -- this was
+    silently unverified before (no existing test asserted `Principal.id`,
+    only role/group/manager fields), and load-bearing: mock_qms's real
+    SSO-authenticated approve/reject button (api.py's
+    ui_decide_quote_version) stores this id as a QuoteDecision's
+    `approver` -- was recording an unreadable, non-canonical UUID on
+    every real human decision.
+
+    `preferred_username` IS the canonical id on both providers: Keycloak
+    emits it bare ("diane.delgado"); Entra emits it as a UPN
+    ("diane.delgado@rpapubhotmail.onmicrosoft.com") -- stripping the
+    domain suffix, when present, unifies both without a provider branch.
+    Falls back to `sub` only if `preferred_username` is absent entirely
+    (defensive, not expected on any real token this repo issues)."""
+    preferred_username = claims.get("preferred_username") or claims.get("upn")
+    if preferred_username:
+        return preferred_username.split("@", 1)[0]
+    return claims.get("sub", "")
+
+
 def resolve_principal(claims: dict) -> Principal:
     is_human = any(k in claims for k in ("tid", "oid", "groups"))
     kind = "human" if is_human else "service"
@@ -57,7 +83,7 @@ def resolve_principal(claims: dict) -> Principal:
     approval_limit = claims.get("approval_limit_eur_cents") if is_human else None
     return Principal(
         kind=kind,
-        id=claims.get("sub", ""),
+        id=_canonical_human_id(claims) if is_human else claims.get("sub", ""),
         oid=claims.get("oid") if is_human else None,
         tid=claims.get("tid") if is_human else None,
         groups=claims.get("groups") if is_human else None,

@@ -154,6 +154,40 @@ def test_resolve_principal_rejects_unclassifiable_claims():
         resolve_principal({"sub": "mystery"}, root=RFQ_ROOT)
 
 
+def test_resolve_principal_human_id_from_preferred_username_not_sub():
+    """M7 live-login checkpoint: verified against REAL tokens from both
+    IdPs for the same human (diane.delgado) that `sub` is NOT a stable,
+    readable canonical id on either provider -- Keycloak's `sub` is its
+    own internal user UUID, Entra v2's `sub` defaults to an opaque
+    "pairwise" identifier. `preferred_username` is the real canonical id
+    on both: bare on Keycloak, a UPN (with tenant domain suffix) on
+    Entra. Shapes below mirror the two real captured tokens exactly,
+    `sub` deliberately NOT equal to the canonical id (unlike this file's
+    older human-path tests, which happened to use `sub` == canonical id
+    and so never caught this)."""
+    keycloak_shaped = {
+        "sub": "5ce8c7cd-0bb4-4b02-81e5-b4ea35f12a8e", "oid": "8e41c2b0-0000-4000-9000-000000000010",
+        "tid": "rfq-dev-tenant", "preferred_username": "diane.delgado",
+        "iss": "https://keycloak.rfq-showcase.localhost/realms/rfq",
+    }
+    entra_shaped = {
+        "sub": "KcBaQcbZES2Jb0-vG6pgecqO3Vj5onZNj7x46PhzNt0", "oid": "eb772284-35fc-4d96-a0c9-98f3458673c8",
+        "tid": "3180a10e-b222-49d4-a2e9-2023dadef26a",
+        "preferred_username": "diane.delgado@rpapubhotmail.onmicrosoft.com",
+        "iss": "https://login.microsoftonline.com/3180a10e-b222-49d4-a2e9-2023dadef26a/v2.0",
+    }
+    kc = resolve_principal(keycloak_shaped, root=RFQ_ROOT)
+    entra = resolve_principal(entra_shaped, root=RFQ_ROOT)
+    assert kc.id == "diane.delgado"
+    assert entra.id == "diane.delgado"
+    assert kc.id == entra.id  # canonical-principal parity across both IdPs
+
+
+def test_resolve_principal_human_id_falls_back_to_sub_without_preferred_username():
+    resolved = resolve_principal({"sub": "some-opaque-id", "oid": "o", "tid": "t"}, root=RFQ_ROOT)
+    assert resolved.id == "some-opaque-id"
+
+
 def test_resolve_principal_records_provider_from_issuer():
     kc = resolve_principal({"azp": "tms-mcp-svc", "sub": "x",
                              "iss": "http://localhost:8081/realms/rfq"}, root=RFQ_ROOT)

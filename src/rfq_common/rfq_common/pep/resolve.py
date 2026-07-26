@@ -150,6 +150,11 @@ def resolve_principal(claims: dict, *, root: Path | None = None) -> ResolvedPrin
 
     is_human = any(k in claims for k in ("tid", "oid", "groups"))
     if is_human:
+        # rfq_common.identity.resolve_principal() (resolve_human_claims)
+        # derives the canonical id from `preferred_username`, not `sub` --
+        # see its own docstring for why (verified against real tokens
+        # from both IdPs, M7 live-login checkpoint) -- correct for both
+        # providers already, no provider branch needed here.
         human = resolve_human_claims(claims)
         return ResolvedPrincipal(
             kind="human", id=human.id, groups=human.groups or [],
