@@ -22,6 +22,7 @@ from a2a.types import (
     AgentInterface,
     AgentSkill,
 )
+from a2a.utils.constants import PROTOCOL_VERSION_0_3, PROTOCOL_VERSION_1_0
 from fastapi import FastAPI
 
 from rfq_common.app import create_app
@@ -56,15 +57,20 @@ def _agent_card(public_url: str) -> AgentCard:
             )
         ],
         supported_interfaces=[
+            # Real capabilities, not one interface with a bolted-on legacy
+            # field -- the dispatcher (enable_v0_3_compat=True below)
+            # genuinely accepts both wire dialects at this URL, so both are
+            # declared. a2a.client's interface selection (client_factory.py)
+            # prefers an exact "1.0" match; only a 0.3-only client falls
+            # back to the second entry.
             AgentInterface(
                 protocol_binding="JSONRPC",
-                # protocol_version deliberately left unset (empty), not "1.0"
-                # -- a2a-sdk's to_compat_agent_card() only backfills the
-                # legacy top-level `url` field (still required by some
-                # clients, e.g. a2a-inspector) for interfaces with NO
-                # protocol_version or a legacy (0.3) one; an explicit "1.0"
-                # opts OUT of that compat path entirely. See
-                # skills/a2a-agent-card/SKILL.md for the full root cause.
+                protocol_version=PROTOCOL_VERSION_1_0,
+                url=f"{public_url}/a2a/jsonrpc",
+            ),
+            AgentInterface(
+                protocol_binding="JSONRPC",
+                protocol_version=PROTOCOL_VERSION_0_3,
                 url=f"{public_url}/a2a/jsonrpc",
             ),
         ],
@@ -134,7 +140,9 @@ def build_app(
     add_a2a_routes_to_fastapi(
         app,
         agent_card_routes=create_agent_card_routes(agent_card=agent_card),
-        jsonrpc_routes=create_jsonrpc_routes(request_handler=request_handler, rpc_url="/a2a/jsonrpc"),
+        jsonrpc_routes=create_jsonrpc_routes(
+            request_handler=request_handler, rpc_url="/a2a/jsonrpc", enable_v0_3_compat=True
+        ),
         rest_routes=create_rest_routes(request_handler=request_handler, path_prefix="/a2a/rest"),
     )
 

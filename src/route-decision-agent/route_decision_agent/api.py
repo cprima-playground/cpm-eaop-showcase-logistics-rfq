@@ -17,6 +17,7 @@ from a2a.server.routes import (
 )
 from a2a.server.tasks.inmemory_task_store import InMemoryTaskStore
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
+from a2a.utils.constants import PROTOCOL_VERSION_0_3, PROTOCOL_VERSION_1_0
 from fastapi import FastAPI
 
 from rfq_common.app import create_app
@@ -50,11 +51,17 @@ def _agent_card(public_url: str) -> AgentCard:
             )
         ],
         supported_interfaces=[
+            # Both genuinely accepted at this URL (enable_v0_3_compat=True
+            # below) -- a2a.client prefers the exact "1.0" match, falling
+            # back to 0.3 only for a client that can't do better.
             AgentInterface(
                 protocol_binding="JSONRPC",
-                # protocol_version deliberately left unset -- see
-                # skills/a2a-agent-card/SKILL.md for why an explicit "1.0"
-                # breaks the served card's legacy `url` field.
+                protocol_version=PROTOCOL_VERSION_1_0,
+                url=f"{public_url}/a2a/jsonrpc",
+            ),
+            AgentInterface(
+                protocol_binding="JSONRPC",
+                protocol_version=PROTOCOL_VERSION_0_3,
                 url=f"{public_url}/a2a/jsonrpc",
             ),
         ],
@@ -128,7 +135,9 @@ def build_app(
     add_a2a_routes_to_fastapi(
         app,
         agent_card_routes=create_agent_card_routes(agent_card=agent_card),
-        jsonrpc_routes=create_jsonrpc_routes(request_handler=request_handler, rpc_url="/a2a/jsonrpc"),
+        jsonrpc_routes=create_jsonrpc_routes(
+            request_handler=request_handler, rpc_url="/a2a/jsonrpc", enable_v0_3_compat=True
+        ),
         rest_routes=create_rest_routes(request_handler=request_handler, path_prefix="/a2a/rest"),
     )
 
