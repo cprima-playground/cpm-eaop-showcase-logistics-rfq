@@ -54,6 +54,14 @@ services:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: rfq-dev-admin
       KC_PROXY_HEADERS: xforwarded
+      # Fixed issuer regardless of request path -- without this, a token
+      # minted via Caddy/:8081 (external Host) carries a different `iss`
+      # than what an MCP server's internal http://keycloak:8080 call
+      # computes for itself, so introspection sees active:false for a
+      # genuinely valid token. Confirmed by direct reproduction (M7
+      # re-auth work): external introspection said active:true, tms-mcp's
+      # own internal introspection of the identical token said false.
+      KC_HOSTNAME: https://keycloak.rfq-showcase.localhost
     ports:
       - "8081:8080"   # carve-out: admin console direct access
     volumes:
