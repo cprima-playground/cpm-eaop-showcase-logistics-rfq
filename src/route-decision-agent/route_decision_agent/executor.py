@@ -32,6 +32,7 @@ from a2a.server.tasks.task_updater import TaskUpdater
 from a2a.types import Message, Part, Role, SendMessageRequest, TaskState
 from opentelemetry import metrics, trace
 
+from rfq_common.a2a_context import skill_from_metadata
 from rfq_common.mcp_auth import AuthenticationError, authenticate_request, build_token_verifier
 from rfq_common.pdp import PolicyBundle
 from rfq_common.pdp.entities import ref
@@ -140,7 +141,7 @@ class RouteRecommendationExecutor(AgentExecutor):
             await updater.failed(message=updater.new_agent_message(parts=[Part(text=f"authentication failed: {exc}")]))
             return False
 
-        skill = context.metadata.get("skill") if context.metadata else None
+        skill = skill_from_metadata(context)
         if skill != SKILL_ID:
             await updater.failed(message=updater.new_agent_message(
                 parts=[Part(text=f"unsupported skill {skill!r} -- this agent only supports {SKILL_ID!r}")]))
