@@ -10,7 +10,13 @@ WORKDIR /app
 COPY . /app
 WORKDIR /app/src/mock-qms
 
-RUN pip install --no-cache-dir uv && uv sync --frozen
+# --mount=type=cache: BuildKit-internal package cache, NOT baked into the
+# final image layer -- persists across builds/rebuilds of this service
+# (and any other service reusing the same id), so a slow/flaky path to
+# pypi.org only has to succeed once per package, not once per build.
+RUN --mount=type=cache,target=/root/.cache/pip,id=pip-cache \
+    --mount=type=cache,target=/root/.cache/uv,id=uv-cache \
+    pip install uv && uv sync --frozen
 
 # SERVICE_PORT is a bind-only detail (GATEWAY-FIRST: external identity is a
 # hostname, not this port) -- baked in as the default, override via compose
