@@ -1,0 +1,57 @@
+# M5.9 local dev target -- OTLP in, Prometheus + Tempo out. Runs via
+# infra/observability/docker-compose.yml, IaC (not hand-run `docker run`).
+# `service.name` DNS below refers to COMPOSE SERVICE NAMES (tempo,
+# prometheus), not container_name -- this file's hostnames must stay in
+# sync with docker-compose.yml's service keys.
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch: {}
+  # Guards against the collector itself OOMing under a runaway local
+  # smoke-test loop -- cheap insurance, not tuned for any real load.
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 200
+    spike_limit_mib: 50
+
+extensions:
+  # No Docker-level HEALTHCHECK for this container is possible -- the
+  # otel-collector-contrib image ships no shell (confirmed: `docker run
+  # --entrypoint sh ... ` fails, "sh": executable file not found), so
+  # there's no CMD Docker can exec inside it. This extension is still
+  # real and useful (a future k8s/GCP deployment's readiness probe can
+  # hit :13133 directly, no exec needed) -- it's the honest alternative,
+  # not a workaround pretending to be a Docker healthcheck.
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+exporters:
+  prometheus:
+    # 0.0.0.0 is fine here -- this port is NOT published to the host
+    # (see docker-compose.yml); only other containers on the compose
+    # network (prometheus) can reach it at all.
+    endpoint: 0.0.0.0:8889
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+  debug:
+    verbosity: basic
+
+service:
+  extensions: [health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlp/tempo, debug]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [prometheus, debug]

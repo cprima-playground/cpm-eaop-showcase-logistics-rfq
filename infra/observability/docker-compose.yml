@@ -1,0 +1,111 @@
+# M5.9 local observability stack -- IaC for the 4 containers this
+# milestone needs (Collector, Tempo, Prometheus, Grafana). Deliberately
+# SEPARATE from infra/compose.yaml (the app topology M6-pre owns) --
+# independently bootable/disposable: `docker compose up -d` / `down`,
+# no coupling to app service lifecycle.
+#
+# Telemetry is NOT persisted across `down` on purpose (no named volumes)
+# -- this is a local dev observability stack, not a retention system;
+# re-run your smoke test after `up` if you need fresh data. Tempo's own
+# compactor.block_retention (tempo.yaml) still governs retention WHILE
+# the stack is up, so long-running local sessions don't grow unbounded.
+#
+# Host port exposure is deliberately minimal:
+#   4317/4318 (OTLP)  -- host-run apps (uv run, pre-M6-pre) send here
+#   3200 (Tempo)       -- direct API debugging only
+#   9090 (Prometheus)  -- direct query/debugging only
+#   3000 (Grafana)      -- the primary human-facing UI
+#   8889 (collector's Prometheus exporter) -- INTERNAL ONLY, not
+#     published; only `prometheus` (same compose network) scrapes it.
+#
+# Under M6-pre, containerized apps join this same network and reach the
+# collector at `otel-collector:4317` instead of `localhost:4317` -- same
+# instrumentation, only the network address changes (no rewrite).
+name: rfq-showcase-otel
+
+services:
+  tempo:
+    image: grafana/tempo:2.6.1
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ./tempo.yaml:/etc/tempo.yaml:ro
+    ports:
+      - "3200:3200"   # direct debugging only -- Grafana reaches it via the compose network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3200/ready"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.112.0
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro
+    ports:
+      - "4317:4317"   # OTLP gRPC -- host-run apps need this until M6-pre
+      - "4318:4318"   # OTLP HTTP -- same
+      # 8889 (Prometheus exporter) intentionally NOT published -- internal-only,
+      # reached by the `prometheus` service over the compose network.
+    # No Docker-level healthcheck: the image ships no shell (verified --
+    # `--entrypoint sh` fails to exec), so there's no CMD to run inside
+    # it. The health_check extension (config, :13133) is real and usable
+    # by a future non-Docker-exec readiness probe (k8s, GCP) -- just not
+    # by Compose's own healthcheck mechanism. depends_on below can only
+    # use service_started for this service, not service_healthy -- a
+    # real constraint, not an oversight.
+    depends_on:
+      tempo:
+        condition: service_healthy
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"   # direct query/debugging only
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    depends_on:
+      otel-collector:
+        condition: service_started   # can't be service_healthy -- see above
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana-oss:11.3.1
+    volumes:
+      - ./grafana-provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "3000:3000"   # primary human-facing observability UI
+    environment:
+      # Anonymous Admin is fine STRICTLY for local dev -- explicitly
+      # forbidden in test/prod-demo (M5.9's own deployment.environment
+      # split governs this; a GCP/test deployment of this stack must NOT
+      # reuse this compose file's auth posture unchanged).
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: "Admin"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      # 120s, not 10s -- no persistent volume (telemetry is disposable by
+      # design, see file header), so every `up` re-runs Grafana's full
+      # SQLite migration set from scratch. Measured locally: ~90-100s on
+      # a cold container. A short start_period let the healthcheck's
+      # failure count exceed `retries` WHILE migrations were still
+      # running, flipping the container to "unhealthy" for a fully
+      # healthy service -- found by watching it happen, not guessed.
+      start_period: 120s
+    depends_on:
+      prometheus:
+        condition: service_healthy
+      tempo:
+        condition: service_healthy
+    restart: unless-stopped
