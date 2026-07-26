@@ -58,60 +58,60 @@ spikes/repricing/        the spike that would verify it (mocks)
 The authorization + identity artifacts here **copy** cpm-eaop shapes so the two
 stay consistent. `TARGET` = design intent that does not yet exist in cpm-eaop.
 
-| This showcase | Mirrors (cpm-eaop) | Notes |
-| --- | --- | --- |
-| `business/actions.yaml` | `data/policies/actions.yaml` | dotted names; `principals`/`resources`/`context` typing. Authored, never generated. |
-| `authorization/authz-projection.yaml` | `data/policies/authz-projection.yaml` | coupling firewall; only `member_of`→`Group` is a parent; everything else a typed attribute; `namespace: Agentic`. |
-| `authorization/agentic.cedarschema` | `data/policies/agentic.cedarschema` | **GENERATED** from projection+actions — not authored here (see note in file). |
-| `authorization/policies.cedar` | `data/policies/policies.cedar` | `@id/@version/@owner/@description` + `@obligations("csv")`; `forbid`>`permit`; conditions read resolved attrs; uids `Agentic::Type::"id"`. |
-| `authorization/obligations.yaml` | `data/policies/obligations.yaml` | `version:` + id→**flat** payload; Cedar never sees obligations. |
-| `business/decisions.md` | `docs/policies/decisions.md` | table `# \| Question \| action \| principal \| resource \| context \| status \| policy id(s)`; `proposed→modeled→enforced`. |
-| method | `docs/policies/domain-to-cedar-runbook.md` | decision-question first, Cedar last, never hand-edit the schema. |
-| `agents/catalog.yaml` | `data/agents/hello-agent-*.yaml` | `caller_identity.keycloak_client` is load-bearing (drives `kind=agent`). |
-| `identity/actors.yaml` | `data/identity/{groups,users,group_memberships}` | department/BU from group path→cost_center, not inline. |
-| `identity/claims-contract.md` | `src/spike/model/identity.py` | claim keys: scope/scp · roles · groups→member_of · tid→trust_domain · active. |
-| Entra adapter note | `src/spike/entra/principal.py` | `normalize_claims` layer (scp→scope, app-only, MSA tenant). |
-| `identity/terraform/` `TARGET` | `infra/entra/main.tf` | client-secret pattern + real fixes. WIF federated creds + YAML→tfvars generator = `TARGET`. |
-| `interfaces/a2a/` | `src/spike/a2a/hello_a2a/agent-card.json` | a2a-sdk 1.1 card shape. |
-| `interfaces/mcp/`, `interfaces/api/` `TARGET` | — none in cpm-eaop — | no MCP server / no committed OpenAPI exist; green-field. |
-| `scenarios/*` + spike gating | `tests/test_model.py`, `tests/spike/fixtures/entra/` | `_sidecar_up()` skip-gate, `mock_pdp` vs `pdp`, `test_int_*`; frozen fixtures, patterned GUIDs. |
+| This showcase                                 | Mirrors (cpm-eaop)                                   | Notes                                                                                                                                      |
+| --------------------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `business/actions.yaml`                       | `data/policies/actions.yaml`                         | dotted names; `principals`/`resources`/`context` typing. Authored, never generated.                                                        |
+| `authorization/authz-projection.yaml`         | `data/policies/authz-projection.yaml`                | coupling firewall; only `member_of`→`Group` is a parent; everything else a typed attribute; `namespace: Agentic`.                          |
+| `authorization/agentic.cedarschema`           | `data/policies/agentic.cedarschema`                  | **GENERATED** from projection+actions — not authored here (see note in file).                                                              |
+| `authorization/policies.cedar`                | `data/policies/policies.cedar`                       | `@id/@version/@owner/@description` + `@obligations("csv")`; `forbid`>`permit`; conditions read resolved attrs; uids `Agentic::Type::"id"`. |
+| `authorization/obligations.yaml`              | `data/policies/obligations.yaml`                     | `version:` + id→**flat** payload; Cedar never sees obligations.                                                                            |
+| `business/decisions.md`                       | `docs/policies/decisions.md`                         | table `# \| Question \| action \| principal \| resource \| context \| status \| policy id(s)`; `proposed→modeled→enforced`.                |
+| method                                        | `docs/policies/domain-to-cedar-runbook.md`           | decision-question first, Cedar last, never hand-edit the schema.                                                                           |
+| `agents/catalog.yaml`                         | `data/agents/hello-agent-*.yaml`                     | `caller_identity.keycloak_client` is load-bearing (drives `kind=agent`).                                                                   |
+| `identity/actors.yaml`                        | `data/identity/{groups,users,group_memberships}`     | department/BU from group path→cost_center, not inline.                                                                                     |
+| `identity/claims-contract.md`                 | `src/spike/model/identity.py`                        | claim keys: scope/scp · roles · groups→member_of · tid→trust_domain · active.                                                              |
+| Entra adapter note                            | `src/spike/entra/principal.py`                       | `normalize_claims` layer (scp→scope, app-only, MSA tenant).                                                                                |
+| `identity/terraform/` `TARGET`                | `infra/entra/main.tf`                                | client-secret pattern + real fixes. WIF federated creds + YAML→tfvars generator = `TARGET`.                                                |
+| `interfaces/a2a/`                             | `src/spike/a2a/hello_a2a/agent-card.json`            | a2a-sdk 1.1 card shape.                                                                                                                    |
+| `interfaces/mcp/`, `interfaces/api/` `TARGET` | — none in cpm-eaop —                                 | no MCP server / no committed OpenAPI exist; green-field.                                                                                   |
+| `scenarios/*` + spike gating                  | `tests/test_model.py`, `tests/spike/fixtures/entra/` | `_sidecar_up()` skip-gate, `mock_pdp` vs `pdp`, `test_int_*`; frozen fixtures, patterned GUIDs.                                            |
 
 ## Status
 
-| Area | Design | Mock | Spike | Verified |
-| --- | :--: | :--: | :--: | :--: |
-| Business process (repricing) | ✓ | — | — | — |
-| Domain actions + decisions (D1–D9, all 7 thresholds) | ✓ | — | — | — |
-| Cedar authorization | ✓ | — | — | — |
-| Systems of record + provenance | ✓ | — | — | — |
-| Mock system architecture (capability matrix + enterprise frontend) | ✓ | — | — | — |
-| Tech stack (ADR-006) | ✓ proposed | — | — | — |
-| Deploy → GCP mapping + container strategy (plan) | ✓ `TARGET` | — | — | — |
-| Identity (actors/groups) | ✓ | — | — | — |
-| Agents (3) | ✓ | — | — | — |
-| FX API | ✓ `TARGET` | — | — | — |
-| MCP servers/tools | ✓ `TARGET` | — | — | — |
-| A2A handoff | ✓ | — | — | — |
-| Reference data (real UN/LOCODE + synthetic ops) | ✓ | — | — | — |
-| Scenario 01 (FX flips lane) | ✓ | — | — | — |
-| Scenario 02 (route unavailable) | ✓ | — | — | — |
-| Scenario 03 (approval loop / HITL) | ✓ | — | — | — |
-| Scenario 04 (combined route + FX shock — flagship) | ✓ | — | — | — |
-| Scenario packs (5, reproducible) | ✓ | — | — | — |
-| Fixtures (given-state) | ✓ | — | — | — |
-| Determinism / running (RUNNING.md) | ✓ | — | — | — |
-| API contracts (OpenAPI 3.1 per API) | ✓ | — | — | — |
-| Theming (ADR-007 · passable colorscheme) | ✓ | — | — | — |
-| Build plan (phased) | ✓ | — | — | — |
-| **Phase 1 — `rfq_common` foundation** | ✓ | — | ✓ **57 tests green** | ✓ |
-| **Policy-evaluation spike (scenarios 01–04 + failures)** | ✓ | — | ✓ **7 tests green** | ✓ |
-| **Phase 2 — mock-fx (consumes masterdata via API; live ECB anchor)** | ✓ | ✓ | ✓ **59 tests, verified live** | ✓ |
-| **Phase 2 — mock-masterdata (ADR-010, 9 domains)** | ✓ | ✓ | ✓ **24 tests, verified live** | ✓ |
-| **Phase 2 — mock-tms (topology + availability overlay)** | ✓ | ✓ | ✓ **38 tests, verified live** | ✓ |
-| **Phase 2 — mock-rate (carrier rates, exercises Party)** | ✓ | ✓ | ✓ **25 tests, verified live** | ✓ |
-| **Ops Dashboard (first frontend + human SSO, de-risks QMS)** | ✓ | ✓ | ✓ **44 tests, verified live incl. real Keycloak login** | ✓ |
-| Environments (dev·test·prod) + agent identity + persistence | ✓ decided | — | — | — |
-| Credential inventory + management (ADR-009: Vault-dev/Secret Manager) | ✓ decided | ✓ **live** | ✓ | ✓ |
+| Area                                                                  |   Design   |    Mock    |                          Spike                          | Verified |
+| --------------------------------------------------------------------- | :--------: | :--------: | :-----------------------------------------------------: | :------: |
+| Business process (repricing)                                          |     ✓      |     —      |                            —                            |    —     |
+| Domain actions + decisions (D1–D9, all 7 thresholds)                  |     ✓      |     —      |                            —                            |    —     |
+| Cedar authorization                                                   |     ✓      |     —      |                            —                            |    —     |
+| Systems of record + provenance                                        |     ✓      |     —      |                            —                            |    —     |
+| Mock system architecture (capability matrix + enterprise frontend)    |     ✓      |     —      |                            —                            |    —     |
+| Tech stack (ADR-006)                                                  | ✓ proposed |     —      |                            —                            |    —     |
+| Deploy → GCP mapping + container strategy (plan)                      | ✓ `TARGET` |     —      |                            —                            |    —     |
+| Identity (actors/groups)                                              |     ✓      |     —      |                            —                            |    —     |
+| Agents (3)                                                            |     ✓      |     —      |                            —                            |    —     |
+| FX API                                                                | ✓ `TARGET` |     —      |                            —                            |    —     |
+| MCP servers/tools                                                     | ✓ `TARGET` |     —      |                            —                            |    —     |
+| A2A handoff                                                           |     ✓      |     —      |                            —                            |    —     |
+| Reference data (real UN/LOCODE + synthetic ops)                       |     ✓      |     —      |                            —                            |    —     |
+| Scenario 01 (FX flips lane)                                           |     ✓      |     —      |                            —                            |    —     |
+| Scenario 02 (route unavailable)                                       |     ✓      |     —      |                            —                            |    —     |
+| Scenario 03 (approval loop / HITL)                                    |     ✓      |     —      |                            —                            |    —     |
+| Scenario 04 (combined route + FX shock — flagship)                    |     ✓      |     —      |                            —                            |    —     |
+| Scenario packs (5, reproducible)                                      |     ✓      |     —      |                            —                            |    —     |
+| Fixtures (given-state)                                                |     ✓      |     —      |                            —                            |    —     |
+| Determinism / running (RUNNING.md)                                    |     ✓      |     —      |                            —                            |    —     |
+| API contracts (OpenAPI 3.1 per API)                                   |     ✓      |     —      |                            —                            |    —     |
+| Theming (ADR-007 · passable colorscheme)                              |     ✓      |     —      |                            —                            |    —     |
+| Build plan (phased)                                                   |     ✓      |     —      |                            —                            |    —     |
+| **Phase 1 — `rfq_common` foundation**                                 |     ✓      |     —      |                  ✓ **57 tests green**                   |    ✓     |
+| **Policy-evaluation spike (scenarios 01–04 + failures)**              |     ✓      |     —      |                   ✓ **7 tests green**                   |    ✓     |
+| **Phase 2 — mock-fx (consumes masterdata via API; live ECB anchor)**  |     ✓      |     ✓      |              ✓ **59 tests, verified live**              |    ✓     |
+| **Phase 2 — mock-masterdata (ADR-010, 9 domains)**                    |     ✓      |     ✓      |              ✓ **24 tests, verified live**              |    ✓     |
+| **Phase 2 — mock-tms (topology + availability overlay)**              |     ✓      |     ✓      |              ✓ **38 tests, verified live**              |    ✓     |
+| **Phase 2 — mock-rate (carrier rates, exercises Party)**              |     ✓      |     ✓      |              ✓ **25 tests, verified live**              |    ✓     |
+| **Ops Dashboard (first frontend + human SSO, de-risks QMS)**          |     ✓      |     ✓      | ✓ **44 tests, verified live incl. real Keycloak login** |    ✓     |
+| Environments (dev·test·prod) + agent identity + persistence           | ✓ decided  |     —      |                            —                            |    —     |
+| Credential inventory + management (ADR-009: Vault-dev/Secret Manager) | ✓ decided  | ✓ **live** |                            ✓                            |    ✓     |
 
 ## Layout
 
