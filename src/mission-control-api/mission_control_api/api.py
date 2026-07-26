@@ -36,6 +36,8 @@ from rfq_common.settings import ServiceSettings
 
 from . import settings
 from .health import health_report
+from .identity_drift import identity_drift_report
+from .identity_model import identities_report
 from .policy_model import policies_report, policy_drift
 from .registry import ObservedServiceRegistry
 from .topology import topology as build_topology
@@ -117,6 +119,14 @@ def build_app(
     def get_policies_drift(_principal=Depends(_require_authenticated)) -> dict:
         from rfq_common.settings import CedarSettings
         return policy_drift(CedarSettings.from_env().cedar_url)
+
+    @api_v1.get("/identities")
+    def get_identities(_principal=Depends(_require_authenticated)) -> dict:
+        return identities_report(root)
+
+    @api_v1.get("/identity-drift")
+    def get_identity_drift(_principal=Depends(_require_authenticated)) -> dict:
+        return identity_drift_report()
 
     app.include_router(api_v1)
 
