@@ -1,0 +1,117 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Route geometry viewer</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    html, body { height: 100%; margin: 0; font-family: system-ui, sans-serif; }
+    #map { position: absolute; top: 0; bottom: 0; left: 260px; right: 0; }
+    #sidebar { position: absolute; top: 0; bottom: 0; left: 0; width: 260px; overflow-y: auto;
+               background: #111; color: #eee; box-sizing: border-box; padding: 10px; }
+    #sidebar h1 { font-size: 14px; margin: 0 0 8px; }
+    .route-item { padding: 4px 6px; margin-bottom: 2px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+    .route-item:hover { background: #333; }
+    .route-item.active { background: #2563eb; }
+    .legend { margin-top: 12px; font-size: 11px; line-height: 1.6; }
+    .legend span { display: inline-block; width: 12px; height: 3px; margin-right: 6px; vertical-align: middle; }
+  </style>
+</head>
+<body>
+  <div id="sidebar">
+    <h1>Routes</h1>
+    <div id="route-list"></div>
+    <div class="legend">
+      <div><span style="background:#2563eb"></span>ocean</div>
+      <div><span style="background:#dc2626"></span>air</div>
+      <div><span style="background:#16a34a"></span>rail</div>
+      <div><span style="background:#ea580c"></span>road</div>
+      <div><span style="background:#a855f7"></span>keepout zone</div>
+    </div>
+  </div>
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const MODE_COLOR = { ocean: "#2563eb", air: "#dc2626", rail: "#16a34a", road: "#ea580c" };
+
+    const map = L.map("map", { worldCopyJump: true }).setView([30, 40], 3);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "&copy; OpenStreetMap contributors",
+      maxZoom: 12,
+    }).addTo(map);
+
+    // dedicated pane below the default overlayPane (400) so keepout zones
+    // never sit visually on top of route lines / port markers.
+    map.createPane("zones");
+    map.getPane("zones").style.zIndex = 350;
+
+    const layerByRoute = {};
+
+    async function loadKeepoutZones() {
+      const zones = await (await fetch("/api/keepout-zones")).json();
+      const style = { pane: "zones", color: "#a855f7", weight: 1, fillColor: "#a855f7", fillOpacity: 0.15 };
+      for (const z of zones) {
+        const layer = z.circle
+          ? L.circle([z.circle.lat, z.circle.lon], { ...style, radius: z.circle.radius_km * 1000 })
+          : L.polygon(z.polygon.map(([lon, lat]) => [lat, lon]), style);
+        layer.bindTooltip(z.name).addTo(map);
+      }
+    }
+
+    async function loadLocations() {
+      const locs = await (await fetch("/api/locations")).json();
+      for (const loc of locs) {
+        L.circleMarker([loc.lat, loc.lon], { radius: 3, color: "#999", weight: 1, fillOpacity: 0.8 })
+          .bindTooltip(`${loc.name} (${loc.locode})`)
+          .addTo(map);
+      }
+    }
+
+    function styleFor(feature) {
+      return { color: MODE_COLOR[feature.properties.mode] || "#999", weight: 2.5, opacity: 0.85 };
+    }
+
+    async function loadRoute(routeId) {
+      if (layerByRoute[routeId]) return layerByRoute[routeId];
+      const geojson = await (await fetch(`/api/geometry/${routeId}.geojson`)).json();
+      const layer = L.geoJSON(geojson, {
+        style: styleFor,
+        onEachFeature: (f, l) => l.bindTooltip(`${f.properties.mode}: ${f.properties.from} -> ${f.properties.to}`),
+      });
+      layerByRoute[routeId] = layer;
+      return layer;
+    }
+
+    let activeRouteId = null;
+
+    async function showRoute(routeId, itemEl) {
+      document.querySelectorAll(".route-item").forEach((el) => el.classList.remove("active"));
+      itemEl.classList.add("active");
+      map.eachLayer((l) => { if (l.routeLayer) map.removeLayer(l); });
+      const layer = await loadRoute(routeId);
+      layer.routeLayer = true;
+      layer.addTo(map);
+      map.fitBounds(layer.getBounds(), { padding: [20, 20] });
+      activeRouteId = routeId;
+    }
+
+    async function init() {
+      await loadKeepoutZones();
+      await loadLocations();
+      const routes = await (await fetch("/api/routes")).json();
+      const list = document.getElementById("route-list");
+      for (const r of routes) {
+        const el = document.createElement("div");
+        el.className = "route-item";
+        el.textContent = `${r.id} (${r.lane}${r.contracted ? ", contracted" : ""})`;
+        el.onclick = () => showRoute(r.id, el);
+        list.appendChild(el);
+      }
+      if (routes.length) showRoute(routes[0].id, list.firstChild);
+    }
+
+    init();
+  </script>
+</body>
+</html>

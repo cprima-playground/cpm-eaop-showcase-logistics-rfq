@@ -1,0 +1,196 @@
+# Hand-authored maritime waypoint graph — chokepoints + corridors between them.
+# The GRAPH TOPOLOGY (which chokepoints a lane passes through) is curated by
+# hand, per geo.md's "known waypoint graph" idea. The GEOMETRY of each edge is
+# no longer a naive direct geodesic: a raw geodesic chord can cut straight
+# across land between two water points (e.g. Cape-of-Good-Hope->Hamburg, or
+# Malacca->Suez through India/Iran -- both bulge toward the pole and land in
+# between). Every edge is instead resolved by tools/geo/ocean_astar.py against the
+# real Natural Earth coastline, except `kind: canal`, which is an artificial
+# waterway too narrow for any coastline dataset to represent and is instead
+# a trusted straight hop between its two hand-placed endpoints.
+#
+# Ports are graph nodes in their own right (coords copied from locations.jsonl),
+# so port->graph snapping is exact (zero-length connector) rather than nearest-
+# neighbor.
+
+nodes:
+  # chokepoints
+  MALACCA_W:      {name: "Strait of Malacca (west, off Singapore)", lat: 1.26,   lon: 103.83}
+  # A single MALACCA_W->BAB_EL_MANDEB hop (direct or grid A*) grazed Sri
+  # Lanka/southern India: technically "clear" per point-sampling, visually
+  # hugging. Hand-plotted waypoints well clear of both give real margin.
+  # The strait exit itself (Sumatra's tip is close by) stays `ocean`/A* --
+  # a segment hop there clipped Sumatra; A* already handles it fine.
+  ANDAMAN_SEA:        {name: "Andaman Sea, west of Sumatra",          lat: 5.0,    lon: 95.0}
+  # CNSHA/CNNGB -> MALACCA_W as one A* hop technically avoided land but
+  # visually hugged Vietnam's coast. A straight `segment` here clips Taiwan/
+  # Hainan on departure from China -- unlike the open-water crossings above,
+  # this stays `ocean`/A* (still avoids the coast correctly) with an extra
+  # waypoint so the topology pushes it further offshore.
+  SOUTH_CHINA_SEA_MID: {name: "South China Sea, mid-crossing",        lat: 12.0,   lon: 113.0}
+  SOUTH_OF_SRI_LANKA: {name: "Indian Ocean, south of Sri Lanka",     lat: 2.0,    lon: 78.0}
+  ARABIAN_SEA_MID:    {name: "Arabian Sea, mid-crossing",            lat: 6.0,    lon: 65.0}
+  # Cape-of-Good-Hope escalation for the China-Europe lane too, not just
+  # Middle-East-Europe (MEA-CAPE) -- a Suez-blocked scenario needs a China
+  # reroute around Africa, not just a Jebel Ali one. Branches off
+  # SOUTH_OF_SRI_LANKA, well clear of Madagascar, into the existing
+  # ZADUR/CAPE_OF_GOOD_HOPE nodes MEA-CAPE already uses.
+  EAST_OF_MADAGASCAR:  {name: "Indian Ocean, east of Madagascar",     lat: -22.0,  lon: 52.0}
+  SOUTH_OF_MADAGASCAR: {name: "Indian Ocean, south of Madagascar",    lat: -28.0,  lon: 44.0}
+  # ARABIAN_SEA_MID -> BAB_EL_MANDEB direct cut across Yemen's coast (corner-
+  # cutting, same failure mode). Chain through the real Gulf of Aden route,
+  # south of Socotra through the Guardafui channel.
+  SOUTH_OF_SOCOTRA:    {name: "South of Socotra",                    lat: 11.5,   lon: 54.0}
+  GUARDAFUI_CHANNEL:   {name: "Guardafui Channel, north of the Horn of Africa", lat: 12.5, lon: 50.5}
+  GULF_OF_ADEN_MID:    {name: "Gulf of Aden, mid-crossing",          lat: 12.2,   lon: 48.0}
+  HORMUZ:         {name: "Strait of Hormuz",                        lat: 26.57,  lon: 56.25}
+  BAB_EL_MANDEB:  {name: "Bab-el-Mandeb (Gulf of Aden entrance)",    lat: 12.58,  lon: 43.33}
+  # The strait itself (~30km wide) is too narrow for the buffered grid to
+  # resolve -- Dahlak/Hanish archipelago right past it makes it worse. Split
+  # into two nodes so no single A* run has to cross the pinch -- same fix as
+  # the river-port sea mouths below, real strait instead of a river this time.
+  BAB_EL_MANDEB_N: {name: "Red Sea proper, past the strait",         lat: 15.5,   lon: 41.8}
+  # BAB_EL_MANDEB_N -> SUEZ_SOUTH direct is ~1900km, too long for one grid's
+  # resolution to also resolve the Gulf of Suez's narrows at the far end.
+  # An intermediate waypoint on the Red Sea's real curve keeps each hop a
+  # few hundred km, so target-cell resolution stays fine enough throughout.
+  RED_SEA_MID:    {name: "Central Red Sea, off Port Sudan",          lat: 20.0,   lon: 38.5}
+  SUEZ_SOUTH:     {name: "Suez, Gulf of Suez",                      lat: 29.97,  lon: 32.55}
+  SUEZ_NORTH:     {name: "Port Said, Mediterranean entrance",       lat: 31.26,  lon: 32.31}
+  # Same hugging problem crossing the Mediterranean (threading north of
+  # Crete into the Aegean, clipping the Nile Delta/Peloponnese/Corsica,
+  # skimming Spain's coast). Buoy chain keeps real clearance from all of it.
+  NORTH_OF_PORT_SAID: {name: "Mediterranean, just off Port Said",    lat: 32.3,   lon: 32.0}
+  SOUTH_OF_CRETE:    {name: "Mediterranean, south of Crete",         lat: 34.0,   lon: 25.0}
+  CAPE_MATAPAN:      {name: "Cape Matapan, southern Peloponnese",    lat: 35.8,   lon: 21.7}
+  CAPE_MALEA:        {name: "Cape Malea, southeastern Peloponnese",  lat: 35.7,   lon: 23.5}
+  EAST_OF_HYDRA:     {name: "Aegean, east of Hydra island",          lat: 37.3,   lon: 23.7}
+  SOUTH_OF_SICILY:   {name: "Mediterranean, south of Sicily",        lat: 35.5,   lon: 14.0}
+  TYRRHENIAN_MID:    {name: "Tyrrhenian Sea, mid-crossing",          lat: 38.5,   lon: 11.0}
+  NORTH_OF_CORSICA:  {name: "Ligurian Sea, north of Corsica",        lat: 43.3,   lon: 9.5}
+  NORTH_OF_CAPE_BON: {name: "Sicilian Channel, north of Cape Bon",   lat: 37.6,   lon: 11.2}
+  SOUTH_OF_SARDINIA: {name: "Mediterranean, south of Sardinia",      lat: 37.8,   lon: 8.0}
+  OFFSHORE_ALGERIA:  {name: "Mediterranean, offshore Algeria",       lat: 37.0,   lon: 2.0}
+  GIBRALTAR:      {name: "Strait of Gibraltar",                     lat: 35.95,  lon: -5.60}
+  # Reaching the Baltic means threading Denmark's islands -- no single hop's
+  # grid resolution can resolve that maze (tried, failed even at 16x pad).
+  # Chained short waypoints along the real deep-draft lane (Skagerrak ->
+  # Kattegat -> Great Belt, the route large vessels use -- Oresund is
+  # shallower/narrower, Kiel Canal is far too small for ocean freight)
+  # keep each hop's span small enough for its own resolution to catch it.
+  SKAGERRAK:      {name: "Skagerrak, north of Jutland",              lat: 57.7,   lon: 8.0}
+  KATTEGAT:       {name: "Kattegat",                                 lat: 56.3,   lon: 11.3}
+  GREAT_BELT:     {name: "Great Belt, Denmark (deep-draft Baltic entrance)", lat: 55.35, lon: 10.9}
+  WESTERN_BALTIC: {name: "Western Baltic, past the Belt",            lat: 54.6,   lon: 12.8}
+  CAPE_OF_GOOD_HOPE: {name: "Cape of Good Hope",                    lat: -34.83, lon: 19.98}
+
+  # river-port sea mouths -- DEHAM/BEANR/NLRTM's own coordinates sit inland on
+  # a river/estuary (confirmed against Natural Earth: is_land is true there),
+  # invisible to any coastline dataset the same way Suez's canal cut is. Each
+  # gets a `kind: canal` connector out to open water, same treatment as Suez.
+  DEHAM_MOUTH: {name: "Elbe mouth, German Bight",      lat: 54.30, lon: 7.00}
+  BEANR_MOUTH: {name: "Scheldt mouth, North Sea",      lat: 51.50, lon: 2.80}
+  NLRTM_MOUTH: {name: "Nieuwe Waterweg mouth, North Sea", lat: 51.95, lon: 3.80}
+  # USNYC is the same story -- New York Harbor's real channel (Ambrose
+  # Channel -> Lower Bay -> the Verrazzano Narrows -> Upper Bay) isn't a
+  # straight line any generic land-polygon check will pass, at any single
+  # intermediate point tried. Trusted direct hop from open Atlantic, same
+  # as the European river mouths.
+  USNYC_MOUTH: {name: "Ambrose Channel approach, open Atlantic", lat: 40.45, lon: -73.83}
+  # CNSHA/CNNGB are the same story too -- both sit inland on the Yangtze
+  # delta / Hangzhou Bay, confirmed is_land -- discovered only once
+  # _nearest_navigable started actually verifying its connector segment
+  # instead of just checking the candidate cell itself was unblocked.
+  CNSHA_MOUTH: {name: "East China Sea, off the Yangtze mouth",  lat: 30.90, lon: 122.70}
+  CNNGB_MOUTH: {name: "East China Sea, off Ningbo/Zhoushan",    lat: 29.85, lon: 122.70}
+
+  # ports (coords must match systems/masterdata/fixtures/locations.jsonl)
+  CNSHA: {name: "Shanghai",     lat: 31.23,  lon: 121.47}
+  CNNGB: {name: "Ningbo",       lat: 29.87,  lon: 121.55}
+  DEHAM: {name: "Hamburg",      lat: 53.55,  lon: 9.99}
+  NLRTM: {name: "Rotterdam",    lat: 51.95,  lon: 4.14}
+  BEANR: {name: "Antwerp",      lat: 51.26,  lon: 4.40}
+  PLGDN: {name: "Gdansk",       lat: 54.35,  lon: 18.65}
+  GRPIR: {name: "Piraeus",      lat: 37.94,  lon: 23.65}
+  ITGOA: {name: "Genoa",        lat: 44.41,  lon: 8.93}
+  USLAX: {name: "Los Angeles",  lat: 33.74,  lon: -118.27}
+  USOAK: {name: "Oakland",      lat: 37.80,  lon: -122.32}
+  AEJEA: {name: "Jebel Ali",    lat: 25.01,  lon: 55.06}
+  ZADUR: {name: "Durban",       lat: -29.87, lon: 31.02}
+  USNYC: {name: "New York",     lat: 40.71,  lon: -74.01}
+
+# Edges are undirected. Weight (great-circle distance, for Dijkstra's choice
+# of topology) is computed at load time via pyproj -- not stored here, so it
+# can't drift from the coordinates above. `kind` defaults to "ocean" (path
+# resolved by ocean_astar.py against the coastline -- for short connector
+# hops between chokepoints, where that's reliable). `canal`/`segment` both
+# skip ocean_astar entirely and draw a trusted direct hop: `canal` for an
+# artificial cut or river mouth invisible to any coastline dataset, `segment`
+# for a long open-water corridor that's hand-plotted with real clearance
+# rather than left to A* -- which was found hugging/grazing real coastline
+# (Sri Lanka, Spain, Crete) on these long crossings even though each sampled
+# point technically tested clear.
+edges:
+  # Far East -> Malacca -> Indian Ocean -> Bab-el-Mandeb -> Red Sea -> Suez
+  - {edge: [CNSHA, CNSHA_MOUTH], kind: canal}
+  - {edge: [CNNGB, CNNGB_MOUTH], kind: canal}
+  - [CNSHA_MOUTH, SOUTH_CHINA_SEA_MID]
+  - [CNNGB_MOUTH, SOUTH_CHINA_SEA_MID]
+  - [SOUTH_CHINA_SEA_MID, MALACCA_W]
+  - [MALACCA_W, ANDAMAN_SEA]
+  - {edge: [ANDAMAN_SEA, SOUTH_OF_SRI_LANKA], kind: segment}
+  - {edge: [SOUTH_OF_SRI_LANKA, ARABIAN_SEA_MID], kind: segment}
+  # Cape-of-Good-Hope escalation branch (China-Europe, Suez blocked)
+  - {edge: [SOUTH_OF_SRI_LANKA, EAST_OF_MADAGASCAR], kind: segment}
+  - {edge: [EAST_OF_MADAGASCAR, SOUTH_OF_MADAGASCAR], kind: segment}
+  - {edge: [SOUTH_OF_MADAGASCAR, ZADUR], kind: segment}
+  - {edge: [ARABIAN_SEA_MID, SOUTH_OF_SOCOTRA], kind: segment}
+  - {edge: [SOUTH_OF_SOCOTRA, GUARDAFUI_CHANNEL], kind: segment}
+  - {edge: [GUARDAFUI_CHANNEL, GULF_OF_ADEN_MID], kind: segment}
+  - {edge: [GULF_OF_ADEN_MID, BAB_EL_MANDEB], kind: segment}
+  - [AEJEA, HORMUZ]
+  - [HORMUZ, BAB_EL_MANDEB]
+  - [BAB_EL_MANDEB, BAB_EL_MANDEB_N]
+  - [BAB_EL_MANDEB_N, RED_SEA_MID]
+  - [RED_SEA_MID, SUEZ_SOUTH]
+  - {edge: [SUEZ_SOUTH, SUEZ_NORTH], kind: canal}
+  - {edge: [SUEZ_NORTH, NORTH_OF_PORT_SAID], kind: segment}
+  - {edge: [NORTH_OF_PORT_SAID, SOUTH_OF_CRETE], kind: segment}
+  - {edge: [SOUTH_OF_CRETE, CAPE_MATAPAN], kind: segment}
+  - {edge: [CAPE_MATAPAN, CAPE_MALEA], kind: segment}
+  - {edge: [CAPE_MALEA, EAST_OF_HYDRA], kind: segment}
+  - {edge: [EAST_OF_HYDRA, GRPIR], kind: segment}
+  - {edge: [SOUTH_OF_CRETE, SOUTH_OF_SICILY], kind: segment}
+  - {edge: [SOUTH_OF_SICILY, TYRRHENIAN_MID], kind: segment}
+  - {edge: [TYRRHENIAN_MID, NORTH_OF_CORSICA], kind: segment}
+  - {edge: [NORTH_OF_CORSICA, ITGOA], kind: segment}
+  - {edge: [SOUTH_OF_SICILY, NORTH_OF_CAPE_BON], kind: segment}
+  - {edge: [NORTH_OF_CAPE_BON, SOUTH_OF_SARDINIA], kind: segment}
+  - {edge: [SOUTH_OF_SARDINIA, OFFSHORE_ALGERIA], kind: segment}
+  - {edge: [OFFSHORE_ALGERIA, GIBRALTAR], kind: segment}
+  - [GIBRALTAR, DEHAM_MOUTH]
+  - [GIBRALTAR, NLRTM_MOUTH]
+  - [GIBRALTAR, BEANR_MOUTH]
+  - [GIBRALTAR, SKAGERRAK]
+  - [SKAGERRAK, KATTEGAT]
+  - [KATTEGAT, GREAT_BELT]
+  - [GREAT_BELT, WESTERN_BALTIC]
+  - [WESTERN_BALTIC, PLGDN]
+  - {edge: [DEHAM_MOUTH, DEHAM], kind: canal}
+  - {edge: [BEANR_MOUTH, BEANR], kind: canal}
+  - {edge: [NLRTM_MOUTH, NLRTM], kind: canal}
+  - {edge: [USNYC_MOUTH, USNYC], kind: canal}
+
+  # Cape of Good Hope escalation (Suez blocked)
+  - [AEJEA, ZADUR]
+  - [ZADUR, CAPE_OF_GOOD_HOPE]
+  - [CAPE_OF_GOOD_HOPE, DEHAM_MOUTH]
+
+  # Transpacific (open ocean, no chokepoint)
+  - [CNSHA_MOUTH, USLAX]
+  - [CNSHA_MOUTH, USOAK]
+
+  # Transatlantic (open ocean, no chokepoint)
+  - [DEHAM_MOUTH, USNYC_MOUTH]
+  - [NLRTM_MOUTH, USNYC_MOUTH]
+  - [BEANR_MOUTH, USNYC_MOUTH]

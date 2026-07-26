@@ -1,0 +1,22 @@
+# Manual exclusion zones merged into the *buffered* blocked mask (never the
+# raw land test -- these are policy/precaution, not physical land). Brute
+# force on purpose: cheaper than modeling piracy risk, shoal areas Natural
+# Earth's land layer doesn't capture, or military exercise areas as real
+# routing costs.
+#
+# Each zone is either:
+#   - {name, circle: {lat, lon, radius_km}}        -- quick and simple
+#   - {name, polygon: [[lon, lat], [lon, lat], ...]} -- matches how real IMO/
+#     UKMTO High Risk Area advisories are actually published (coordinate
+#     lists, not circles -- a circle either over- or under-covers the real
+#     shape of an elongated corridor-style risk area).
+zones:
+  - name: "Gulf of Aden piracy risk area"
+    circle: {lat: 12.5, lon: 48.0, radius_km: 60}
+
+# Example (polygon):
+# zones:
+#   - name: "IMO High Risk Area (example)"
+#     polygon: [[45.0, 15.0], [52.0, 15.0], [52.0, 10.0], [45.0, 10.0]]
+#   - name: "Bermuda Triangle (joke -- replace with a real exclusion)"
+#     circle: {lat: 25.0, lon: -71.0, radius_km: 300}
