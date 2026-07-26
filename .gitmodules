@@ -1,0 +1,3 @@
+[submodule "vendor/a2aproject/a2a-inspector"]
+	path = vendor/a2aproject/a2a-inspector
+	url = https://github.com/cprima-forks/a2aproject-a2a-inspector.git
