@@ -111,19 +111,13 @@ flowchart LR
     review -->|Requirements complete?| complete{ }
     complete -->|No| clarify[Clarify with customer\nor Commercial]
     clarify --> brief
-    complete -->|Yes| evaluate[Lane Evaluation Agent\nfind feasible options]
-
-    evaluate --> policy1[Policy engine\ncheck permitted action]
-    policy1 --> tms[/TMS\nroute and capacity facts/]
-    policy1 --> rates[/Rate system\ncarrier-rate facts/]
+    complete -->|Yes| tms[/TMS\nroute and capacity facts/]
+    tms --> rates[/Rate system\ncarrier-rate facts/]
     tms --> options[Compare feasible\nroute options]
     rates --> options
     options -->|Feasible option exists?| feasible{ }
     feasible -->|No| no_lane(( ))
-    feasible -->|Yes| recommend[Route Decision Agent\nprepare recommendation]
-
-    recommend --> a2a[Specialist hand-off\nrequest fresh capacity check]
-    a2a --> recommendation[/Route recommendation\nalternatives and evidence/]
+    feasible -->|Yes| recommendation[Transport Planner\nprepare route recommendation]
     recommendation -->|Fits cost and service needs?| fit{ }
     fit -->|Yes| planner[Transport Planner\nreview and accept plan]
     fit -->|No| exception[Record exception\nand prepare escalation]
@@ -139,13 +133,13 @@ flowchart LR
     planner -->|Route plan ready| finish(( ))
 
     classDef human fill:#e8f1ff,stroke:#3566a8,color:#111;
-    classDef agent fill:#eaf7ea,stroke:#3b7d3b,color:#111;
     classDef system fill:#fff4d6,stroke:#a87800,color:#111;
     classDef decision fill:#f5eaff,stroke:#7542a5,color:#111,font-size:10px;
-    class review,clarify,planner,manager,director human;
-    class evaluate,recommend,a2a agent;
-    class brief,tms,rates,recommendation,quote system;
+    classDef event fill:#ffffff,stroke:#666666,color:#111,font-size:10px;
+    class review,clarify,options,recommendation,exception,planner,manager,approve,director human;
+    class brief,tms,rates,quote system;
     class complete,feasible,fit,approval,limit decision;
+    class start,no_lane,finish event;
 ```
 
 ### 1. Understand the shipment need
@@ -175,7 +169,7 @@ flowchart LR
 3. Identify anything that requires clarification from Commercial, the customer,
    or a carrier.
 
-**The planner owns this understanding.** No agent can infer an important
+**The planner owns this understanding.** No system can infer an important
 customer commitment that has not been recorded or explained.
 
 ### 2. Find feasible transport options
@@ -184,15 +178,13 @@ customer commitment that has not been recorded or explained.
 
 ```mermaid
 flowchart LR
-    evaluate[Lane Evaluation Agent<br/>find feasible options]
-    policy[Policy engine<br/>check permitted action]
+    review[Transport Planner<br/>review route requirements]
     tms[/TMS<br/>route and capacity facts/]
     rates[/Rate system<br/>carrier-rate facts/]
     options[Compare feasible<br/>route options]
     feasible{ }
-    evaluate --> policy
-    policy --> tms
-    policy --> rates
+    review --> tms
+    review --> rates
     tms --> options
     rates --> options
     options -->|Feasible option exists?| feasible
@@ -201,17 +193,17 @@ flowchart LR
     classDef agent fill:#eaf7ea,stroke:#3b7d3b,color:#111;
     classDef system fill:#fff4d6,stroke:#a87800,color:#111;
     classDef decision fill:#f5eaff,stroke:#7542a5,color:#111,font-size:10px;
-    class evaluate agent;
-    class policy,tms,rates,options system;
+    class review human;
+    class tms,rates,options system;
     class feasible decision;
 ```
 
-1. Ask the company’s route specialist to evaluate available lanes.
-2. The route specialist checks whether the relevant routes have capacity.
-3. It checks the applicable carrier-rate information.
-4. The planner reviews the resulting options and the evidence behind them.
+1. Review the available routes and route constraints in the TMS.
+2. Check whether the relevant routes have capacity.
+3. Check the applicable carrier-rate information.
+4. Compare the resulting options and the evidence behind them.
 
-**The agent gathers and compares evidence. The planner remains responsible for
+**The planner gathers and compares the evidence, then remains responsible for
 deciding whether the options make sense in the real operating context.**
 
 ### 3. Prepare a route recommendation
@@ -220,29 +212,25 @@ deciding whether the options make sense in the real operating context.**
 
 ```mermaid
 flowchart LR
-    decision[Route Decision Agent<br/>prepare recommendation]
-    handoff[Specialist hand-off<br/>request fresh capacity check]
-    evidence[/Route recommendation<br/>alternatives and evidence/]
+    options[Compare feasible<br/>route options]
+    recommendation[Transport Planner<br/>prepare route recommendation]
     fit{ }
-    decision --> handoff --> evidence -->|Fits cost and service needs?| fit
+    options --> recommendation -->|Fits cost and service needs?| fit
 
     classDef human fill:#e8f1ff,stroke:#3566a8,color:#111;
     classDef agent fill:#eaf7ea,stroke:#3b7d3b,color:#111;
     classDef system fill:#fff4d6,stroke:#a87800,color:#111;
     classDef decision fill:#f5eaff,stroke:#7542a5,color:#111,font-size:10px;
-    class decision,handoff agent;
-    class evidence system;
+    class options,recommendation human;
     class fit decision;
 ```
 
-1. Ask the company’s decision specialist to compare the options against cost and
-   service requirements.
-2. The decision specialist may ask the route specialist for a fresh capacity
-   check.
-3. Review the recommended route, alternatives, assumptions, and exceptions.
+1. Compare the options against cost and service requirements.
+2. Prepare a route recommendation with alternatives and assumptions.
+3. Review the recommendation, exceptions, and operational consequences.
 4. Accept the recommendation, revise the plan, or escalate the exception.
 
-**The recommendation is prepared by software; the operational judgment remains
+**The recommendation is prepared by the planner; operational judgment remains
 with the planner and the authorized human decision-makers.**
 
 ### 4. Consider cost and mode together
@@ -300,12 +288,48 @@ flowchart LR
 3. Communicate with drivers, carriers, customers, and colleagues.
 4. Re-plan when the situation changes.
 
-These activities remain part of the Transport Planner’s job even when agents
-support the earlier research and preparation.
+These activities remain part of the Transport Planner’s job throughout the
+process. They are the responsibilities the company will later examine for
+carefully bounded support.
 
 ## What is enhanced by agents?
 
 The company assigns selected parts of the job to specialist software workers:
+
+The human process remains the reference process. The enhancement is that
+selected research and preparation steps can now be performed by specialist
+workers, while the planner continues to review the evidence and own the
+operational decision.
+
+```mermaid
+flowchart LR
+    responsibility[Transport Planner<br/>responsibility]
+    lane[Lane Evaluation Agent<br/>find feasible options]
+    policy[Policy engine<br/>check permitted action]
+    tms[/TMS<br/>route and capacity facts/]
+    rates[/Rate system<br/>carrier-rate facts/]
+    options[/Route options<br/>and evidence/]
+    decision[Route Decision Agent<br/>prepare recommendation]
+    handoff[Agent hand-off<br/>request capacity evidence]
+    planner[Transport Planner<br/>review recommendation]
+
+    responsibility --> lane
+    lane -->|controlled service| policy
+    policy --> tms
+    policy --> rates
+    tms --> options
+    rates --> options
+    options --> decision
+    decision --> handoff --> planner
+
+    classDef human fill:#e8f1ff,stroke:#3566a8,color:#111;
+    classDef agent fill:#eaf7ea,stroke:#3b7d3b,color:#111;
+    classDef system fill:#fff4d6,stroke:#a87800,color:#111;
+    classDef decision fill:#f5eaff,stroke:#7542a5,color:#111,font-size:10px;
+    class responsibility,planner human;
+    class lane,decision,handoff agent;
+    class policy,tms,rates,options system;
+```
 
 | Planner responsibility | Company support | What the support does |
 | --- | --- | --- |
