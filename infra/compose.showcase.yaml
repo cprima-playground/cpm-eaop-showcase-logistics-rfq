@@ -4,12 +4,13 @@
 # infra/compose.support.yaml -f infra/compose.showcase.yaml ... up` merges
 # both into one project in a single command.
 #
-# CADDY-FIRST (tmp/caddy-first-routing-analysis.md): none of these publish a
-# host port. Reachable only via the support stack's Caddy (external,
-# infra/compose/Caddyfile) or this network's own DNS (internal, peer-to-peer
-# -- an agent calling an MCP server, or an MCP server calling its backend
-# business system, addresses the other container by compose SERVICE NAME
-# directly; Caddy is authoritative EXTERNAL ingress only, never an internal
+# GATEWAY-FIRST (tmp/caddy-first-routing-analysis.md): none of these publish a
+# host port. Reachable only via the support stack's gateway (external,
+# infra/compose/Caddyfile -- Caddy in dev, GCP Apigee is the TARGET for
+# test/prod) or this network's own DNS (internal, peer-to-peer -- an agent
+# calling an MCP server, or an MCP server calling its backend business
+# system, addresses the other container by compose SERVICE NAME directly;
+# the gateway is authoritative EXTERNAL ingress only, never an internal
 # service-mesh hairpin).
 #
 # Profiles (pass more than one --profile flag to combine):
@@ -126,7 +127,7 @@ services:
       RATE_URL: http://mock-rate:8005
       TMS_URL: http://mock-tms:8004
       QMS_URL: http://mock-qms:8007
-      CADDY_HOST: caddy   # ops-dashboard's own Caddy-fronted checks (_check_frontend etc.)
+      GATEWAY_HOST: gateway   # ops-dashboard's own gateway-fronted checks (_check_frontend etc.)
     networks: [rfq-showcase]
     restart: unless-stopped
     profiles: [core, full]

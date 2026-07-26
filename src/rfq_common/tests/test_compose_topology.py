@@ -1,6 +1,7 @@
-"""Caddy-first topology (tmp/caddy-first-routing-analysis.md): Caddy is the
-sole externally-published ingress. Everything else is reachable only via
-Caddy or the shared compose network's own internal DNS -- a host-published
+"""Gateway-first topology (tmp/caddy-first-routing-analysis.md): the gateway
+(Caddy in dev, GCP Apigee is the TARGET for test/prod) is the sole
+externally-published ingress. Everything else is reachable only via the
+gateway or the shared compose network's own internal DNS -- a host-published
 port on any OTHER service is exactly the kind of accidental clash this
 consolidation exists to prevent (e.g. a2a-inspector's first port choice,
 8090, silently collided with an unrelated process on the dev host this
@@ -19,9 +20,12 @@ RFQ_ROOT = Path(__file__).resolve().parents[3]
 # peer services need them that way. Anything not listed must publish no
 # host port at all.
 JUSTIFIED_HOST_PORTS = {
-    "caddy": {"443"},
+    "gateway": {"443"},
     "keycloak": {"8081"},
     "vault": {"8200"},
+    # a2a-inspector: gateway-routed (https://a2a-inspector.rfq-showcase.
+    # localhost), not a host-port carve-out -- it's a peer dev surface, not
+    # an admin console like Keycloak/Vault above.
 }
 
 
@@ -51,8 +55,8 @@ def test_support_stack_only_publishes_justified_host_ports():
         assert published == expected, (
             f"{name!r} publishes host ports {published!r}, expected exactly "
             f"{expected!r} -- unjustified host-port publish breaks the "
-            f"Caddy-first topology (every other service should be reachable "
-            f"only via Caddy or compose-internal DNS)"
+            f"gateway-first topology (every other service should be reachable "
+            f"only via the gateway or compose-internal DNS)"
         )
 
 
@@ -62,8 +66,8 @@ def test_showcase_stack_publishes_no_host_ports_at_all():
         published = _published_host_ports(service)
         assert not published, (
             f"{name!r} publishes host ports {published!r} -- showcase app "
-            f"services must be reachable only via Caddy (external) or compose "
-            f"DNS (internal peer traffic), never a host-published port"
+            f"services must be reachable only via the gateway (external) or "
+            f"compose DNS (internal peer traffic), never a host-published port"
         )
 
 

@@ -22,7 +22,7 @@ checks it requires have a named authority to point back to.
 
 ## Decision
 
-### 1. Networking model: Caddy-first, compose-DNS for everything else
+### 1. Networking model: GATEWAY-FIRST, compose-DNS for everything else
 
 Caddy is the **sole externally-published ingress** (port 443). Every
 showcase service — mock backends, MCP servers, A2A agents — publishes no

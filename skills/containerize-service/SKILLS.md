@@ -9,7 +9,7 @@ this repo has today (6 mock backends, 3 A2A agents, 4 MCP servers).
 
 ## Prerequisite reading
 
-- `tmp/caddy-first-routing-analysis.md` — the architectural decision this
+- `tmp/GATEWAY-FIRST-routing-analysis.md` — the architectural decision this
   skill implements: service identity is a **hostname**, routed by Caddy
   (or, on GCP, Apigee/Cloud Run's own URL). A container's bind port is an
   internal implementation detail, never part of external identity.
@@ -123,10 +123,10 @@ CMD ["uv", "run", "<service>"]
   decision.
 - Non-root user, build-metadata labels (service/version/commit) are a
   deliberate **future** hardening step, not part of this skill's baseline
-  — see `tmp/caddy-first-routing-analysis.md` §9 for why they're deferred,
+  — see `tmp/GATEWAY-FIRST-routing-analysis.md` §9 for why they're deferred,
   not forgotten.
 
-## Step 4 — wire it into `infra/compose.yaml` (Caddy-first)
+## Step 4 — wire it into `infra/compose.yaml` (GATEWAY-FIRST)
 
 Do **not** add a `ports:` host-publish mapping by default. The target
 topology:

@@ -12,7 +12,7 @@ WORKDIR /app/src/mock-rate
 
 RUN pip install --no-cache-dir uv && uv sync --frozen
 
-# SERVICE_PORT is a bind-only detail (Caddy-first: external identity is a
+# SERVICE_PORT is a bind-only detail (GATEWAY-FIRST: external identity is a
 # hostname, not this port) -- baked in as the default, override via compose
 # environment: if ever needed. No HOST port published here; Caddy (or
 # compose's internal DNS for peer traffic) is what reaches this container.

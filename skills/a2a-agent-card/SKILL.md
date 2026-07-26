@@ -78,7 +78,7 @@ AgentInterface(
 2. Set `url` on the interface to `f"{public_url}/a2a/jsonrpc"` where
    `public_url` comes from `ServiceSettings.from_env(default_port=port).public_url`
    (see `rfq_common.settings`) — never a hardcoded `http://{host}:{port}`
-   (that's the separate Caddy-first/public-URL fix from earlier this
+   (that's the separate GATEWAY-FIRST/public-URL fix from earlier this
    session — both bugs live in the same `_agent_card()` function, don't
    reintroduce the old one while fixing this).
 3. Don't hand-roll JSON serialization — use `create_agent_card_routes()`

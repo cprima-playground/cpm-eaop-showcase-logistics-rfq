@@ -12,7 +12,7 @@ WORKDIR /app/src/rate-mcp
 
 RUN pip install --no-cache-dir uv && uv sync --frozen
 
-# SERVICE_HOST/SERVICE_PORT are bind-only details (Caddy-first: external
+# SERVICE_HOST/SERVICE_PORT are bind-only details (GATEWAY-FIRST: external
 # identity is a hostname via SERVICE_PUBLIC_URL, not this port) -- main()
 # already reads both from env (with A2A_HOST/A2A_PORT legacy fallback). No
 # HOST port published here; Caddy (or compose's internal DNS for peer
