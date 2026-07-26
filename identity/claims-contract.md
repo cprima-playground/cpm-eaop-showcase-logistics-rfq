@@ -40,12 +40,31 @@ else                                  -> service
 ## Entra adapter
 
 The domain model is **Keycloak-native**; Entra needs a normalization layer
-(mirrors cpm-eaop `src/spike/entra/principal.py`):
+for the app-only path (mirrors cpm-eaop `src/spike/entra/principal.py`):
 - `scp` → `scope`
 - app-only detection (`idtyp == "app"`, or no `scp` and `sub == oid`) → surface `azp`
   so an app token classifies as `agent`/`service`, not `human`
-- `wids` merged into `roles`
 - `tid == MSA` → `trust_domain = consumer`, else `corporate`
+
+**`wids` merged into `roles` — verified WRONG against a real token, removed.**
+Minted a real Entra v2.0 human token (`az login --use-device-code` against
+`infra/entra/human-sso.tf`'s `ops-dashboard-web` app, real app-role
+assignment via Microsoft Graph) and inspected it directly: app roles
+already arrive under the claim name `roles`, identical to Keycloak's
+shape (`"roles": ["ops-viewer"]`). `wids` (directory role-template IDs —
+tenant-level roles like Global Administrator) never appeared on this
+token at all; it's a different, Graph-audience-token-only concept, not
+this app's roles. No merge needed — `resolve_principal`'s
+`claims.get("roles")` already reads the right claim natively for both
+providers. See `tmp/oidc-identity-unification-plan.md`'s "Implementation
+findings" section for the full token shape.
+
+`groups`: also read as-is (opaque `list[str]`) by both providers already —
+Keycloak emits full group paths (`/rfq-commercial-emea`), Entra emits raw
+group-object GUIDs. Neither is parsed into `department`/`business_unit`
+today (that derivation isn't built yet, see above) — when it is, Entra's
+side will need a GUID→name lookup (`infra/entra/`'s `group_object_ids`
+Terraform output), not a path-string parse.
 
 Keycloak needs no adapter — `resolve_principal` reads its claims natively.
 
