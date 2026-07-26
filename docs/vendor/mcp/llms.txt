@@ -1,0 +1,52 @@
+# Model Context Protocol
+## Docs
+- [Antitrust Policy](https://modelcontextprotocol.io/community/antitrust.md): MCP Project Antitrust Policy for participants and contributors
+- [Group Charter Template](https://modelcontextprotocol.io/community/charter-template.md): Template for MCP Working Group and Interest Group charters.
+- [Contributor Communication](https://modelcontextprotocol.io/community/communication.md): Communication strategy and framework for the Model Context Protocol community
+- [Contributing to MCP](https://modelcontextprotocol.io/community/contributing.md): How to contribute to the Model Context Protocol project
+- [Contributor Ladder](https://modelcontextprotocol.io/community/contributor-ladder.md): Roles, responsibilities, and advancement criteria for Model Context Protocol contributors
+- [Design Principles](https://modelcontextprotocol.io/community/design-principles.md): The core design principles that guide the Model Context Protocol.
+- [Feature Lifecycle and Deprecation Policy](https://modelcontextprotocol.io/community/feature-lifecycle.md): How individual MCP specification features move through lifecycle states
+- [Governance and Stewardship](https://modelcontextprotocol.io/community/governance.md): MCP governance structure
+- [SDK Tiering System](https://modelcontextprotocol.io/community/sdk-tiers.md): SDK feature completeness and maintenance tiers
+- [Security Policy](https://modelcontextprotocol.io/community/security.md): MCP security vulnerability reporting and coordination
+- [SEP Guidelines](https://modelcontextprotocol.io/community/sep-guidelines.md): Specification Enhancement Proposal guidelines
+- [Build an MCP client](https://modelcontextprotocol.io/docs/develop/build-client.md): Build a client that integrates with MCP servers
+- [Build an MCP server](https://modelcontextprotocol.io/docs/develop/build-server.md): Build and use an MCP server
+- [Client Best Practices](https://modelcontextprotocol.io/docs/develop/clients/client-best-practices.md): Patterns for scaling host applications across servers and tools
+- [Connect to local MCP servers](https://modelcontextprotocol.io/docs/develop/connect-local-servers.md): Connect to local servers
+- [Connect to remote MCP servers](https://modelcontextprotocol.io/docs/develop/connect-remote-servers.md): Connect to remote servers
+- [What is MCP?](https://modelcontextprotocol.io/docs/getting-started/intro.md)
+- [Architecture overview](https://modelcontextprotocol.io/docs/learn/architecture.md)
+- [Understanding MCP clients](https://modelcontextprotocol.io/docs/learn/client-concepts.md)
+- [Understanding MCP servers](https://modelcontextprotocol.io/docs/learn/server-concepts.md)
+- [Versioning](https://modelcontextprotocol.io/docs/learn/versioning.md)
+- [SDKs](https://modelcontextprotocol.io/docs/sdk.md): Official SDKs
+- [Debugging](https://modelcontextprotocol.io/docs/tools/debugging.md)
+- [MCP Inspector](https://modelcontextprotocol.io/docs/tools/inspector.md)
+- [Authorization](https://modelcontextprotocol.io/docs/tutorials/security/authorization.md): OAuth 2.1 authorization for MCP servers
+- [Security Best Practices](https://modelcontextprotocol.io/docs/tutorials/security/security_best_practices.md)
+- [Extensions Overview](https://modelcontextprotocol.io/extensions/overview.md)
+- [Tasks](https://modelcontextprotocol.io/extensions/tasks/overview.md): Asynchronous task execution
+- [Architecture](https://modelcontextprotocol.io/specification/2025-11-25/architecture/index.md)
+- [Authorization](https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization.md)
+- [Overview](https://modelcontextprotocol.io/specification/2025-11-25/basic/index.md)
+- [Lifecycle](https://modelcontextprotocol.io/specification/2025-11-25/basic/lifecycle.md)
+- [Transports](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports.md)
+- [Cancellation](https://modelcontextprotocol.io/specification/2025-11-25/basic/utilities/cancellation.md)
+- [Ping](https://modelcontextprotocol.io/specification/2025-11-25/basic/utilities/ping.md)
+- [Progress](https://modelcontextprotocol.io/specification/2025-11-25/basic/utilities/progress.md)
+- [Tasks](https://modelcontextprotocol.io/specification/2025-11-25/basic/utilities/tasks.md)
+- [Key Changes](https://modelcontextprotocol.io/specification/2025-11-25/changelog.md)
+- [Elicitation](https://modelcontextprotocol.io/specification/2025-11-25/client/elicitation.md)
+- [Roots](https://modelcontextprotocol.io/specification/2025-11-25/client/roots.md)
+- [Sampling](https://modelcontextprotocol.io/specification/2025-11-25/client/sampling.md)
+- [Specification](https://modelcontextprotocol.io/specification/2025-11-25/index.md)
+- [Schema Reference](https://modelcontextprotocol.io/specification/2025-11-25/schema.md)
+- [Server overview](https://modelcontextprotocol.io/specification/2025-11-25/server/index.md)
+- [Prompts](https://modelcontextprotocol.io/specification/2025-11-25/server/prompts.md)
+- [Resources](https://modelcontextprotocol.io/specification/2025-11-25/server/resources.md)
+- [Tools](https://modelcontextprotocol.io/specification/2025-11-25/server/tools.md)
+- [Completion](https://modelcontextprotocol.io/specification/2025-11-25/server/utilities/completion.md)
+- [Logging](https://modelcontextprotocol.io/specification/2025-11-25/server/utilities/logging.md)
+- [Pagination](https://modelcontextprotocol.io/specification/2025-11-25/server/utilities/pagination.md)

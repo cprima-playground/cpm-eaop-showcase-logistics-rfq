@@ -1,0 +1,16 @@
+# MCP Python SDK
+## Docs
+- [Introduction](https://py.sdk.modelcontextprotocol.io/index.md)
+- [Installation](https://py.sdk.modelcontextprotocol.io/installation/index.md)
+- [Building Servers](https://py.sdk.modelcontextprotocol.io/server/index.md)
+- [Writing Clients](https://py.sdk.modelcontextprotocol.io/client/index.md)
+- [Protocol Features](https://py.sdk.modelcontextprotocol.io/protocol/index.md)
+- [Low-Level Server](https://py.sdk.modelcontextprotocol.io/low-level-server/index.md)
+- [Authorization](https://py.sdk.modelcontextprotocol.io/authorization/index.md)
+- [Testing](https://py.sdk.modelcontextprotocol.io/testing/index.md)
+## Experimental
+- [Overview](https://py.sdk.modelcontextprotocol.io/experimental/index.md)
+- [Tasks server implementation](https://py.sdk.modelcontextprotocol.io/experimental/tasks-server/index.md)
+- [Tasks client usage](https://py.sdk.modelcontextprotocol.io/experimental/tasks-client/index.md)
+## Optional
+- [API reference](https://py.sdk.modelcontextprotocol.io/api/)
