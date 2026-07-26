@@ -9,8 +9,11 @@ __pycache__/
 .terraform/
 *.tfstate
 *.tfstate.backup
+infra/entra/terraform.tfvars
 
 # Caddy's internal CA root cert -- extracted manually via docker cp, unique
 # per caddy-data volume instance, never committed (see config.py's
 # caddy_ca_bundle()).
 infra/caddy/root.crt
+infra/keycloak/terraform/tfplan
+tmp/
