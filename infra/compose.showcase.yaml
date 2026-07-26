@@ -53,9 +53,20 @@ x-keycloak-env: &keycloak-env
 # already-running container to the rfq-showcase network directly
 # (`docker network connect --alias cedar-agent rfq-showcase
 # rfq-showcase-cedar-agent`) rather than touching its own compose file,
-# which lives outside this repo's tree.
+# which lives outside this repo's tree -- still true, this is the one
+# remaining manual-connect workaround (Tempo's equivalent was resolved
+# by making infra/observability/docker-compose.yml join natively, see
+# that file's own header comment).
 x-cedar-env: &cedar-env
   CEDAR_URL: http://cedar-agent:8180
+
+x-otel-env: &otel-env
+  # Container DNS, not localhost -- rfq_common.observability's own
+  # default (http://localhost:4317) is correct for a host-run process
+  # and wrong inside a container (points at itself). otel-collector
+  # is reachable here because infra/observability/docker-compose.yml
+  # joins this same rfq-showcase network natively.
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
 
 networks:
   rfq-showcase:
@@ -80,7 +91,7 @@ services:
         - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/mock-fx,mode=max
     image: rfq-showcase-mock-fx
     environment:
-      <<: *vault-env
+      <<: [*vault-env, *otel-env]
       # Found live via M8.3's health check: without this, mock-fx falls
       # back to a broken default (http://localhost:8003, itself inside
       # its own container) and crash-loops on every currency lookup --
@@ -106,7 +117,7 @@ services:
         - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/mock-masterdata,mode=max
     image: rfq-showcase-mock-masterdata
     environment:
-      <<: *vault-env
+      <<: [*vault-env, *otel-env]
     networks: [rfq-showcase]
     restart: unless-stopped
     profiles: [core, full]
@@ -127,7 +138,7 @@ services:
         - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/mock-tms,mode=max
     image: rfq-showcase-mock-tms
     environment:
-      <<: *vault-env
+      <<: [*vault-env, *otel-env]
       MASTERDATA_URL: http://mock-masterdata:8003
     networks: [rfq-showcase]
     restart: unless-stopped
@@ -149,7 +160,7 @@ services:
         - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/mock-rate,mode=max
     image: rfq-showcase-mock-rate
     environment:
-      <<: *vault-env
+      <<: [*vault-env, *otel-env]
       MASTERDATA_URL: http://mock-masterdata:8003
     networks: [rfq-showcase]
     restart: unless-stopped
@@ -171,7 +182,7 @@ services:
         - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/mock-qms,mode=max
     image: rfq-showcase-mock-qms
     environment:
-      <<: [*vault-env, *keycloak-env, *cedar-env]
+      <<: [*vault-env, *keycloak-env, *cedar-env, *otel-env]
       MASTERDATA_URL: http://mock-masterdata:8003
       FX_URL: http://mock-fx:8001
       RATE_URL: http://mock-rate:8005
@@ -196,7 +207,7 @@ services:
         - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/ops-dashboard,mode=max
     image: rfq-showcase-ops-dashboard
     environment:
-      <<: [*vault-env, *keycloak-env, *cedar-env]
+      <<: [*vault-env, *keycloak-env, *cedar-env, *otel-env]
       MASTERDATA_URL: http://mock-masterdata:8003
       FX_URL: http://mock-fx:8001
       RATE_URL: http://mock-rate:8005
@@ -228,7 +239,7 @@ services:
         - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/tms-mcp,mode=max
     image: rfq-showcase-tms-mcp
     environment:
-      <<: [*vault-env, *keycloak-env, *cedar-env]
+      <<: [*vault-env, *keycloak-env, *cedar-env, *otel-env]
       TMS_URL: http://mock-tms:8004
       SERVICE_PUBLIC_URL: https://tms-mcp.rfq-showcase.localhost
     networks: [rfq-showcase]
@@ -251,7 +262,7 @@ services:
         - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/rate-mcp,mode=max
     image: rfq-showcase-rate-mcp
     environment:
-      <<: [*vault-env, *keycloak-env, *cedar-env]
+      <<: [*vault-env, *keycloak-env, *cedar-env, *otel-env]
       RATE_API_URL: http://mock-rate:8005
       SERVICE_PUBLIC_URL: https://rate-mcp.rfq-showcase.localhost
     networks: [rfq-showcase]
@@ -274,7 +285,7 @@ services:
         - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/qms-mcp,mode=max
     image: rfq-showcase-qms-mcp
     environment:
-      <<: [*vault-env, *keycloak-env, *cedar-env]
+      <<: [*vault-env, *keycloak-env, *cedar-env, *otel-env]
       QMS_API_URL: http://mock-qms:8007
       FX_API_URL: http://mock-fx:8001
       SERVICE_PUBLIC_URL: https://qms-mcp.rfq-showcase.localhost
@@ -298,7 +309,7 @@ services:
         - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/approval-mcp,mode=max
     image: rfq-showcase-approval-mcp
     environment:
-      <<: [*vault-env, *keycloak-env, *cedar-env]
+      <<: [*vault-env, *keycloak-env, *cedar-env, *otel-env]
       QMS_API_URL: http://mock-qms:8007
       SERVICE_PUBLIC_URL: https://approval-mcp.rfq-showcase.localhost
     networks: [rfq-showcase]
@@ -322,7 +333,7 @@ services:
         - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/lane-evaluation-agent,mode=max
     image: rfq-showcase-lane-evaluation-agent
     environment:
-      <<: [*vault-env, *keycloak-env, *cedar-env]
+      <<: [*vault-env, *keycloak-env, *cedar-env, *otel-env]
       TMS_MCP_URL: http://tms-mcp:8104
       SERVICE_PUBLIC_URL: https://lane-evaluation-agent.rfq-showcase.localhost
     networks: [rfq-showcase]
@@ -345,7 +356,7 @@ services:
         - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/route-decision-agent,mode=max
     image: rfq-showcase-route-decision-agent
     environment:
-      <<: [*vault-env, *keycloak-env, *cedar-env]
+      <<: [*vault-env, *keycloak-env, *cedar-env, *otel-env]
       LANE_EVAL_AGENT_URL: http://lane-evaluation-agent:8204
       SERVICE_PUBLIC_URL: https://route-decision-agent.rfq-showcase.localhost
     networks: [rfq-showcase]
@@ -368,7 +379,7 @@ services:
         - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/commercial-normalization-agent,mode=max
     image: rfq-showcase-commercial-normalization-agent
     environment:
-      <<: [*vault-env, *keycloak-env, *cedar-env]
+      <<: [*vault-env, *keycloak-env, *cedar-env, *otel-env]
       ROUTE_DECISION_AGENT_URL: http://route-decision-agent:8205
       SERVICE_PUBLIC_URL: https://commercial-normalization-agent.rfq-showcase.localhost
     networks: [rfq-showcase]
@@ -392,7 +403,7 @@ services:
         - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/mission-control-api,mode=max
     image: rfq-showcase-mission-control-api
     environment:
-      <<: [*vault-env, *keycloak-env, *cedar-env]
+      <<: [*vault-env, *keycloak-env, *cedar-env, *otel-env]
       SERVICE_PUBLIC_URL: https://mission-control.rfq-showcase.localhost
       # Registry roster (M8.2) -- the ONE place in this repo that
       # legitimately resolves every peer service's endpoint (ADR-002: no
@@ -411,17 +422,17 @@ services:
       RATE_URL: http://mock-rate:8005
       FX_URL: http://mock-fx:8001
       QMS_URL: http://mock-qms:8007
-      # M8.6: Tempo lives in infra/observability/'s OWN compose project
-      # (separate network, deliberately -- see compose.support.yaml's own
-      # header comment). Same gap class as cedar-agent (M7 stabilization):
-      # joined the running tempo container to this network directly
-      # (`docker network connect --alias tempo rfq-showcase
-      # rfq-showcase-otel-tempo-1`) rather than merging the two compose
-      # projects. Real, separate, unresolved finding (traces.py's own
-      # module docstring): every OTHER showcase service still has no
-      # OTLP wiring to the collector at all -- this only fixes Mission
-      # Control's own read path to Tempo, not the write path from every
-      # other service.
+      # M8.6, resolved: Tempo lives in infra/observability/'s OWN compose
+      # project, but that project now joins this network natively
+      # (`networks: [rfq-showcase]`, `external: true` -- see
+      # infra/observability/docker-compose.yml) instead of the earlier
+      # manual `docker network connect` stopgap. Same class of gap as
+      # cedar-agent's (still a manual connect -- cedar-agent's own
+      # compose file lives outside this repo's tree, that constraint
+      # hasn't changed). Every showcase service now gets a real
+      # OTEL_EXPORTER_OTLP_ENDPOINT (x-otel-env below), so Mission
+      # Control's own Tempo read path AND every other service's write
+      # path are both live now, not just this one's.
       TEMPO_URL: http://tempo:3200
       # M10: geo-api joins the observed registry too (D7) -- registry_roster()
       # gains a third derivation source alongside agents/catalog.yaml +
@@ -448,7 +459,7 @@ services:
         - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/geo-api,mode=max
     image: rfq-showcase-geo-api
     environment:
-      <<: [*vault-env, *keycloak-env]
+      <<: [*vault-env, *keycloak-env, *otel-env]
       SERVICE_PUBLIC_URL: https://geo.rfq-showcase.localhost
       MASTERDATA_URL: http://mock-masterdata:8003
       # D13: cache state is never authoritative (geometry computation is

@@ -60,7 +60,15 @@ def serve(host: str = "127.0.0.1", port: int = int(os.environ.get("SERVICE_PORT"
     """Run the REST API (Swagger UI at /docs)."""
     import uvicorn
 
+    from rfq_common.descriptor import new_instance_id
+    from rfq_common.observability import configure_observability
+
     from .api import build_app
+
+    configure_observability(
+        service_name="mock-rate", canonical_id="system.mock-rate",
+        instance_id=new_instance_id(), environment=os.environ.get("DEPLOYMENT_ENVIRONMENT", "local"),
+    )
     uvicorn.run(build_app(), host=host, port=port)
 
 

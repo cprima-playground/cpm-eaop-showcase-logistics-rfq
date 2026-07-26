@@ -11,17 +11,26 @@
 # the stack is up, so long-running local sessions don't grow unbounded.
 #
 # Host port exposure is deliberately minimal:
-#   4317/4318 (OTLP)  -- host-run apps (uv run, pre-M6-pre) send here
+#   4317/4318 (OTLP)  -- host-run apps (uv run) send here
 #   3200 (Tempo)       -- direct API debugging only
 #   9090 (Prometheus)  -- direct query/debugging only
 #   3000 (Grafana)      -- the primary human-facing UI
 #   8889 (collector's Prometheus exporter) -- INTERNAL ONLY, not
 #     published; only `prometheus` (same compose network) scrapes it.
 #
-# Under M6-pre, containerized apps join this same network and reach the
-# collector at `otel-collector:4317` instead of `localhost:4317` -- same
-# instrumentation, only the network address changes (no rewrite).
+# Joins the app stack's `rfq-showcase` network (infra/compose.support.yaml
+# owns it, this file attaches as external, same pattern
+# infra/compose.showcase.yaml already uses) -- containerized apps reach
+# the collector at `otel-collector:4317`; host-run processes still use
+# `localhost:4317` via the published port above. Requires the support
+# stack to already be up (creates the network); this project itself can
+# start before or after the showcase stack.
 name: rfq-showcase-otel
+
+networks:
+  rfq-showcase:
+    name: rfq-showcase
+    external: true
 
 services:
   tempo:
@@ -37,6 +46,7 @@ services:
       timeout: 3s
       retries: 5
       start_period: 10s
+    networks: [rfq-showcase]
     restart: unless-stopped
 
   otel-collector:
@@ -58,6 +68,7 @@ services:
     depends_on:
       tempo:
         condition: service_healthy
+    networks: [rfq-showcase]
     restart: unless-stopped
 
   prometheus:
@@ -75,6 +86,7 @@ services:
     depends_on:
       otel-collector:
         condition: service_started   # can't be service_healthy -- see above
+    networks: [rfq-showcase]
     restart: unless-stopped
 
   grafana:
@@ -108,4 +120,5 @@ services:
         condition: service_healthy
       tempo:
         condition: service_healthy
+    networks: [rfq-showcase]
     restart: unless-stopped

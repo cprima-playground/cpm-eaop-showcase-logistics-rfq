@@ -150,6 +150,15 @@ exists in v1, mechanically asserted.
   services still have no OTLP wiring to the observability collector at
   all, so `/api/v1/traces` will show real showcase authorization
   activity only once that separate, larger gap is closed.
+  **Update:** the larger gap is now closed —
+  `infra/observability/docker-compose.yml` joins the `rfq-showcase`
+  network natively (`external: true`, replacing Tempo's manual-connect
+  stopgap), every showcase service gets a real
+  `OTEL_EXPORTER_OTLP_ENDPOINT`, and the 6 services that never called
+  `configure_observability()` (the 5 mocks + `ops-dashboard`) now do.
+  `/api/v1/traces` reflects real live traffic. cedar-agent's
+  manual-connect remains — its compose file is outside this repo's
+  tree, unaffected by this fix.
 - A real, pre-existing bug (`mock-fx` missing `MASTERDATA_URL`,
   crash-looping) was found and fixed by this milestone's own health
   check — the kind of finding this endpoint exists to surface.
