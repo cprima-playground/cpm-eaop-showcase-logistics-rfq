@@ -291,6 +291,19 @@ actors:
     system: control-plane      # M8 -- observes, never a mock-* business system
     trust_domain: internal
 
+  - id: workload.geo-api
+    kind: workload
+    system: geo                # M10 -- no mock-* backend; self-descriptive,
+    trust_domain: internal     # same posture as workload.mission-control
+
+  - id: workload.ops-dashboard
+    kind: workload
+    system: ops-dashboard      # M10 -- ops-dashboard's OWN service identity for
+    trust_domain: internal     # outbound calls to bearer-token-protected peers
+                                # (geo-api), distinct from ops-dashboard-web (the
+                                # human-SSO Authorization Code client) -- a
+                                # client_credentials-grant confidential client
+
   # --- Agents (kind=agent) ---------------------------------------------
   # keycloak_client removed (M3.1 directory review, decision #1): it was a
   # redundant copy of agents/catalog.yaml's caller_identity.keycloak_client,

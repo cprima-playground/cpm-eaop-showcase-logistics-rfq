@@ -11,6 +11,7 @@ Every service-to-service auth edge this repo actually has (decision #8, M6). Any
 | commercial-normalization-agent | mock-fx | shared API key (fx-api-key) | real |
 | commercial-normalization-agent | mock-masterdata | shared API key (masterdata-api-key) | real |
 | commercial-normalization-agent | mock-qms | shared API key (qms-api-key) | real |
+| geo-api | Keycloak (token introspection, RFC 7662) | OIDC confidential client, workload's own identity (geo-api-svc-client-secret) | real |
 | infra/keycloak/terraform (Terraform apply, human-triggered) | Keycloak admin API | keycloak-realm-admin-password (identity/credentials-inventory.yaml) | real |
 | lane-evaluation-agent | mock-masterdata | shared API key (masterdata-api-key) | real |
 | lane-evaluation-agent | mock-rate | shared API key (rate-api-key) | real |
@@ -19,6 +20,7 @@ Every service-to-service auth edge this repo actually has (decision #8, M6). Any
 | mock-fx | mock-masterdata | shared API key (masterdata-api-key) | real |
 | mock-rate | mock-masterdata | shared API key (masterdata-api-key) | real |
 | mock-tms | mock-masterdata | shared API key (masterdata-api-key) | real |
+| ops-dashboard | Keycloak (token introspection, RFC 7662) | OIDC confidential client, workload's own identity (ops-dashboard-svc-client-secret) | real |
 | qms-mcp | Keycloak (token introspection, RFC 7662) | OIDC confidential client, workload's own identity (qms-mcp-svc-client-secret) | real |
 | qms-mcp | mock-fx | shared API key (fx-api-key) | real |
 | qms-mcp | mock-qms | shared API key (qms-api-key) | real |
@@ -54,6 +56,7 @@ ADR-002 because their EXPOSED action sets are disjoint (mechanically
 checked, see src/qms-mcp/tests/test_adr002_disjointness.py) -- this
 shared-key note documents the transport layer, not the authorization
 layer, and does not itself relax that requirement.
+- **geo-api -> Keycloak (token introspection, RFC 7662)**: value comes from the geo-api-svc client Keycloak already provisions (infra/keycloak/terraform's machine_identities for_each) -- fetched live via the Keycloak admin API and recorded here, same posture as qms-mcp-svc-client-secret/approval-mcp-svc-client-secret above; seed.py must not overwrite it with a random value.
 - **infra/keycloak/terraform (Terraform apply, human-triggered) -> Keycloak admin API**: Provisions realm/clients/workload identities -- not a runtime service edge, an operator edge.
 - **lane-evaluation-agent -> mock-rate**: (credential-level note, shared by every consumer of rate-api-key) rate-mcp reuses this shared key as its own transport credential to
 mock-rate (M6, same posture tms-mcp/tms-api-key established in M6a)
@@ -66,6 +69,7 @@ posture for this hop (unchanged behavior for the other two consumers).
 A dedicated tms-mcp-api-key entry remains status:planned below for a
 future tightening, not activated by this milestone.
 - **mission-control-api -> Keycloak (token introspection, RFC 7662)**: value comes from the mission-control-api-svc client Keycloak already provisions (infra/keycloak/terraform's machine_identities for_each) -- fetched live via the Keycloak admin API and recorded here, same posture as tms-mcp-svc-client-secret/rate-mcp-svc-client-secret/ qms-mcp-svc-client-secret/approval-mcp-svc-client-secret above; seed.py must not overwrite it with a random value.
+- **ops-dashboard -> Keycloak (token introspection, RFC 7662)**: value comes from the ops-dashboard-svc client Keycloak already provisions (infra/keycloak/terraform's machine_identities for_each) -- fetched live via the Keycloak admin API and recorded here, same posture as qms-mcp-svc-client-secret above; seed.py must not overwrite it with a random value.
 - **qms-mcp -> Keycloak (token introspection, RFC 7662)**: value comes from the qms-mcp-svc client Keycloak already provisions (infra/keycloak/terraform's machine_identities for_each) -- fetched live via the Keycloak admin API and recorded here, same posture as tms-mcp-svc-client-secret/rate-mcp-svc-client-secret above; seed.py must not overwrite it with a random value.
 - **qms-mcp -> mock-fx**: (credential-level note, shared by every consumer of fx-api-key) qms-mcp's route-cost.normalize tool consults mock-fx directly (real
 fx_age_seconds for D2's already-decided freshness gate, then the

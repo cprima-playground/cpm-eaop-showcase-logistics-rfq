@@ -30,6 +30,10 @@ app_registrations:
     display_name: approval-mcp-svc
   workload.mission-control:
     display_name: mission-control-api-svc
+  workload.geo-api:
+    display_name: geo-api-svc
+  workload.ops-dashboard:
+    display_name: ops-dashboard-svc
 tenant_id: 3180a10e-b222-49d4-a2e9-2023dadef26a
 clients:
   workload.approval-mcp:

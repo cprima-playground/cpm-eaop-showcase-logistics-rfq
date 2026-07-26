@@ -69,6 +69,14 @@ edges:
     shared-key note documents the transport layer, not the authorization
 
     layer, and does not itself relax that requirement.'
+- caller: geo-api
+  target: Keycloak (token introspection, RFC 7662)
+  mechanism: OIDC confidential client, workload's own identity (geo-api-svc-client-secret)
+  status: real
+  note: value comes from the geo-api-svc client Keycloak already provisions (infra/keycloak/terraform's
+    machine_identities for_each) -- fetched live via the Keycloak admin API and recorded
+    here, same posture as qms-mcp-svc-client-secret/approval-mcp-svc-client-secret
+    above; seed.py must not overwrite it with a random value.
 - caller: infra/keycloak/terraform (Terraform apply, human-triggered)
   target: Keycloak admin API
   mechanism: keycloak-realm-admin-password (identity/credentials-inventory.yaml)
@@ -132,6 +140,14 @@ edges:
   mechanism: shared API key (masterdata-api-key)
   status: real
   note: null
+- caller: ops-dashboard
+  target: Keycloak (token introspection, RFC 7662)
+  mechanism: OIDC confidential client, workload's own identity (ops-dashboard-svc-client-secret)
+  status: real
+  note: value comes from the ops-dashboard-svc client Keycloak already provisions
+    (infra/keycloak/terraform's machine_identities for_each) -- fetched live via the
+    Keycloak admin API and recorded here, same posture as qms-mcp-svc-client-secret
+    above; seed.py must not overwrite it with a random value.
 - caller: qms-mcp
   target: Keycloak (token introspection, RFC 7662)
   mechanism: OIDC confidential client, workload's own identity (qms-mcp-svc-client-secret)
