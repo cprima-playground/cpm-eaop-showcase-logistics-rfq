@@ -41,6 +41,7 @@ from .identity_model import identities_report
 from .policy_model import policies_report, policy_drift
 from .registry import ObservedServiceRegistry
 from .topology import topology as build_topology
+from .traces import get_trace, search_traces
 
 RFQ_ROOT = settings.RFQ_ROOT
 
@@ -127,6 +128,14 @@ def build_app(
     @api_v1.get("/identity-drift")
     def get_identity_drift(_principal=Depends(_require_authenticated)) -> dict:
         return identity_drift_report()
+
+    @api_v1.get("/traces")
+    def list_traces(_principal=Depends(_require_authenticated)) -> dict:
+        return search_traces()
+
+    @api_v1.get("/traces/{trace_id}")
+    def get_one_trace(trace_id: str, _principal=Depends(_require_authenticated)) -> dict:
+        return get_trace(trace_id)
 
     app.include_router(api_v1)
 

@@ -235,6 +235,18 @@ services:
       RATE_URL: http://mock-rate:8005
       FX_URL: http://mock-fx:8001
       QMS_URL: http://mock-qms:8007
+      # M8.6: Tempo lives in infra/observability/'s OWN compose project
+      # (separate network, deliberately -- see compose.support.yaml's own
+      # header comment). Same gap class as cedar-agent (M7 stabilization):
+      # joined the running tempo container to this network directly
+      # (`docker network connect --alias tempo rfq-showcase
+      # rfq-showcase-otel-tempo-1`) rather than merging the two compose
+      # projects. Real, separate, unresolved finding (traces.py's own
+      # module docstring): every OTHER showcase service still has no
+      # OTLP wiring to the collector at all -- this only fixes Mission
+      # Control's own read path to Tempo, not the write path from every
+      # other service.
+      TEMPO_URL: http://tempo:3200
     networks: [rfq-showcase]
     restart: unless-stopped
     profiles: [control-plane, full]
