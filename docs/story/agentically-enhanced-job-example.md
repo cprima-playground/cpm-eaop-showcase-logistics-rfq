@@ -34,6 +34,36 @@ This is a broad job. The company does not treat every responsibility as a
 candidate for automation. It selects a few activities where software can gather
 evidence and prepare useful work for the planner.
 
+## The organization behind the role
+
+The directory data can be presented as a conventional organization chart. This
+is the human structure in which the Transport Planner works; it is not an agent
+architecture diagram.
+
+```mermaid
+flowchart TD
+    organization[Logistics organization]
+
+    organization --> diane[Diane Delgado<br/>Regional Commercial Director · EMEA]
+    organization --> lin[Lin Zhao<br/>Regional Commercial Director · APAC]
+    organization --> omar[Omar Haddad<br/>Regional Commercial Director · AMER]
+
+    diane --> mona[Mona Caldwell<br/>Pricing Manager<br/>EUR 10,000 delegated approval]
+    diane --> wei[Wei Chen<br/>Transport Planner]
+    mona --> sam[Marek Petrov<br/>Commercial Pricing Specialist]
+
+    lin --> priya[Priya Nair<br/>Pricing Manager<br/>EUR 10,000 delegated approval]
+    lin --> mei[Mei Lin<br/>Transport Planner]
+    priya --> tomas[Tomas Reyes<br/>Commercial Pricing Specialist]
+
+    omar --> carla[Carla Mendes<br/>Pricing Manager<br/>EUR 10,000 delegated approval]
+    omar --> javier[Javier Torres<br/>Transport Planner]
+    carla --> diego[Diego Alvarez<br/>Commercial Pricing Specialist]
+
+    classDef human fill:#e8f1ff,stroke:#3566a8,color:#111;
+    class organization,diane,mona,sam,wei,lin,priya,tomas,mei,omar,carla,diego,javier human;
+```
+
 ## The planner’s immediate team
 
 The Transport Planner works within a small team. The planner’s direct manager is
@@ -262,7 +292,7 @@ flowchart LR
 3. Avoid selecting a nominally cheap option that cannot be executed.
 4. Explain the recommendation when handing it to Pricing or Commercial.
 
-### 5. Continue the human work
+### 5. Monitor and adjust the shipment
 
 **Diagram path:**
 
@@ -396,36 +426,6 @@ flowchart LR
     class tms,rates system;
 ```
 
-## The organization behind the role
-
-The directory data can be presented as a conventional organization chart. This
-is the human structure in which the Transport Planner works; it is not an agent
-architecture diagram.
-
-```mermaid
-flowchart TD
-    organization[Logistics organization]
-
-    organization --> diane[Diane Delgado<br/>Regional Commercial Director · EMEA]
-    organization --> lin[Lin Zhao<br/>Regional Commercial Director · APAC]
-    organization --> omar[Omar Haddad<br/>Regional Commercial Director · AMER]
-
-    diane --> mona[Mona Caldwell<br/>Pricing Manager<br/>EUR 10,000 delegated approval]
-    diane --> wei[Wei Chen<br/>Transport Planner]
-    mona --> sam[Marek Petrov<br/>Commercial Pricing Specialist]
-
-    lin --> priya[Priya Nair<br/>Pricing Manager<br/>EUR 10,000 delegated approval]
-    lin --> mei[Mei Lin<br/>Transport Planner]
-    priya --> tomas[Tomas Reyes<br/>Commercial Pricing Specialist]
-
-    omar --> carla[Carla Mendes<br/>Pricing Manager<br/>EUR 10,000 delegated approval]
-    omar --> javier[Javier Torres<br/>Transport Planner]
-    carla --> diego[Diego Alvarez<br/>Commercial Pricing Specialist]
-
-    classDef human fill:#e8f1ff,stroke:#3566a8,color:#111;
-    class organization,diane,mona,sam,wei,lin,priya,tomas,mei,omar,carla,diego,javier human;
-```
-
 The agents and controlled services have separate machine identities. They do
 not inherit a planner’s human group membership. This distinction matters: a
 software worker should not gain human approval rights simply because it supports
@@ -433,12 +433,22 @@ a human job.
 
 ## The policy engine protects business actions
 
-Before a software worker checks capacity, reads a rate, or prepares a route
-recommendation, the company checks whether that worker is allowed to perform
-the requested action.
+In a company, a policy is a clear business rule about who may do what, under
+which circumstances. It turns responsibilities and approval limits into rules
+that can be applied consistently—for example, “this role may approve a route
+deviation up to EUR 10,000,” or “this service may read carrier rates.”
 
-The control-panel Policy Enforcement Point applies the answer from the policy
-engine. The relevant rules in this example cover:
+Policies are especially important when software workers act on behalf of the
+business. In this showcase, policies explicitly govern the agents. They decide
+which agent may evaluate a lane, check capacity, read rates, or pass work to
+another approved agent. They also make clear which actions remain reserved for
+people.
+
+When an agent requests a business action, the request passes through the
+control-panel Policy Enforcement Point before it can affect a company system.
+The control panel asks the policy engine whether that particular agent may
+perform that particular action in that situation. The showcase therefore
+demonstrates policies for both agent actions and human approval actions:
 
 | Policy | Business meaning |
 | --- | --- |
@@ -452,9 +462,20 @@ engine. The relevant rules in this example cover:
 | `recommend-slower-transit` | A recommendation adding more than three transit days requires operations review. |
 | `forbid-inactive` | An inactive identity cannot perform a controlled action. |
 
-### Example: checking route capacity
+This gives the process a simple business boundary:
 
-The policy-engine rule behind the business statement above has this shape:
+- agents may gather evidence and prepare recommendations within their assigned
+  responsibilities;
+- the policy engine can refuse an agent action even when the agent is technically
+  able to request it; and
+- a human approval remains a human approval, with the organization and delegated
+  limit checked explicitly.
+
+### Example: an agent checks route capacity
+
+The Lane Evaluation Agent requests a route-capacity check as part of its
+agentic route evaluation. The showcase includes a policy governing that request.
+The rule has this shape:
 
 ```text
 permit(
@@ -468,16 +489,19 @@ permit(
 };
 ```
 
-In business terms:
+In business terms, the company is saying:
 
 > Only an active company service operating inside the trusted logistics
 > environment may check whether a route has capacity. Inactive services and
 > callers from outside that environment are refused.
 
-### Example: approving a route deviation
+### Example: an agent prepares a route deviation for human approval
 
-Route recommendation and route approval are different responsibilities. The
-approval rule is reserved for the human commercial management group:
+The Route Decision Agent may prepare the route-deviation recommendation and its
+supporting evidence. It cannot approve the deviation. The showcase includes a
+separate policy for the approval action. Route recommendation and route approval
+are different responsibilities; the approval rule is reserved for the human
+commercial management group:
 
 ```text
 permit(
@@ -489,7 +513,7 @@ permit(
 };
 ```
 
-In business terms:
+In business terms, the company is saying:
 
 > A member of the EMEA commercial management group may approve a route
 > deviation up to EUR 10,000. The route agents may prepare evidence and
@@ -499,6 +523,62 @@ The agent catalog makes the same boundary explicit by listing
 `route-deviation.approve` as prohibited for both the Lane Evaluation Agent and
 the Route Decision Agent. The agent may help prepare a business decision; it may
 not turn that preparation into an unauthorized commitment.
+
+## Human-in-the-loop approvals
+
+Some decisions are deliberately kept with people because they change the
+company’s commercial commitment. The agents can investigate the situation,
+compare alternatives, and prepare a recommendation, but they do not silently
+turn that recommendation into an approved quote or route deviation.
+
+The approval boundary works as follows:
+
+1. An agent prepares the recommendation and the evidence behind it.
+2. The control panel checks whether the requested approval is allowed for the
+   person, group, business action, and amount involved.
+3. An authorized human reviews the recommendation and accepts, changes, or
+   rejects it.
+4. The approval and its outcome are recorded in the quotation system.
+
+For this showcase, the Pricing Manager may approve a route deviation up to the
+delegated EUR 10,000 limit. A request above that limit is escalated to the
+Regional Commercial Director. The agent remains involved as a source of
+evidence and preparation, but the accountable human decision stays visible.
+
+```mermaid
+flowchart LR
+    agent[Route Decision Agent<br/>prepare recommendation and evidence]
+    pep[Control panel<br/>check requested action]
+    policy[Policy engine<br/>apply business rules]
+    allowed{ }
+    planner[Transport Planner<br/>review recommendation]
+    specialist[Commercial Pricing Specialist<br/>check commercial evidence]
+    pricing[Pricing Manager<br/>EUR 10,000 delegated approval]
+    limit{ }
+    approve[Human approval<br/>accept route deviation]
+    director[Regional Commercial Director<br/>planner's manager]
+    quote[/Quotation system<br/>record decision/]
+    refused(( ))
+
+    agent --> pep --> policy -->|Approval allowed?| allowed
+    allowed -->|No| refused
+    allowed -->|Yes| planner
+    planner --> specialist -->|Commercial decision needed?| pricing
+    pricing -->|Within EUR 10,000 limit?| limit
+    limit -->|Yes| approve --> quote
+    limit -->|No| director --> quote
+
+    classDef human fill:#e8f1ff,stroke:#3566a8,color:#111;
+    classDef agent fill:#eaf7ea,stroke:#3b7d3b,color:#111;
+    classDef system fill:#fff4d6,stroke:#a87800,color:#111;
+    classDef decision fill:#f5eaff,stroke:#7542a5,color:#111,font-size:10px;
+    classDef event fill:#ffffff,stroke:#666666,color:#111,font-size:10px;
+    class agent agent;
+    class pep,policy,quote system;
+    class planner,specialist,pricing,approve,director human;
+    class allowed,limit decision;
+    class refused event;
+```
 
 ## What remains with the Transport Planner
 
