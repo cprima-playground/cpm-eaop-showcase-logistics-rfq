@@ -15,6 +15,7 @@ Every service-to-service auth edge this repo actually has (decision #8, M6). Any
 | lane-evaluation-agent | mock-masterdata | shared API key (masterdata-api-key) | real |
 | lane-evaluation-agent | mock-rate | shared API key (rate-api-key) | real |
 | lane-evaluation-agent | mock-tms | shared API key (tms-api-key) | real |
+| mission-control-api | Keycloak (token introspection, RFC 7662) | OIDC confidential client, workload's own identity (mission-control-api-svc-client-secret) | real |
 | mock-fx | mock-masterdata | shared API key (masterdata-api-key) | real |
 | mock-rate | mock-masterdata | shared API key (masterdata-api-key) | real |
 | mock-tms | mock-masterdata | shared API key (masterdata-api-key) | real |
@@ -64,6 +65,7 @@ weaker-than-per-workload-token granularity, already the repo's existing
 posture for this hop (unchanged behavior for the other two consumers).
 A dedicated tms-mcp-api-key entry remains status:planned below for a
 future tightening, not activated by this milestone.
+- **mission-control-api -> Keycloak (token introspection, RFC 7662)**: value comes from the mission-control-api-svc client Keycloak already provisions (infra/keycloak/terraform's machine_identities for_each) -- fetched live via the Keycloak admin API and recorded here, same posture as tms-mcp-svc-client-secret/rate-mcp-svc-client-secret/ qms-mcp-svc-client-secret/approval-mcp-svc-client-secret above; seed.py must not overwrite it with a random value.
 - **qms-mcp -> Keycloak (token introspection, RFC 7662)**: value comes from the qms-mcp-svc client Keycloak already provisions (infra/keycloak/terraform's machine_identities for_each) -- fetched live via the Keycloak admin API and recorded here, same posture as tms-mcp-svc-client-secret/rate-mcp-svc-client-secret above; seed.py must not overwrite it with a random value.
 - **qms-mcp -> mock-fx**: (credential-level note, shared by every consumer of fx-api-key) qms-mcp's route-cost.normalize tool consults mock-fx directly (real
 fx_age_seconds for D2's already-decided freshness gate, then the

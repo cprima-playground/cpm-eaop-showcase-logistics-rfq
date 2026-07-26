@@ -19,6 +19,7 @@ clients:
   workload.qms-mcp: {client_id: qms-mcp-svc}
   workload.approval-mcp: {client_id: approval-mcp-svc}
   agent.trust-boundary-fixture: {client_id: trust-boundary-fixture-agent-svc}
+  workload.mission-control: {client_id: mission-control-api-svc}
 
 # Humans get Keycloak users, not clients -- username = canonical actor id
 # directly, no projection entry needed unless a username ever needs to

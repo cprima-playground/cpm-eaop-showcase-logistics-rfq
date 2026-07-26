@@ -63,6 +63,7 @@ def test_discovers_every_real_machine_identity_used_by_m5_and_m6(preconditions):
         "workload.rate-mcp",
         "workload.qms-mcp",
         "workload.approval-mcp",
+        "workload.mission-control",
     }
 
 
@@ -76,6 +77,7 @@ def test_discovers_every_real_machine_identity_used_by_m5_and_m6(preconditions):
     "workload.rate-mcp",
     "workload.qms-mcp",
     "workload.approval-mcp",
+    "workload.mission-control",
 ])
 async def test_machine_identity_preflight(preconditions, canonical_id):
     """secret exists in Vault -> Keycloak accepts a client-credentials

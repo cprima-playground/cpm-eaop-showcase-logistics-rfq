@@ -20,6 +20,7 @@ def test_real_identity_files_validate_cleanly():
     workloads = [p for p in model.principals if p.kind == "workload"]
     assert {w.id for w in workloads} == {
         "workload.tms-mcp", "workload.rate-mcp", "workload.qms-mcp", "workload.approval-mcp",
+        "workload.mission-control",
     }
 
 

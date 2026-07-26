@@ -256,9 +256,16 @@ actors:
     manager: human.omar.director
     region: AMER
 
-  # --- Workloads (kind=workload; MCP servers, M2) ---------------------------
-  # Raw identity facts only -- see header comment. No member_of (no default
-  # group membership; Cedar policy decides what a workload may do).
+  # --- Workloads (kind=workload) ---------------------------------------
+  # workload.* identifies non-human service principals, including MCP
+  # servers, control-plane services, and other trusted runtime workloads
+  # (widened M8 -- previously documented as "MCP servers" only, no
+  # longer accurate once workload.mission-control exists). Raw identity
+  # facts only -- see header comment. No member_of (no default group
+  # membership; Cedar policy decides what a workload may do). `system`
+  # is optional -- for an MCP server it names the mock-<system>/ it
+  # wraps; a control-plane service has no such backing system and uses
+  # a self-descriptive value instead (see workload.mission-control).
   - id: workload.tms-mcp
     kind: workload
     system: tms
@@ -278,6 +285,11 @@ actors:
     kind: workload
     system: qms                # shares mock-qms with qms-mcp; ADR-002 must
     trust_domain: internal     # verify their owned action sets stay disjoint
+
+  - id: workload.mission-control
+    kind: workload
+    system: control-plane      # M8 -- observes, never a mock-* business system
+    trust_domain: internal
 
   # --- Agents (kind=agent) ---------------------------------------------
   # keycloak_client removed (M3.1 directory review, decision #1): it was a

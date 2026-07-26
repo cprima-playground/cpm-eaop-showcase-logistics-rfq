@@ -42,7 +42,7 @@ def test_workload_entities_have_no_parents():
     model = _real_model()
     entities = generate_cedar_entities(model, CATALOG_PATH)
     workloads = [e for e in entities if e["uid"]["type"] == "Agentic::Workload"]
-    assert len(workloads) == 4
+    assert len(workloads) == 5
     assert all(w["parents"] == [] for w in workloads)
 
 
