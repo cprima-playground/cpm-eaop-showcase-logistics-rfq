@@ -150,19 +150,35 @@ resource "keycloak_role" "qms_administrator" {
   name      = "administrator"
 }
 
-# --- Groups -- reuses the exact names Cedar already references
-# (authorization/policies.cedar's Agentic::Group::"rfq-commercial-emea"),
-# flat (no nesting -- Cedar keys off the plain group name, not a Keycloak
-# path; identity/actors.yaml's own `path:` field is a separate, cosmetic
-# org attribute). Mirrors ops-dashboard's flat "Ops" group.
-resource "keycloak_group" "rfq_commercial_emea" {
-  realm_id = keycloak_realm.rfq.id
-  name     = "rfq-commercial-emea"
+# --- Groups (canonical, generator-owned; M3.2a) ----------------------------
+# rfq-commercial-emea/rfq-pricing-emea now for_each over
+# keycloak.generated.tfvars.json (tools/identity/gen_keycloak.py), reuses the
+# exact names Cedar already references (authorization/policies.cedar's
+# Agentic::Group::"rfq-commercial-emea"), flat (no nesting -- Cedar keys off
+# the plain group name, not a Keycloak path; identity/actors.yaml's own
+# `path:` field is a separate, cosmetic org attribute).
+#
+# rfq_qms_platform stays hand-authored below -- MIGRATION.md's Ambiguous
+# classification (aiden.ashford's live group isn't in identity/groups.yaml's
+# 9-group model).
+locals {
+  keycloak_generated = jsondecode(file("${path.module}/keycloak.generated.tfvars.json"))
 }
 
-resource "keycloak_group" "rfq_pricing_emea" {
+resource "keycloak_group" "groups" {
+  for_each = { for g in local.keycloak_generated.groups : g.group_id => g }
   realm_id = keycloak_realm.rfq.id
-  name     = "rfq-pricing-emea"
+  name     = each.value.group_id
+}
+
+moved {
+  from = keycloak_group.rfq_commercial_emea
+  to   = keycloak_group.groups["rfq-commercial-emea"]
+}
+
+moved {
+  from = keycloak_group.rfq_pricing_emea
+  to   = keycloak_group.groups["rfq-pricing-emea"]
 }
 
 resource "keycloak_group" "rfq_qms_platform" {
@@ -170,99 +186,80 @@ resource "keycloak_group" "rfq_qms_platform" {
   name     = "rfq-qms-platform"
 }
 
-# --- Users -- full names (Keycloak first/last name), usernames match the
-# existing identity/actors.yaml ids where one already exists (mona.commercial/
-# sam.pricing predate this build and are live Cedar test fixtures -- kept
-# as-is rather than renamed). Every user gets `reader` plus their specific
-# function role (no composite-role inheritance configured -- out of scope
-# for a 4-person demo, see the plan's §6 note).
-
-resource "keycloak_user" "diane_delgado" {
+# --- Users (canonical, generator-owned; M3.2a) ------------------------------
+# diane.delgado/mona.commercial/sam.pricing now for_each over the same
+# generated input. Roles stay hand-authored per-user below (MIGRATION.md:
+# no job_title/department -> Keycloak role projection rule exists) -- only
+# their `user_id` reference is updated to the new for_each address.
+resource "keycloak_user" "humans" {
+  for_each   = { for u in local.keycloak_generated.users : u.username => u }
   depends_on = [null_resource.enable_unmanaged_attributes]
   realm_id   = keycloak_realm.rfq.id
-  username   = "diane.delgado"
-  email      = "diane.delgado@rfq-showcase.dev"
+  username   = each.value.username
+  email      = each.value.email
   enabled    = true
-  first_name = "Diane"
-  last_name  = "Delgado"
+  first_name = each.value.first_name
+  last_name  = each.value.last_name
 
-  attributes = tomap({ oid = "8e41c2b0-0000-4000-9000-000000000010" })
+  attributes = each.value.attributes
 
   initial_password {
     value     = var.keycloak_user_password
     temporary = false
   }
+}
+
+moved {
+  from = keycloak_user.diane_delgado
+  to   = keycloak_user.humans["diane.delgado"]
+}
+
+moved {
+  from = keycloak_user.mona_commercial
+  to   = keycloak_user.humans["mona.commercial"]
+}
+
+moved {
+  from = keycloak_user.sam_pricing
+  to   = keycloak_user.humans["sam.pricing"]
 }
 
 resource "keycloak_user_roles" "diane_delgado_roles" {
   realm_id = keycloak_realm.rfq.id
-  user_id  = keycloak_user.diane_delgado.id
+  user_id  = keycloak_user.humans["diane.delgado"].id
   role_ids = [keycloak_role.qms_reader.id]
-}
-
-resource "keycloak_user" "mona_commercial" {
-  depends_on = [null_resource.enable_unmanaged_attributes]
-  realm_id   = keycloak_realm.rfq.id
-  username   = "mona.commercial"
-  email      = "mona.commercial@rfq-showcase.dev"
-  enabled    = true
-  first_name = "Mona"
-  last_name  = "Caldwell"
-
-  attributes = tomap({
-    oid                      = "8e41c2b0-0000-4000-9000-000000000011"
-    approval_limit_eur_cents = "1000000"
-    manager                  = "diane.delgado"
-  })
-
-  initial_password {
-    value     = var.keycloak_user_password
-    temporary = false
-  }
 }
 
 resource "keycloak_user_roles" "mona_commercial_roles" {
   realm_id = keycloak_realm.rfq.id
-  user_id  = keycloak_user.mona_commercial.id
+  user_id  = keycloak_user.humans["mona.commercial"].id
   role_ids = [keycloak_role.qms_reader.id, keycloak_role.qms_commercial_manager.id]
-}
-
-resource "keycloak_user_groups" "mona_commercial_groups" {
-  realm_id  = keycloak_realm.rfq.id
-  user_id   = keycloak_user.mona_commercial.id
-  group_ids = [keycloak_group.rfq_commercial_emea.id]
-}
-
-resource "keycloak_user" "sam_pricing" {
-  depends_on = [null_resource.enable_unmanaged_attributes]
-  realm_id   = keycloak_realm.rfq.id
-  username   = "sam.pricing"
-  email      = "sam.pricing@rfq-showcase.dev"
-  enabled    = true
-  first_name = "Marek"
-  last_name  = "Petrov"
-
-  attributes = tomap({
-    oid     = "8e41c2b0-0000-4000-9000-000000000012"
-    manager = "diane.delgado"
-  })
-
-  initial_password {
-    value     = var.keycloak_user_password
-    temporary = false
-  }
 }
 
 resource "keycloak_user_roles" "sam_pricing_roles" {
   realm_id = keycloak_realm.rfq.id
-  user_id  = keycloak_user.sam_pricing.id
+  user_id  = keycloak_user.humans["sam.pricing"].id
   role_ids = [keycloak_role.qms_reader.id, keycloak_role.qms_pricing_manager.id]
 }
 
-resource "keycloak_user_groups" "sam_pricing_groups" {
+# human_group_memberships: keyed by username, assumes at most one group per
+# human (true for every migrated human today -- MIGRATION.md's known
+# limitation).
+resource "keycloak_user_groups" "human_group_memberships" {
+  for_each  = { for m in local.keycloak_generated.group_memberships : m.username => m }
   realm_id  = keycloak_realm.rfq.id
-  user_id   = keycloak_user.sam_pricing.id
-  group_ids = [keycloak_group.rfq_pricing_emea.id]
+  user_id   = keycloak_user.humans[each.value.username].id
+  group_ids = [keycloak_group.groups[each.value.group_id].id]
+}
+
+moved {
+  from = keycloak_user_groups.mona_commercial_groups
+  to   = keycloak_user_groups.human_group_memberships["mona.commercial"]
+}
+
+moved {
+  from = keycloak_user_groups.sam_pricing_groups
+  to   = keycloak_user_groups.human_group_memberships["sam.pricing"]
 }
 
 resource "keycloak_user" "aiden_ashford" {
