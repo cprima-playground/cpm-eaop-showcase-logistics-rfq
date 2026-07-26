@@ -30,6 +30,7 @@ answered by two different rosters (see api.py's module docstring)."""
 
 from __future__ import annotations
 
+import threading
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -106,6 +107,7 @@ class ObservedServiceRegistry:
         self._resolver = _resolver()
         self._entries: dict[str, RegistryEntry] = {}
         self._last_refresh: float = 0.0
+        self._refresh_lock = threading.Lock()
 
     def _poll_one(self, canonical_id: str, now: float) -> RegistryEntry:
         prior = self._entries.get(canonical_id)
@@ -132,9 +134,16 @@ class ObservedServiceRegistry:
         now = time.monotonic()
         if not force and (now - self._last_refresh) < self.ttl_seconds and self._entries:
             return
-        for canonical_id in registry_roster(self.root):
-            self._entries[canonical_id] = self._poll_one(canonical_id, now)
-        self._last_refresh = now
+        with self._refresh_lock:
+            # Re-check under the lock -- a concurrent caller may have
+            # already refreshed while this one was waiting (real
+            # single-flight, not just a docstring claim).
+            now = time.monotonic()
+            if not force and (now - self._last_refresh) < self.ttl_seconds and self._entries:
+                return
+            for canonical_id in registry_roster(self.root):
+                self._entries[canonical_id] = self._poll_one(canonical_id, now)
+            self._last_refresh = now
 
     def list_entries(self) -> list[RegistryEntry]:
         self.refresh()
@@ -143,3 +152,9 @@ class ObservedServiceRegistry:
     def get_entry(self, canonical_id: str) -> RegistryEntry | None:
         self.refresh()
         return self._entries.get(canonical_id)
+
+    def resolve_endpoint(self, canonical_id: str) -> str:
+        """Intentional seam for other read models (health.py) that need
+        this registry's endpoint resolution without reaching into
+        private state (_resolver)."""
+        return self._resolver.resolve(canonical_id)

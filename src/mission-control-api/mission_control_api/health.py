@@ -40,10 +40,9 @@ def health_report(registry: ObservedServiceRegistry, root: Path | None = None) -
     # implies more than /healthz alone would, but this probe is
     # independent of the registry's own cache so a stale registry entry
     # never masks a real outage).
-    resolver = registry._resolver  # same EnvironmentServiceResolver registry.py already built
     for canonical_id in registry_roster(root):
         try:
-            base_url = resolver.resolve(canonical_id)
+            base_url = registry.resolve_endpoint(canonical_id)
         except Exception as exc:
             results.append(ProbeResult(
                 name=canonical_id, base_url="", status="fail",
