@@ -34,31 +34,26 @@ This is a broad job. The company does not treat every responsibility as a
 candidate for automation. It selects a few activities where software can gather
 evidence and prepare useful work for the planner.
 
-## The wider team and approval hierarchy
+## The planner’s immediate team
 
-The Transport Planner is part of a wider commercial and operational chain. The
-company does not ask the planner to make every decision alone:
+The Transport Planner works within a small team. The planner’s direct manager is
+the Regional Commercial Director. Pricing colleagues work alongside the planner
+when a route recommendation affects a quotation or a commercial decision.
 
 ```mermaid
 flowchart TD
-    director[Regional Commercial Director]
-    manager[Pricing Manager / Commercial Manager]
-    specialist[Commercial Pricing Specialist]
+    manager[Regional Commercial Director<br/>planner's manager]
     planner[Transport Planner]
-    operations[Operations / carrier execution]
+    pricing[Pricing Manager<br/>EUR 10,000 delegated approval]
+    specialist[Commercial Pricing Specialist]
 
-    director -->|escalation above delegated limit| manager
-    manager -->|commercial approval within delegated limit| specialist
-    specialist <-->|quote and route evidence| planner
-    planner --> operations
+    manager --> planner
+    manager --> pricing
+    pricing --> specialist
+    planner <-->|route and quote evidence| specialist
 
     classDef human fill:#e8f1ff,stroke:#3566a8,color:#111;
-    classDef agent fill:#eaf7ea,stroke:#3b7d3b,color:#111;
-    classDef system fill:#fff4d6,stroke:#a87800,color:#111;
-    classDef decision fill:#f5eaff,stroke:#7542a5,color:#111,font-size:10px;
-    classDef event fill:#ffffff,stroke:#666666,color:#111,font-size:10px;
-    class start,no_lane,finish event;
-    class director,manager,specialist,planner,operations human;
+    class manager,planner,pricing,specialist human;
 ```
 
 The roles have different responsibilities:
@@ -67,28 +62,37 @@ The roles have different responsibilities:
   recommendations.
 - **Commercial Pricing Specialist** prepares quotations and compares commercial
   inputs.
-- **Pricing Manager / Commercial Manager** governs pricing and approves
+- **Pricing Manager** governs pricing and approves
   commercial decisions within the delegated limit.
-- **Regional Commercial Director** is the escalation point above that limit.
+- **Regional Commercial Director** manages the planner and is the escalation
+  point above that limit.
 
 In the current showcase, the policy engine explicitly demonstrates a EUR 10,000
-approval limit for the EMEA commercial management group. The directory contains
-regional planning, pricing, and commercial groups for EMEA, APAC, and AMER. The
-organizational hierarchy is therefore broader than the one Transport Planner
-example; the example focuses on one position inside that hierarchy.
+approval limit for the commercial management group. The wider organization may
+have more regions and departments, but this example stays with the planner’s
+immediate working context.
 
-## A shipment arrives
+## A business interruption occurs
 
-Imagine a request to move freight from Shanghai to Munich.
+Imagine that a quote has already been prepared for freight from Shanghai to
+Munich. The customer has been given a price and service expectation, and the
+transport plan is based on a particular route and carrier-rate picture.
 
-The planner needs to understand the customer’s required delivery date, the
-equipment, the available modes, route constraints, carrier capacity, and likely
-cost. A route that is cheapest on paper may be unsuitable if it is too slow,
-unavailable, or inconsistent with the customer’s service promise.
+Then the business world changes:
 
-The planner therefore needs more than a single answer. They need a set of
-credible options, the evidence behind those options, and a clear indication of
-where a business decision or approval is required.
+- the exchange rate moves significantly; or
+- a route becomes unavailable because capacity, infrastructure, or an operating
+  condition has changed.
+
+The original quote may no longer be commercially or operationally reliable. This
+is not a workflow step waiting for someone to click a button. It is a business
+interruption that requires the company to reassess an existing commitment.
+
+The Transport Planner now needs to understand the impact, find credible route
+alternatives, and check whether they still meet the customer’s service promise.
+The Pricing Manager may need to review a commercial deviation or revised quote.
+The team needs evidence, options, and a clear indication of where human approval
+is required before the company changes its commitment.
 
 ## How the planner performs the work here
 
@@ -105,9 +109,9 @@ flowchart LR
     start(( )) -->|Shipment request| brief[/Shipment brief\ncustomer requirements/]
     brief --> review[Transport Planner\nreview shipment need]
     review -->|Requirements complete?| complete{ }
-    complete -- No -->|No| clarify[Clarify with customer\nor Commercial]
+    complete -->|No| clarify[Clarify with customer\nor Commercial]
     clarify --> brief
-    complete -- Yes -->|Yes| evaluate[Lane Evaluation Agent\nfind feasible options]
+    complete -->|Yes| evaluate[Lane Evaluation Agent\nfind feasible options]
 
     evaluate --> policy1[Policy engine\ncheck permitted action]
     policy1 --> tms[/TMS\nroute and capacity facts/]
@@ -115,21 +119,21 @@ flowchart LR
     tms --> options[Compare feasible\nroute options]
     rates --> options
     options -->|Feasible option exists?| feasible{ }
-    feasible -- No -->|No| no_lane(( ))
-    feasible -- Yes -->|Yes| recommend[Route Decision Agent\nprepare recommendation]
+    feasible -->|No| no_lane(( ))
+    feasible -->|Yes| recommend[Route Decision Agent\nprepare recommendation]
 
     recommend --> a2a[Specialist hand-off\nrequest fresh capacity check]
     a2a --> recommendation[/Route recommendation\nalternatives and evidence/]
     recommendation -->|Fits cost and service needs?| fit{ }
-    fit -- Yes -->|Yes| planner[Transport Planner\nreview and accept plan]
-    fit -- No -->|No| exception[Record exception\nand prepare escalation]
+    fit -->|Yes| planner[Transport Planner\nreview and accept plan]
+    fit -->|No| exception[Record exception\nand prepare escalation]
     exception -->|Commercial approval needed?| approval{ }
-    approval -- No -->|No| planner
-    approval -- Yes -->|Yes| quote[/Quotation system\nquote and approval state/]
+    approval -->|No| planner
+    approval -->|Yes| quote[/Quotation system\nquote and approval state/]
     quote --> manager[Pricing Manager\nreview commercial decision]
     manager -->|Within delegated EUR 10,000 limit?| limit{ }
-    limit -- Yes --> approve[Human approval\nrecorded in quotation system]
-    limit -- No --> director[Regional Commercial Director\nescalation]
+    limit -->|Yes| approve[Human approval\nrecorded in quotation system]
+    limit -->|No| director[Regional Commercial Director\nescalation]
     approve --> planner
     director --> planner
     planner -->|Route plan ready| finish(( ))
@@ -376,53 +380,27 @@ architecture diagram.
 
 ```mermaid
 flowchart TD
-    subgraph EMEA[EMEA]
-        diane[Diane Delgado<br/>Regional Commercial Director]
-        mona[Mona Caldwell<br/>Pricing Manager<br/>EUR 10,000 delegated approval]
-        sam[Marek Petrov<br/>Commercial Pricing Specialist]
-        wei[Wei Chen<br/>Transport Planner]
-        diane --> mona
-        mona --> sam
-        diane --> wei
-    end
+    organization[Logistics organization]
 
-    subgraph APAC[APAC]
-        lin[Lin Zhao<br/>Regional Commercial Director]
-        priya[Priya Nair<br/>Pricing Manager<br/>EUR 10,000 delegated approval]
-        tomas[Tomas Reyes<br/>Commercial Pricing Specialist]
-        mei[Mei Lin<br/>Transport Planner]
-        lin --> priya
-        priya --> tomas
-        lin --> mei
-    end
+    organization --> diane[Diane Delgado<br/>Regional Commercial Director · EMEA]
+    organization --> lin[Lin Zhao<br/>Regional Commercial Director · APAC]
+    organization --> omar[Omar Haddad<br/>Regional Commercial Director · AMER]
 
-    subgraph AMER[AMER]
-        omar[Omar Haddad<br/>Regional Commercial Director]
-        carla[Carla Mendes<br/>Pricing Manager<br/>EUR 10,000 delegated approval]
-        diego[Diego Alvarez<br/>Commercial Pricing Specialist]
-        javier[Javier Torres<br/>Transport Planner]
-        omar --> carla
-        carla --> diego
-        omar --> javier
-    end
+    diane --> mona[Mona Caldwell<br/>Pricing Manager<br/>EUR 10,000 delegated approval]
+    diane --> wei[Wei Chen<br/>Transport Planner]
+    mona --> sam[Marek Petrov<br/>Commercial Pricing Specialist]
+
+    lin --> priya[Priya Nair<br/>Pricing Manager<br/>EUR 10,000 delegated approval]
+    lin --> mei[Mei Lin<br/>Transport Planner]
+    priya --> tomas[Tomas Reyes<br/>Commercial Pricing Specialist]
+
+    omar --> carla[Carla Mendes<br/>Pricing Manager<br/>EUR 10,000 delegated approval]
+    omar --> javier[Javier Torres<br/>Transport Planner]
+    carla --> diego[Diego Alvarez<br/>Commercial Pricing Specialist]
 
     classDef human fill:#e8f1ff,stroke:#3566a8,color:#111;
-    class diane,mona,sam,wei,lin,priya,tomas,mei,omar,carla,diego,javier human;
+    class organization,diane,mona,sam,wei,lin,priya,tomas,mei,omar,carla,diego,javier human;
 ```
-
-This chart is derived from the directory actors and their `manager` links. The
-corresponding directory groups are:
-
-- `/Front-Office/Planning/EMEA`, `/Front-Office/Planning/APAC`, and
-  `/Front-Office/Planning/AMER` for Transport Planners;
-- `/Back-Office/Pricing/EMEA`, `/Back-Office/Pricing/APAC`, and
-  `/Back-Office/Pricing/AMER` for Commercial Pricing Specialists;
-- `/Front-Office/Commercial/EMEA`, `/Front-Office/Commercial/APAC`, and
-  `/Front-Office/Commercial/AMER` for commercial management.
-
-The directory may be provided by Keycloak or Entra ID. It tells the company who
-a person is, which organizational group they belong to, and which management or
-approval context applies.
 
 The agents and controlled services have separate machine identities. They do
 not inherit a planner’s human group membership. This distinction matters: a
