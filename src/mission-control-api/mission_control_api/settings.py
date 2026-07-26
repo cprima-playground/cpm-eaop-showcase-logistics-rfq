@@ -2,8 +2,8 @@
 Mission Control's own introspection-auth client secret (OIDC_CLIENT_SECRET)
 is the only credential this service holds -- it verifies inbound bearer
 tokens (D6: authN yes, Cedar authZ deferred), it never calls cedar-agent's
-/v1/is_authorized (see test_no_authorization_decisions.py, M8.4), and it
-never reads another workload's Vault secret (D3: identity-drift is
+real decision endpoint (see tests/test_no_authorization_decisions.py,
+M8.4), and it never reads another workload's Vault secret (D3: identity-drift is
 declared-vs-Terraform-state only, no live-grant checks against other
 identities' credentials)."""
 

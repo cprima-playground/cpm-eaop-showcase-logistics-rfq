@@ -1,9 +1,9 @@
 """mission-control-api -- M8's read-only control-plane API.
 
 Mission Control is a PROJECTION, never a source of truth, and never makes
-an authorization decision -- it must never call cedar-agent's
-/v1/is_authorized (mechanically enforced by test_no_authorization_
-decisions.py, M8.4).
+an authorization decision -- it must never call cedar-agent's real
+decision endpoint (mechanically enforced by
+tests/test_no_authorization_decisions.py, M8.4).
 
 Three separate concepts, kept separate in code even where they share
 infrastructure (this module's descriptor cache, rfq_common/probe.py):
@@ -36,6 +36,7 @@ from rfq_common.settings import ServiceSettings
 
 from . import settings
 from .health import health_report
+from .policy_model import policies_report, policy_drift
 from .registry import ObservedServiceRegistry
 from .topology import topology as build_topology
 
@@ -107,6 +108,15 @@ def build_app(
     @api_v1.get("/health")
     def get_health(_principal=Depends(_require_authenticated)) -> dict:
         return health_report(registry, root)
+
+    @api_v1.get("/policies")
+    def get_policies(_principal=Depends(_require_authenticated)) -> dict:
+        return policies_report()
+
+    @api_v1.get("/policies/drift")
+    def get_policies_drift(_principal=Depends(_require_authenticated)) -> dict:
+        from rfq_common.settings import CedarSettings
+        return policy_drift(CedarSettings.from_env().cedar_url)
 
     app.include_router(api_v1)
 
