@@ -62,7 +62,19 @@ networks:
 services:
   # ------------------------------------------------------- mock backends
   mock-fx:
-    build: {context: .., dockerfile: src/mock-fx/Dockerfile}
+    build:
+      context: ..
+      dockerfile: src/mock-fx/Dockerfile
+      # Explicit local cache dir, independent of wherever Docker Desktop's
+      # own VM disk lives -- point DOCKER_BUILDCACHE_DIR at a fast/large
+      # drive (e.g. T:\docker-buildcache) if the default in-repo location
+      # isn't right for this machine. mode=max on cache_to so uv sync's
+      # dependency-download layer specifically gets cached, not just the
+      # final layer.
+      cache_from:
+        - type=local,src=${DOCKER_BUILDCACHE_DIR:-.buildcache}/mock-fx
+      cache_to:
+        - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/mock-fx,mode=max
     image: rfq-showcase-mock-fx
     environment:
       <<: *vault-env
@@ -76,7 +88,19 @@ services:
     profiles: [core, full]
 
   mock-masterdata:
-    build: {context: .., dockerfile: src/mock-masterdata/Dockerfile}
+    build:
+      context: ..
+      dockerfile: src/mock-masterdata/Dockerfile
+      # Explicit local cache dir, independent of wherever Docker Desktop's
+      # own VM disk lives -- point DOCKER_BUILDCACHE_DIR at a fast/large
+      # drive (e.g. T:\docker-buildcache) if the default in-repo location
+      # isn't right for this machine. mode=max on cache_to so uv sync's
+      # dependency-download layer specifically gets cached, not just the
+      # final layer.
+      cache_from:
+        - type=local,src=${DOCKER_BUILDCACHE_DIR:-.buildcache}/mock-masterdata
+      cache_to:
+        - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/mock-masterdata,mode=max
     image: rfq-showcase-mock-masterdata
     environment:
       <<: *vault-env
@@ -85,7 +109,19 @@ services:
     profiles: [core, full]
 
   mock-tms:
-    build: {context: .., dockerfile: src/mock-tms/Dockerfile}
+    build:
+      context: ..
+      dockerfile: src/mock-tms/Dockerfile
+      # Explicit local cache dir, independent of wherever Docker Desktop's
+      # own VM disk lives -- point DOCKER_BUILDCACHE_DIR at a fast/large
+      # drive (e.g. T:\docker-buildcache) if the default in-repo location
+      # isn't right for this machine. mode=max on cache_to so uv sync's
+      # dependency-download layer specifically gets cached, not just the
+      # final layer.
+      cache_from:
+        - type=local,src=${DOCKER_BUILDCACHE_DIR:-.buildcache}/mock-tms
+      cache_to:
+        - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/mock-tms,mode=max
     image: rfq-showcase-mock-tms
     environment:
       <<: *vault-env
@@ -95,7 +131,19 @@ services:
     profiles: [core, full]
 
   mock-rate:
-    build: {context: .., dockerfile: src/mock-rate/Dockerfile}
+    build:
+      context: ..
+      dockerfile: src/mock-rate/Dockerfile
+      # Explicit local cache dir, independent of wherever Docker Desktop's
+      # own VM disk lives -- point DOCKER_BUILDCACHE_DIR at a fast/large
+      # drive (e.g. T:\docker-buildcache) if the default in-repo location
+      # isn't right for this machine. mode=max on cache_to so uv sync's
+      # dependency-download layer specifically gets cached, not just the
+      # final layer.
+      cache_from:
+        - type=local,src=${DOCKER_BUILDCACHE_DIR:-.buildcache}/mock-rate
+      cache_to:
+        - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/mock-rate,mode=max
     image: rfq-showcase-mock-rate
     environment:
       <<: *vault-env
@@ -105,7 +153,19 @@ services:
     profiles: [core, full]
 
   mock-qms:
-    build: {context: .., dockerfile: src/mock-qms/Dockerfile}
+    build:
+      context: ..
+      dockerfile: src/mock-qms/Dockerfile
+      # Explicit local cache dir, independent of wherever Docker Desktop's
+      # own VM disk lives -- point DOCKER_BUILDCACHE_DIR at a fast/large
+      # drive (e.g. T:\docker-buildcache) if the default in-repo location
+      # isn't right for this machine. mode=max on cache_to so uv sync's
+      # dependency-download layer specifically gets cached, not just the
+      # final layer.
+      cache_from:
+        - type=local,src=${DOCKER_BUILDCACHE_DIR:-.buildcache}/mock-qms
+      cache_to:
+        - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/mock-qms,mode=max
     image: rfq-showcase-mock-qms
     environment:
       <<: [*vault-env, *keycloak-env, *cedar-env]
@@ -118,7 +178,19 @@ services:
     profiles: [core, full]
 
   ops-dashboard:
-    build: {context: .., dockerfile: src/ops-dashboard/Dockerfile}
+    build:
+      context: ..
+      dockerfile: src/ops-dashboard/Dockerfile
+      # Explicit local cache dir, independent of wherever Docker Desktop's
+      # own VM disk lives -- point DOCKER_BUILDCACHE_DIR at a fast/large
+      # drive (e.g. T:\docker-buildcache) if the default in-repo location
+      # isn't right for this machine. mode=max on cache_to so uv sync's
+      # dependency-download layer specifically gets cached, not just the
+      # final layer.
+      cache_from:
+        - type=local,src=${DOCKER_BUILDCACHE_DIR:-.buildcache}/ops-dashboard
+      cache_to:
+        - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/ops-dashboard,mode=max
     image: rfq-showcase-ops-dashboard
     environment:
       <<: [*vault-env, *keycloak-env, *cedar-env]
@@ -134,7 +206,19 @@ services:
 
   # ------------------------------------------------------------- MCP servers
   tms-mcp:
-    build: {context: .., dockerfile: src/tms-mcp/Dockerfile}
+    build:
+      context: ..
+      dockerfile: src/tms-mcp/Dockerfile
+      # Explicit local cache dir, independent of wherever Docker Desktop's
+      # own VM disk lives -- point DOCKER_BUILDCACHE_DIR at a fast/large
+      # drive (e.g. T:\docker-buildcache) if the default in-repo location
+      # isn't right for this machine. mode=max on cache_to so uv sync's
+      # dependency-download layer specifically gets cached, not just the
+      # final layer.
+      cache_from:
+        - type=local,src=${DOCKER_BUILDCACHE_DIR:-.buildcache}/tms-mcp
+      cache_to:
+        - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/tms-mcp,mode=max
     image: rfq-showcase-tms-mcp
     environment:
       <<: [*vault-env, *keycloak-env, *cedar-env]
@@ -145,7 +229,19 @@ services:
     profiles: [mcp, full]
 
   rate-mcp:
-    build: {context: .., dockerfile: src/rate-mcp/Dockerfile}
+    build:
+      context: ..
+      dockerfile: src/rate-mcp/Dockerfile
+      # Explicit local cache dir, independent of wherever Docker Desktop's
+      # own VM disk lives -- point DOCKER_BUILDCACHE_DIR at a fast/large
+      # drive (e.g. T:\docker-buildcache) if the default in-repo location
+      # isn't right for this machine. mode=max on cache_to so uv sync's
+      # dependency-download layer specifically gets cached, not just the
+      # final layer.
+      cache_from:
+        - type=local,src=${DOCKER_BUILDCACHE_DIR:-.buildcache}/rate-mcp
+      cache_to:
+        - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/rate-mcp,mode=max
     image: rfq-showcase-rate-mcp
     environment:
       <<: [*vault-env, *keycloak-env, *cedar-env]
@@ -156,7 +252,19 @@ services:
     profiles: [mcp, full]
 
   qms-mcp:
-    build: {context: .., dockerfile: src/qms-mcp/Dockerfile}
+    build:
+      context: ..
+      dockerfile: src/qms-mcp/Dockerfile
+      # Explicit local cache dir, independent of wherever Docker Desktop's
+      # own VM disk lives -- point DOCKER_BUILDCACHE_DIR at a fast/large
+      # drive (e.g. T:\docker-buildcache) if the default in-repo location
+      # isn't right for this machine. mode=max on cache_to so uv sync's
+      # dependency-download layer specifically gets cached, not just the
+      # final layer.
+      cache_from:
+        - type=local,src=${DOCKER_BUILDCACHE_DIR:-.buildcache}/qms-mcp
+      cache_to:
+        - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/qms-mcp,mode=max
     image: rfq-showcase-qms-mcp
     environment:
       <<: [*vault-env, *keycloak-env, *cedar-env]
@@ -168,7 +276,19 @@ services:
     profiles: [mcp, full]
 
   approval-mcp:
-    build: {context: .., dockerfile: src/approval-mcp/Dockerfile}
+    build:
+      context: ..
+      dockerfile: src/approval-mcp/Dockerfile
+      # Explicit local cache dir, independent of wherever Docker Desktop's
+      # own VM disk lives -- point DOCKER_BUILDCACHE_DIR at a fast/large
+      # drive (e.g. T:\docker-buildcache) if the default in-repo location
+      # isn't right for this machine. mode=max on cache_to so uv sync's
+      # dependency-download layer specifically gets cached, not just the
+      # final layer.
+      cache_from:
+        - type=local,src=${DOCKER_BUILDCACHE_DIR:-.buildcache}/approval-mcp
+      cache_to:
+        - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/approval-mcp,mode=max
     image: rfq-showcase-approval-mcp
     environment:
       <<: [*vault-env, *keycloak-env, *cedar-env]
@@ -180,7 +300,19 @@ services:
 
   # ------------------------------------------------------------- A2A agents
   lane-evaluation-agent:
-    build: {context: .., dockerfile: src/lane-evaluation-agent/Dockerfile}
+    build:
+      context: ..
+      dockerfile: src/lane-evaluation-agent/Dockerfile
+      # Explicit local cache dir, independent of wherever Docker Desktop's
+      # own VM disk lives -- point DOCKER_BUILDCACHE_DIR at a fast/large
+      # drive (e.g. T:\docker-buildcache) if the default in-repo location
+      # isn't right for this machine. mode=max on cache_to so uv sync's
+      # dependency-download layer specifically gets cached, not just the
+      # final layer.
+      cache_from:
+        - type=local,src=${DOCKER_BUILDCACHE_DIR:-.buildcache}/lane-evaluation-agent
+      cache_to:
+        - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/lane-evaluation-agent,mode=max
     image: rfq-showcase-lane-evaluation-agent
     environment:
       <<: [*vault-env, *keycloak-env, *cedar-env]
@@ -191,7 +323,19 @@ services:
     profiles: [agents, full]
 
   route-decision-agent:
-    build: {context: .., dockerfile: src/route-decision-agent/Dockerfile}
+    build:
+      context: ..
+      dockerfile: src/route-decision-agent/Dockerfile
+      # Explicit local cache dir, independent of wherever Docker Desktop's
+      # own VM disk lives -- point DOCKER_BUILDCACHE_DIR at a fast/large
+      # drive (e.g. T:\docker-buildcache) if the default in-repo location
+      # isn't right for this machine. mode=max on cache_to so uv sync's
+      # dependency-download layer specifically gets cached, not just the
+      # final layer.
+      cache_from:
+        - type=local,src=${DOCKER_BUILDCACHE_DIR:-.buildcache}/route-decision-agent
+      cache_to:
+        - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/route-decision-agent,mode=max
     image: rfq-showcase-route-decision-agent
     environment:
       <<: [*vault-env, *keycloak-env, *cedar-env]
@@ -202,7 +346,19 @@ services:
     profiles: [agents, full]
 
   commercial-normalization-agent:
-    build: {context: .., dockerfile: src/commercial-normalization-agent/Dockerfile}
+    build:
+      context: ..
+      dockerfile: src/commercial-normalization-agent/Dockerfile
+      # Explicit local cache dir, independent of wherever Docker Desktop's
+      # own VM disk lives -- point DOCKER_BUILDCACHE_DIR at a fast/large
+      # drive (e.g. T:\docker-buildcache) if the default in-repo location
+      # isn't right for this machine. mode=max on cache_to so uv sync's
+      # dependency-download layer specifically gets cached, not just the
+      # final layer.
+      cache_from:
+        - type=local,src=${DOCKER_BUILDCACHE_DIR:-.buildcache}/commercial-normalization-agent
+      cache_to:
+        - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/commercial-normalization-agent,mode=max
     image: rfq-showcase-commercial-normalization-agent
     environment:
       <<: [*vault-env, *keycloak-env, *cedar-env]
@@ -214,7 +370,19 @@ services:
 
   # --------------------------------------------------------- control plane
   mission-control-api:
-    build: {context: .., dockerfile: src/mission-control-api/Dockerfile}
+    build:
+      context: ..
+      dockerfile: src/mission-control-api/Dockerfile
+      # Explicit local cache dir, independent of wherever Docker Desktop's
+      # own VM disk lives -- point DOCKER_BUILDCACHE_DIR at a fast/large
+      # drive (e.g. T:\docker-buildcache) if the default in-repo location
+      # isn't right for this machine. mode=max on cache_to so uv sync's
+      # dependency-download layer specifically gets cached, not just the
+      # final layer.
+      cache_from:
+        - type=local,src=${DOCKER_BUILDCACHE_DIR:-.buildcache}/mission-control-api
+      cache_to:
+        - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/mission-control-api,mode=max
     image: rfq-showcase-mission-control-api
     environment:
       <<: [*vault-env, *keycloak-env, *cedar-env]

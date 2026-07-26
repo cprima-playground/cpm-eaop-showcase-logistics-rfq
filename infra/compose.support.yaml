@@ -128,8 +128,22 @@ services:
   # localhost (infra/compose/Caddyfile), same as any other showcase service.
   a2a-inspector:
     build:
-      context: ../vendor/a2aproject/a2a-inspector
+      context: ./a2a-inspector
       dockerfile: Dockerfile
+      # Not a submodule -- infra/a2a-inspector/Dockerfile clones
+      # cprima-forks/a2aproject-a2a-inspector directly at build time. Never
+      # the upstream a2aproject/a2a-inspector repo.
+      args:
+        A2A_INSPECTOR_REF: fix/streaming-false-0.3.10
+      cache_from:
+        - type=local,src=${DOCKER_BUILDCACHE_DIR:-.buildcache}/a2a-inspector
+      cache_to:
+        - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/a2a-inspector,mode=max
+      # Only the git-clone stage skips cache -- always pulls the fork's
+      # current branch HEAD. npm ci / uv sync in later stages still cache
+      # normally (mode=max above covers them too).
+      no_cache_filter:
+        - source
     image: rfq-showcase-a2a-inspector
     container_name: rfq-showcase-a2a-inspector
     volumes:
@@ -158,8 +172,17 @@ services:
 
   mcp-inspector:
     build:
-      context: ../vendor/modelcontextprotocol/inspector
+      context: ./mcp-inspector
       dockerfile: Dockerfile
+      # Not a submodule -- infra/mcp-inspector/Dockerfile clones
+      # cprima-forks/modelcontextprotocol-inspector directly at build time.
+      # Never the upstream modelcontextprotocol/inspector repo.
+      cache_from:
+        - type=local,src=${DOCKER_BUILDCACHE_DIR:-.buildcache}/mcp-inspector
+      cache_to:
+        - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/mcp-inspector,mode=max
+      no_cache_filter:
+        - source
     image: rfq-showcase-mcp-inspector
     container_name: rfq-showcase-mcp-inspector
     environment:
