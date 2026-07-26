@@ -16,4 +16,10 @@ node_modules
 **/node_modules
 skills
 docs/vendor
-data
+# NOT a blanket `data` exclusion (M8): mission-control-api reads
+# data/identity/machine-identity-inventory.yaml at runtime (topology.py).
+# Only the genuinely unused subtrees are excluded -- large vendored geo
+# basemap data and unrelated narrative content, neither ever read by any
+# service.
+data/vendor
+data/story

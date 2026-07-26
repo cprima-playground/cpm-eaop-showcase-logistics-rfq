@@ -36,6 +36,7 @@ from rfq_common.settings import ServiceSettings
 
 from . import settings
 from .registry import ObservedServiceRegistry
+from .topology import topology as build_topology
 
 RFQ_ROOT = settings.RFQ_ROOT
 
@@ -97,6 +98,10 @@ def build_app(
             from fastapi import HTTPException
             raise HTTPException(status_code=404, detail=f"no registry entry for {canonical_id!r}")
         return _entry_dict(entry)
+
+    @api_v1.get("/topology")
+    def get_topology(_principal=Depends(_require_authenticated)) -> dict:
+        return build_topology(registry)
 
     app.include_router(api_v1)
 
