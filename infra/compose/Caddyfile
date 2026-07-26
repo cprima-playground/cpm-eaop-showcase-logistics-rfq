@@ -95,3 +95,30 @@ https://mission-control.rfq-showcase.localhost {
     import friendly_errors
     reverse_proxy mission-control-api:8300
 }
+
+https://a2a-inspector.rfq-showcase.localhost {
+    import friendly_errors
+    reverse_proxy a2a-inspector:8080
+}
+
+https://mcp-inspector.rfq-showcase.localhost {
+    import friendly_errors
+    reverse_proxy mcp-inspector:6274
+}
+
+# The Inspector client's browser JS calls the proxy server directly
+# (client/src/utils/configUtils.ts's getMCPProxyAddress) -- same-hostname
+# different-port by default, which doesn't work through a single-port
+# gateway. Needs its own vhost; set "Inspector Proxy Address" to this
+# URL in the Inspector UI's config sidebar (MCP_PROXY_FULL_ADDRESS) once
+# per browser -- exactly the "non-default proxy address" case that field
+# exists for.
+https://mcp-inspector-proxy.rfq-showcase.localhost {
+    import friendly_errors
+    reverse_proxy mcp-inspector:6277
+}
+
+https://web.rfq-showcase.localhost {
+    import friendly_errors
+    reverse_proxy web:80
+}

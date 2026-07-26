@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Logistics Multi-Agent Showcase</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/white.css" />
+  <style>
+    :root {
+      --ink: #17324d;
+      --muted: #60758b;
+      --blue: #e8f1ff;
+      --green: #eaf7ea;
+      --gold: #fff4d6;
+      --purple: #f5eaff;
+    }
+    .reveal { color: var(--ink); font-family: Aptos, "Segoe UI", sans-serif; }
+    .reveal h1, .reveal h2, .reveal h3 { color: var(--ink); text-transform: none; }
+    .reveal h1 { font-size: 2.3em; }
+    .reveal h2 { font-size: 1.65em; }
+    .reveal p, .reveal li { color: var(--ink); }
+    .eyebrow { color: #3566a8; font-size: .55em; letter-spacing: .12em; text-transform: uppercase; }
+    .subtitle { color: var(--muted); font-size: .85em; }
+    .cards { display: flex; gap: 1rem; align-items: stretch; justify-content: center; }
+    .card { flex: 1; border: 2px solid #d4dfeb; border-radius: 14px; padding: 1rem; font-size: .7em; text-align: left; }
+    .human { background: var(--blue); border-color: #3566a8; }
+    .agent { background: var(--green); border-color: #3b7d3b; }
+    .system { background: var(--gold); border-color: #a87800; }
+    .policy { background: var(--purple); border-color: #7542a5; }
+    .card strong { display: block; margin-bottom: .4rem; }
+    .flow { display: flex; align-items: center; justify-content: center; gap: .45rem; margin: 1.3rem 0; font-size: .66em; }
+    .node { border: 2px solid; border-radius: 12px; padding: .75rem .9rem; min-width: 125px; }
+    .arrow { color: var(--muted); font-size: 1.4em; }
+    .quote { font-size: .65em; color: var(--muted); margin-top: 1.2rem; }
+    .small { font-size: .68em; }
+    .reveal .progress { color: #3566a8; }
+  </style>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+      <section>
+        <p class="eyebrow">Logistics multi-agent showcase</p>
+        <h1>A familiar logistics job,<br />enhanced by agents</h1>
+        <p class="subtitle">A business-first view of selected responsibilities, existing systems, and governed automation.</p>
+        <p class="quote">Work in progress · minimum-viable showcase</p>
+      </section>
+
+      <section>
+        <p class="eyebrow">Start with the business</p>
+        <h2>Meet the Transport Planner</h2>
+        <p>The planner understands the customer’s promise, compares credible options, and owns the operational decision.</p>
+        <div class="cards">
+          <div class="card human"><strong>Planner</strong>Understands requirements and service commitments.</div>
+          <div class="card system"><strong>Company systems</strong>TMS, rate management, quotation, and other systems each hold part of the truth.</div>
+          <div class="card human"><strong>Commercial team</strong>Reviews decisions that change the company’s commitment.</div>
+        </div>
+      </section>
+
+      <section>
+        <p class="eyebrow">The interruption</p>
+        <h2>A quote is no longer reliable</h2>
+        <p>Shanghai → Munich. An exchange rate moves, a route loses capacity, or a carrier option changes.</p>
+        <div class="flow">
+          <div class="node system">Existing quote</div><div class="arrow">→</div>
+          <div class="node policy">Business conditions change</div><div class="arrow">→</div>
+          <div class="node human">Planner reassesses</div>
+        </div>
+        <p class="small">The planner needs options, evidence, and a clear approval boundary—not a mysterious all-knowing answer.</p>
+      </section>
+
+      <section>
+        <p class="eyebrow">The enhancement</p>
+        <h2>Selected responsibilities become agent capabilities</h2>
+        <div class="flow">
+          <div class="node human">Transport Planner<br /><small>sets the need</small></div><div class="arrow">→</div>
+          <div class="node agent">Lane Evaluation Agent<br /><small>finds options</small></div><div class="arrow">→</div>
+          <div class="node agent">Route Decision Agent<br /><small>prepares recommendation</small></div><div class="arrow">→</div>
+          <div class="node human">Planner<br /><small>decides</small></div>
+        </div>
+        <p class="small">A2A connects specialist agents. MCP gives them controlled access to existing enterprise capabilities.</p>
+      </section>
+
+      <section>
+        <p class="eyebrow">Enterprise continuity</p>
+        <h2>The systems of record remain</h2>
+        <div class="cards">
+          <div class="card system"><strong>TMS</strong>Route and transport-capacity facts.</div>
+          <div class="card system"><strong>Rate system</strong>Carrier-rate facts.</div>
+          <div class="card system"><strong>Quotation system</strong>Quote and approval state.</div>
+        </div>
+        <p class="subtitle">Agents change how people interact with the landscape—not where business truth is owned.</p>
+      </section>
+
+      <section>
+        <p class="eyebrow">Governed autonomy</p>
+        <h2>Human-in-the-loop is explicit</h2>
+        <div class="flow">
+          <div class="node agent">Agent<br /><small>prepares evidence</small></div><div class="arrow">→</div>
+          <div class="node policy">Control panel<br /><small>policy check</small></div><div class="arrow">→</div>
+          <div class="node human">Pricing Manager<br /><small>approves within limit</small></div><div class="arrow">→</div>
+          <div class="node human">Director<br /><small>escalation above limit</small></div>
+        </div>
+        <p class="small">The agent may prepare a route deviation. It may not approve it. The policy engine and control-panel enforcement point keep that boundary visible.</p>
+      </section>
+
+      <section>
+        <p class="eyebrow">The central message</p>
+        <h2>Business responsibility stays visible</h2>
+        <p>Systems of record remain. Selected responsibilities become agent capabilities. A2A connects capabilities. MCP connects them to enterprise systems. Policy keeps every meaningful action governed.</p>
+        <p class="quote">More soon.</p>
+      </section>
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script>
+    Reveal.initialize({
+      hash: true,
+      slideNumber: true,
+      transition: 'slide',
+      controls: true,
+      progress: true,
+      center: true
+    });
+  </script>
+</body>
+</html>

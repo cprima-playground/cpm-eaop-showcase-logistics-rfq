@@ -1,16 +1,19 @@
 # SUPPORT stack -- platform dependencies the showcase runs on top of, not
-# the showcase itself: Caddy (edge), Keycloak (identity), Vault (secrets).
-# Owns the shared `rfq-showcase` network; infra/compose.showcase.yaml joins
-# it as `external: true`. Separable from the showcase on purpose: you can
-# bring support up/down independently (it changes rarely), and restart the
+# the showcase itself: gateway (edge -- Caddy in dev, GCP Apigee is the
+# TARGET for test/prod, same env-conditional-facade shape as
+# rfq_common.secrets.SecretsClient's Vault-dev/GCP-Secret-Manager-TARGET
+# split), Keycloak (identity), Vault (secrets). Owns the shared
+# `rfq-showcase` network; infra/compose.showcase.yaml joins it as
+# `external: true`. Separable from the showcase on purpose: you can bring
+# support up/down independently (it changes rarely), and restart the
 # showcase app layer without touching identity/secrets state.
 #
-# CADDY-FIRST (tmp/caddy-first-routing-analysis.md): Caddy is the sole
-# externally-published ingress (443). Keycloak/Vault publish host ports too,
-# but as an explicitly justified carve-out (admin console / seed script /
+# GATEWAY-FIRST (tmp/caddy-first-routing-analysis.md): the gateway is the
+# sole externally-published ingress (443). Keycloak/Vault publish host ports
+# too, but as an explicitly justified carve-out (admin console / seed script /
 # debug access), not because peer services need them that way -- every
 # showcase service reaches these by compose DNS (http://keycloak:8080,
-# http://vault:8200), never through Caddy or a host-published port.
+# http://vault:8200), never through the gateway or a host-published port.
 #
 # Run: docker compose -f infra/compose.support.yaml up -d --build
 # Then: docker compose -f infra/compose.support.yaml -f infra/compose.showcase.yaml --profile core up -d --build
@@ -29,18 +32,50 @@ volumes:
   caddy-data:
 
 services:
-  caddy:
+  gateway:
     build:
       context: ./caddy
       dockerfile: Dockerfile
-    image: rfq-showcase-caddy
-    container_name: rfq-showcase-caddy
+    image: rfq-showcase-gateway
+    container_name: rfq-showcase-gateway
     ports:
       - "443:443"
     volumes:
       - ./compose/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
-    networks: [rfq-showcase]
+    networks:
+      rfq-showcase:
+        # Every *.rfq-showcase.localhost vhost this proxies (infra/compose/
+        # Caddyfile), registered as DNS aliases for this container -- lets
+        # ANY peer on this network (a2a-inspector included) resolve and
+        # reach these hostnames via compose-internal DNS, the same names +
+        # real HTTPS + CA a browser gets, without editing /etc/hosts inside
+        # every container that needs one. Docker's embedded resolver
+        # doesn't special-case the .localhost TLD the way browsers do
+        # (confirmed directly -- see infra/caddy/README.md), so without
+        # this, only the HOST machine's hosts-file trick makes these names
+        # resolve; any container-side client (this compose network's own
+        # dev tooling) needs them registered explicitly instead.
+        aliases:
+          - ops-dashboard.rfq-showcase.localhost
+          - qms.rfq-showcase.localhost
+          - tms.rfq-showcase.localhost
+          - rate.rfq-showcase.localhost
+          - fx.rfq-showcase.localhost
+          - masterdata.rfq-showcase.localhost
+          - keycloak.rfq-showcase.localhost
+          - lane-evaluation-agent.rfq-showcase.localhost
+          - route-decision-agent.rfq-showcase.localhost
+          - commercial-normalization-agent.rfq-showcase.localhost
+          - tms-mcp.rfq-showcase.localhost
+          - rate-mcp.rfq-showcase.localhost
+          - qms-mcp.rfq-showcase.localhost
+          - approval-mcp.rfq-showcase.localhost
+          - mission-control.rfq-showcase.localhost
+          - a2a-inspector.rfq-showcase.localhost
+          - mcp-inspector.rfq-showcase.localhost
+          - mcp-inspector-proxy.rfq-showcase.localhost
+          - web.rfq-showcase.localhost
     restart: unless-stopped
 
   keycloak:
@@ -78,5 +113,75 @@ services:
       VAULT_DEV_ROOT_TOKEN_ID: rfq-dev-root
       VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
     cap_add: [IPC_LOCK]
+    networks: [rfq-showcase]
+    restart: unless-stopped
+
+  # ---------------------------------------------------------- dev tooling
+  # First-class members of this stack (not a standalone opt-in compose
+  # project anymore -- infra/a2a-inspector/docker-compose.yml is superseded
+  # by this block): on the SAME rfq-showcase network as everything they
+  # inspect, so they resolve gateway's *.rfq-showcase.localhost aliases
+  # (above) via compose DNS and can reach every agent/MCP server directly,
+  # the same way a real external client does. Gateway-routed, not a host-port
+  # carve-out (unlike Keycloak/Vault's admin consoles) -- a peer dev surface
+  # you browse routinely belongs behind https://a2a-inspector.rfq-showcase.
+  # localhost (infra/compose/Caddyfile), same as any other showcase service.
+  a2a-inspector:
+    build:
+      context: ../vendor/a2aproject/a2a-inspector
+      dockerfile: Dockerfile
+    image: rfq-showcase-a2a-inspector
+    container_name: rfq-showcase-a2a-inspector
+    volumes:
+      - ./caddy/root.crt:/usr/local/share/ca-certificates/gateway-root.crt:ro
+    # Appends the gateway's local CA onto the image's own bundle into a
+    # combined file (not a replacement -- SSL_CERT_FILE pointed at ONLY the
+    # gateway cert broke the image's own startup; confirmed live,
+    # `UnknownIssuer` against pypi.org). Plain concatenation, not
+    # `update-ca-certificates` -- that hung indefinitely in this minimal
+    # image for unclear reasons; confirmed via direct exec, still hung past
+    # 30s. Runs the venv's own python directly instead of `uv run` -- the
+    # vendored submodule's uv.lock is genuinely out of sync with its
+    # pyproject.toml ("Missing workspace member `a2a-inspector`", confirmed
+    # via `--frozen`), which makes plain `uv run` try to self-heal over the
+    # network on every boot (that's what needed pypi.org above, and what was
+    # hanging). The build-time `uv sync` already produced a working venv;
+    # invoking it directly skips uv's runtime lock-check entirely, no
+    # network dependency left at boot -- not a fix for the vendored repo's
+    # own lockfile drift, just not depending on it.
+    command: >
+      sh -c "cat /etc/ssl/certs/ca-certificates.crt /usr/local/share/ca-certificates/gateway-root.crt > /tmp/combined-ca.pem &&
+      cd /app/backend &&
+      SSL_CERT_FILE=/tmp/combined-ca.pem /app/.venv/bin/python -m uvicorn app:app --host 0.0.0.0 --port 8080"
+    networks: [rfq-showcase]
+    restart: unless-stopped
+
+  mcp-inspector:
+    build:
+      context: ../vendor/modelcontextprotocol/inspector
+      dockerfile: Dockerfile
+    image: rfq-showcase-mcp-inspector
+    container_name: rfq-showcase-mcp-inspector
+    environment:
+      HOST: "0.0.0.0"   # image default is `localhost` -- unreachable from Caddy's own network hop
+      ALLOWED_ORIGINS: https://mcp-inspector.rfq-showcase.localhost
+      # DNS-rebinding origin check + per-session proxy token are real
+      # protections (server/src/index.ts) but this instance is local-only,
+      # gateway+CA-fronted, never internet-reachable -- same dev-convenience
+      # tradeoff as Vault's fixed dev root token (infra/vault/README.md).
+      # TARGET (test/prod) would need this on properly.
+      DANGEROUSLY_OMIT_AUTH: "true"
+    networks: [rfq-showcase]
+    restart: unless-stopped
+
+  # Local stand-in for GitHub Pages (web/slides/ -- this repo's showcase
+  # presentation materials): plain static file server, no build step of its
+  # own. Gateway-routed like everything else in this stack, not a raw
+  # host-published port.
+  web:
+    image: nginx:alpine
+    container_name: rfq-showcase-web
+    volumes:
+      - ../web:/usr/share/nginx/html:ro
     networks: [rfq-showcase]
     restart: unless-stopped

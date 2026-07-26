@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Transport Planner — an agentically enhanced job</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/white.css" />
+  <style>
+    :root { --ink:#17324d; --muted:#60758b; --blue:#e8f1ff; --green:#eaf7ea; --gold:#fff4d6; --purple:#f5eaff; }
+    .reveal { color:var(--ink); font-family:Aptos,"Segoe UI",sans-serif; }
+    .reveal h1,.reveal h2,.reveal h3 { color:var(--ink); text-transform:none; }
+    .reveal h1 { font-size:2.15em; }
+    .reveal h2 { font-size:1.55em; }
+    .reveal p,.reveal li { color:var(--ink); }
+    .eyebrow { color:#3566a8; font-size:.52em; letter-spacing:.12em; text-transform:uppercase; }
+    .subtitle { color:var(--muted); font-size:.78em; }
+    .small { font-size:.62em; }
+    .quote { color:var(--muted); font-size:.63em; margin-top:1.2rem; }
+    .cards { display:flex; gap:.8rem; align-items:stretch; justify-content:center; }
+    .card { flex:1; border:2px solid #d4dfeb; border-radius:14px; padding:.8rem; font-size:.62em; text-align:left; }
+    .card strong { display:block; margin-bottom:.35rem; }
+    .human { background:var(--blue); border-color:#3566a8; }
+    .agent { background:var(--green); border-color:#3b7d3b; }
+    .system { background:var(--gold); border-color:#a87800; }
+    .policy { background:var(--purple); border-color:#7542a5; }
+    .org { display:grid; grid-template-columns:repeat(3,1fr); gap:.45rem; align-items:center; font-size:.52em; }
+    .org div { border:2px solid #3566a8; border-radius:10px; background:var(--blue); padding:.45rem; }
+    .org .root { grid-column:1 / -1; width:38%; justify-self:center; }
+    .org .manager { grid-column:1 / -1; width:55%; justify-self:center; }
+    .flow { display:flex; align-items:center; justify-content:center; gap:.35rem; margin:1rem 0; font-size:.57em; }
+    .node { border:2px solid; border-radius:11px; padding:.62rem .7rem; min-width:115px; }
+    .arrow { color:var(--muted); font-size:1.35em; }
+    .step-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:.45rem; margin-top:1rem; }
+    .step { border:2px solid #d4dfeb; border-radius:10px; padding:.55rem; font-size:.51em; min-height:80px; }
+    .step b { display:block; color:#3566a8; margin-bottom:.25rem; }
+    .reveal .progress { color:#3566a8; }
+  </style>
+</head>
+<body>
+  <div class="reveal"><div class="slides">
+    <section>
+      <p class="eyebrow">Onboarding story · logistics showcase</p>
+      <h1>Transport Planner<br />— an agentically enhanced job</h1>
+      <p class="subtitle">Selected responsibilities become governed agent capabilities while the job, accountability, and systems of record remain.</p>
+    </section>
+
+    <section>
+      <section>
+        <p class="eyebrow">Chapter 1 · the role</p>
+        <h2>Meet the Transport Planner</h2>
+        <p class="subtitle">Press ↓ to meet the role and its working context.</p>
+      </section>
+      <section>
+        <p class="eyebrow">The job</p>
+        <div class="cards">
+          <div class="card human"><strong>Plan and route</strong>Create executable routes that fit time, traffic, equipment, and customer requirements.</div>
+          <div class="card human"><strong>Compare choices</strong>Find suitable cost and transport-mode options.</div>
+          <div class="card human"><strong>Stay accountable</strong>Monitor execution, communicate, and adjust when conditions change.</div>
+        </div>
+        <p class="quote">The company selects only a few responsibilities for software support.</p>
+      </section>
+      <section>
+        <p class="eyebrow">The human structure</p>
+        <h2>The planner works in a team</h2>
+        <div class="org">
+          <div class="root">Logistics organization</div>
+          <div class="manager">Regional Commercial Director · planner’s manager</div>
+          <div>Transport Planner</div><div>Pricing Manager<br /><small>EUR 10,000 delegated approval</small></div><div>Commercial Pricing Specialist</div>
+        </div>
+        <p class="small">The manager, pricing colleagues, approval limit, and escalation path are business context—not agent architecture.</p>
+      </section>
+    </section>
+
+    <section>
+      <section>
+        <p class="eyebrow">Chapter 2 · the interruption</p>
+        <h2>A business interruption occurs</h2>
+        <p class="subtitle">Press ↓ to see why the planner must reassess an existing commitment.</p>
+      </section>
+      <section>
+        <h2>The Shanghai–Munich quote may no longer hold</h2>
+        <p>An exchange rate moves. A route loses capacity. An operating condition changes.</p>
+        <div class="flow">
+          <div class="node system">Existing quote</div><div class="arrow">→</div>
+          <div class="node policy">Conditions change</div><div class="arrow">→</div>
+          <div class="node human">Planner reassesses</div>
+        </div>
+        <p class="small">The team needs credible alternatives, evidence, and a clear indication of where approval is required.</p>
+      </section>
+    </section>
+
+    <section>
+      <section>
+        <p class="eyebrow">Chapter 3 · human baseline</p>
+        <h2>How the planner performs the work here</h2>
+        <p class="subtitle">The reference process comes before the agent variation.</p>
+      </section>
+      <section>
+        <div class="step-grid">
+          <div class="step human"><b>1 · Understand</b>Confirm the shipment need and commitments.</div>
+          <div class="step human"><b>2 · Find options</b>Check routes, capacity, and rates.</div>
+          <div class="step human"><b>3 · Recommend</b>Prepare and review the route plan.</div>
+          <div class="step human"><b>4 · Compare</b>Balance cost, mode, time, and service.</div>
+          <div class="step human"><b>5 · Adjust</b>Monitor execution and re-plan.</div>
+        </div>
+        <p class="quote">The planner owns the understanding, judgment, communication, and escalation.</p>
+      </section>
+      <section>
+        <h2>The baseline ends with a human decision</h2>
+        <div class="flow">
+          <div class="node human">Planner<br /><small>prepares route</small></div><div class="arrow">→</div>
+          <div class="node policy">Commercial approval?<br /><small>decision boundary</small></div><div class="arrow">→</div>
+          <div class="node human">Pricing Manager<br /><small>within limit</small></div><div class="arrow">→</div>
+          <div class="node human">Director<br /><small>escalation</small></div>
+        </div>
+      </section>
+    </section>
+
+    <section>
+      <section>
+        <p class="eyebrow">Chapter 4 · agent-supported variation</p>
+        <h2>Specialists support selected steps</h2>
+        <p class="subtitle">Press ↓ to see the agent roles and their controlled boundaries.</p>
+      </section>
+      <section>
+        <div class="flow">
+          <div class="node human">Planner<br /><small>sets the need</small></div><div class="arrow">→</div>
+          <div class="node agent">Lane Evaluation Agent<br /><small>finds alternatives</small></div><div class="arrow">→</div>
+          <div class="node agent">Route Decision Agent<br /><small>prepares evidence</small></div><div class="arrow">→</div>
+          <div class="node human">Planner<br /><small>reviews and decides</small></div>
+        </div>
+        <p class="small">Commercial Normalization Agent makes route costs comparable across modes, currencies, and carrier inputs.</p>
+      </section>
+      <section>
+        <h2>Agents do not own the truth</h2>
+        <div class="cards">
+          <div class="card system"><strong>TMS</strong>Routes and transport capacity.</div>
+          <div class="card system"><strong>Rate system</strong>Carrier-rate facts.</div>
+          <div class="card system"><strong>Quotation system</strong>Quote and approval state.</div>
+        </div>
+        <p class="subtitle">MCP sits over existing APIs. Agents change interaction and orchestration, not ownership of truth.</p>
+      </section>
+      <section>
+        <h2>Business hand-offs, governed access</h2>
+        <div class="cards">
+          <div class="card agent"><strong>A2A</strong>Lane Evaluation Agent asks Route Decision Agent to prepare a recommendation.</div>
+          <div class="card system"><strong>MCP</strong>Agents use controlled company services to access TMS and rate capabilities.</div>
+          <div class="card policy"><strong>Policy engine</strong>Each requested action is checked before it can affect a company system.</div>
+        </div>
+      </section>
+    </section>
+
+    <section>
+      <section>
+        <p class="eyebrow">Chapter 5 · governance</p>
+        <h2>The agent prepares. People approve.</h2>
+        <p class="subtitle">Press ↓ to follow the human-in-the-loop boundary.</p>
+      </section>
+      <section>
+        <div class="flow">
+          <div class="node agent">Route Decision Agent<br /><small>evidence and recommendation</small></div><div class="arrow">→</div>
+          <div class="node policy">Control panel<br /><small>policy check</small></div><div class="arrow">→</div>
+          <div class="node human">Pricing Manager<br /><small>up to EUR 10,000</small></div><div class="arrow">→</div>
+          <div class="node human">Regional Commercial Director<br /><small>above limit</small></div>
+        </div>
+        <p class="small">Route-deviation approval is prohibited for the route agents. The accountable human decision remains visible.</p>
+      </section>
+      <section>
+        <h2>What remains with the Transport Planner</h2>
+        <ul class="small">
+          <li>Decide how recommendations fit customer commitments and priorities.</li>
+          <li>Validate whether a recommendation is realistic.</li>
+          <li>Monitor execution and communicate with carriers, drivers, customers, and colleagues.</li>
+          <li>Handle exceptions and accept, revise, or escalate a recommendation.</li>
+        </ul>
+        <p class="subtitle">The agent is a bounded colleague for selected analytical and preparatory work—not a replacement for the complete job.</p>
+      </section>
+    </section>
+
+    <section>
+      <p class="eyebrow">Central message</p>
+      <h2>Business responsibility stays visible</h2>
+      <p>Systems of record remain. Selected human responsibilities become agent capabilities. A2A connects those capabilities. MCP connects them to enterprise systems. Policy keeps every meaningful action governed.</p>
+      <p class="quote">Transport Planner story · minimum-viable showcase</p>
+    </section>
+  </div></div>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script>
+    Reveal.initialize({ hash: true, slideNumber: true, transition: 'slide', controls: true, progress: true, center: true });
+  </script>
+</body>
+</html>
