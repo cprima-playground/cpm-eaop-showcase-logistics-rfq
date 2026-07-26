@@ -1,0 +1,320 @@
+schema_version: 1
+generated_from:
+- business/job-titles.yaml
+- business/job-workload-mappings.yaml
+- agents/catalog.yaml
+- identity/actors.yaml
+- identity/groups.yaml
+- authorization/policies.cedar
+- tools/story/generate_workload_map.py
+note: 'Current scope: this projection covers selected responsibilities from the Transport
+  Planner, Commercial Pricing Specialist, and Pricing Manager job descriptions within
+  the cross-currency lane repricing and approval subprocess. It connects those responsibilities
+  to the showcase''s implemented agent, MCP, system-API, and policy enforcement workloads,
+  and includes the directory hierarchy used for AuthZ. It is not a claim that an entire
+  job, role, or department is automated or replaced.'
+directory:
+  sources:
+  - identity/actors.yaml
+  - identity/groups.yaml
+  - authorization/authz-projection.yaml
+  identity_service_targets:
+  - keycloak
+  - entra_id
+  hierarchy_relation: actor.member_of -> group.path -> policy principal in Group
+  policy_relevant_groups:
+  - rfq-commercial-emea
+  groups:
+  - group_id: rfq-commercial-emea
+    path: /Front-Office/Commercial/EMEA
+    cost_center: CC-COMM-EMEA
+  - group_id: rfq-pricing-emea
+    path: /Back-Office/Pricing/EMEA
+    cost_center: CC-PRIC-EMEA
+  - group_id: rfq-planning-emea
+    path: /Front-Office/Planning/EMEA
+    cost_center: CC-PLAN-EMEA
+  - group_id: rfq-commercial-apac
+    path: /Front-Office/Commercial/APAC
+    cost_center: CC-COMM-APAC
+  - group_id: rfq-pricing-apac
+    path: /Back-Office/Pricing/APAC
+    cost_center: CC-PRIC-APAC
+  - group_id: rfq-planning-apac
+    path: /Front-Office/Planning/APAC
+    cost_center: CC-PLAN-APAC
+  - group_id: rfq-commercial-amer
+    path: /Front-Office/Commercial/AMER
+    cost_center: CC-COMM-AMER
+  - group_id: rfq-pricing-amer
+    path: /Back-Office/Pricing/AMER
+    cost_center: CC-PRIC-AMER
+  - group_id: rfq-planning-amer
+    path: /Front-Office/Planning/AMER
+    cost_center: CC-PLAN-AMER
+workloads:
+- workload_id: agent.lane-evaluation
+  name: Lane Evaluation Agent
+  kind: agent
+  implementation_status: implemented
+  protocol: a2a
+  source: src/lane-evaluation-agent
+  dependencies:
+  - workload.tms-mcp
+  - workload.rate-mcp
+  directory_identity:
+    kind: agent
+    persona: LaneEvaluationAgent
+    trust_domain: internal
+    member_of: []
+- workload_id: agent.commercial-normalization
+  name: Commercial Normalization Agent
+  kind: agent
+  implementation_status: implemented
+  protocol: a2a
+  source: src/commercial-normalization-agent
+  dependencies:
+  - workload.qms-mcp
+  - system.fx-api
+  directory_identity:
+    kind: agent
+    persona: CommercialNormalizationAgent
+    trust_domain: internal
+    member_of: []
+- workload_id: agent.route-decision
+  name: Route Decision Agent
+  kind: agent
+  implementation_status: implemented
+  protocol: a2a
+  source: src/route-decision-agent
+  dependencies:
+  - workload.approval-mcp
+  - agent.lane-evaluation
+  directory_identity:
+    kind: agent
+    persona: RouteDecisionAgent
+    trust_domain: internal
+    member_of: []
+- workload_id: workload.tms-mcp
+  name: TMS MCP
+  kind: mcp_server
+  implementation_status: implemented
+  protocol: mcp
+  source: src/tms-mcp
+  dependencies:
+  - system.tms-api
+  directory_identity:
+    kind: workload
+    persona: null
+    trust_domain: internal
+    member_of: []
+- workload_id: workload.rate-mcp
+  name: Rate MCP
+  kind: mcp_server
+  implementation_status: implemented
+  protocol: mcp
+  source: src/rate-mcp
+  dependencies:
+  - system.rate-api
+  directory_identity:
+    kind: workload
+    persona: null
+    trust_domain: internal
+    member_of: []
+- workload_id: workload.qms-mcp
+  name: QMS MCP
+  kind: mcp_server
+  implementation_status: implemented
+  protocol: mcp
+  source: src/qms-mcp
+  dependencies:
+  - system.qms-api
+  directory_identity:
+    kind: workload
+    persona: null
+    trust_domain: internal
+    member_of: []
+- workload_id: workload.approval-mcp
+  name: Approval MCP
+  kind: mcp_server
+  implementation_status: implemented
+  protocol: mcp
+  source: src/approval-mcp
+  dependencies:
+  - system.qms-api
+  directory_identity:
+    kind: workload
+    persona: null
+    trust_domain: internal
+    member_of: []
+- workload_id: system.tms-api
+  name: TMS API
+  kind: system_api
+  implementation_status: implemented
+  protocol: http
+  source: src/mock-tms
+  dependencies: []
+  description: TMS
+- workload_id: system.rate-api
+  name: Rate API
+  kind: system_api
+  implementation_status: implemented
+  protocol: http
+  source: src/mock-rate
+  dependencies: []
+  description: Rate management
+- workload_id: system.qms-api
+  name: QMS API
+  kind: system_api
+  implementation_status: implemented
+  protocol: http
+  source: src/mock-qms
+  dependencies: []
+  description: Quotation / QMS
+- workload_id: system.fx-api
+  name: FX API
+  kind: system_api
+  implementation_status: implemented
+  protocol: http
+  source: src/mock-fx
+  dependencies: []
+  description: Exchange rates
+- workload_id: system.masterdata-api
+  name: Masterdata API
+  kind: system_api
+  implementation_status: implemented
+  protocol: http
+  source: src/mock-masterdata
+  dependencies: []
+  description: Master data
+- workload_id: policy.control-panel-pep
+  name: Control-panel PEP / Cedar PDP
+  kind: policy_enforcement
+  implementation_status: implemented
+  protocol: policy
+  source: src/rfq_common
+  dependencies: []
+  description: Authorization and obligations
+job_responsibility_mappings:
+- job_title_id: transport-planner
+  job_title: Transport Planner
+  responsibility: Create optimized shipment routes (distance, time, traffic, customer
+    requirements)
+  workloads:
+  - workload_id: agent.lane-evaluation
+    relationship: performs
+    name: Lane Evaluation Agent
+    implementation_status: implemented
+  directory: &id001
+    actors:
+    - human.wei.planning
+    - human.mei.planning
+    - human.javier.planning
+    groups:
+    - rfq-planning-emea
+    - rfq-planning-apac
+    - rfq-planning-amer
+- job_title_id: transport-planner
+  job_title: Transport Planner
+  responsibility: Identify lowest freight cost and best mode to maximize efficiency
+  workloads:
+  - workload_id: agent.lane-evaluation
+    relationship: performs
+    name: Lane Evaluation Agent
+    implementation_status: implemented
+  - workload_id: workload.rate-mcp
+    relationship: accesses
+    name: Rate MCP
+    implementation_status: implemented
+  directory: *id001
+- job_title_id: transport-planner
+  job_title: Transport Planner
+  responsibility: Plan, tender, and route daily shipments to meet cost/service parameters
+  workloads:
+  - workload_id: agent.route-decision
+    relationship: performs
+    name: Route Decision Agent
+    implementation_status: implemented
+  directory: *id001
+- job_title_id: commercial-pricing-specialist
+  job_title: Commercial Pricing Specialist
+  responsibility: Prepare freight quotations for Air, Sea (FCL/LCL), and Land
+  workloads:
+  - workload_id: agent.commercial-normalization
+    relationship: performs
+    name: Commercial Normalization Agent
+    implementation_status: implemented
+  - workload_id: workload.qms-mcp
+    relationship: accesses
+    name: QMS MCP
+    implementation_status: implemented
+  directory: &id002
+    actors:
+    - sam.pricing
+    - human.tomas.pricing
+    - human.diego.pricing
+    groups:
+    - rfq-pricing-emea
+    - rfq-pricing-apac
+    - rfq-pricing-amer
+- job_title_id: commercial-pricing-specialist
+  job_title: Commercial Pricing Specialist
+  responsibility: Analyze market trends and freight rate fluctuations
+  workloads:
+  - workload_id: agent.commercial-normalization
+    relationship: performs
+    name: Commercial Normalization Agent
+    implementation_status: implemented
+  - workload_id: system.fx-api
+    relationship: accesses
+    name: FX API
+    implementation_status: implemented
+  directory: *id002
+- job_title_id: commercial-pricing-specialist
+  job_title: Commercial Pricing Specialist
+  responsibility: Ensure quotations comply with company policy and service capability
+  workloads:
+  - workload_id: agent.commercial-normalization
+    relationship: supports
+    name: Commercial Normalization Agent
+    implementation_status: implemented
+  - workload_id: workload.qms-mcp
+    relationship: accesses
+    name: QMS MCP
+    implementation_status: implemented
+  - workload_id: policy.control-panel-pep
+    relationship: governs
+    name: Control-panel PEP / Cedar PDP
+    implementation_status: implemented
+  directory: *id002
+- job_title_id: pricing-manager
+  job_title: Pricing Manager
+  responsibility: Lead pricing governance -- standardized practices, discounting policy,
+    approval protocols
+  workloads:
+  - workload_id: policy.control-panel-pep
+    relationship: governs
+    name: Control-panel PEP / Cedar PDP
+    implementation_status: implemented
+  directory: &id003
+    actors:
+    - mona.commercial
+    - human.priya.commercial
+    - human.carla.commercial
+    groups:
+    - rfq-commercial-emea
+    - rfq-commercial-apac
+    - rfq-commercial-amer
+- job_title_id: pricing-manager
+  job_title: Pricing Manager
+  responsibility: Lead pricing reviews, internal approvals, proposal pricing milestones
+  workloads:
+  - workload_id: system.qms-api
+    relationship: records
+    name: QMS API
+    implementation_status: implemented
+  - workload_id: policy.control-panel-pep
+    relationship: governs
+    name: Control-panel PEP / Cedar PDP
+    implementation_status: implemented
+  directory: *id003

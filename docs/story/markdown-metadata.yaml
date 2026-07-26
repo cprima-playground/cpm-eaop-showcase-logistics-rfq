@@ -1,0 +1,82 @@
+# Minimal metadata scaffold for story and marketing Markdown.
+# Use these fields as front matter when a document needs classification.
+
+metadata_schema_version: 1
+
+enums:
+  audience:
+    - technical
+    - developers
+    - architects
+    - security_and_compliance
+    - operations_users
+    - business_users
+    - managers
+    - executives
+    - vip_stakeholders
+    - partners
+    - public
+
+  document_type:
+    - overview
+    - explainer
+    - glossary
+    - role_profile
+    - process_story
+    - architecture_overview
+    - architecture_decision
+    - protocol_guide
+    - api_reference
+    - integration_guide
+    - security_and_governance
+    - deployment_guide
+    - operations_runbook
+    - test_evidence
+    - demo_script
+    - case_study
+    - release_announcement
+    - social_post
+    - faq
+
+  tone:
+    - educational
+    - explanatory
+    - technical
+    - executive
+    - promotional
+    - factual
+
+  channel:
+    - repository
+    - linkedin
+    - presentation
+    - website
+    - blog
+    - email
+    - workshop
+    - internal_review
+
+  status:
+    - draft
+    - in_review
+    - approved
+    - published
+    - archived
+
+fields:
+  title: string
+  summary: string
+  call_to_action: string
+
+# Example Markdown front matter:
+#
+# ---
+# audience: public
+# document_type: release_announcement
+# tone: promotional
+# channel: linkedin
+# status: draft
+# title: Logistics becomes a governed multi-agent business
+# summary: A business-first introduction to the logistics agentic showcase.
+# call_to_action: Follow the project for the next milestone.
+# ---
