@@ -1,0 +1,74 @@
+# SUPPORT stack -- platform dependencies the showcase runs on top of, not
+# the showcase itself: Caddy (edge), Keycloak (identity), Vault (secrets).
+# Owns the shared `rfq-showcase` network; infra/compose.showcase.yaml joins
+# it as `external: true`. Separable from the showcase on purpose: you can
+# bring support up/down independently (it changes rarely), and restart the
+# showcase app layer without touching identity/secrets state.
+#
+# CADDY-FIRST (tmp/caddy-first-routing-analysis.md): Caddy is the sole
+# externally-published ingress (443). Keycloak/Vault publish host ports too,
+# but as an explicitly justified carve-out (admin console / seed script /
+# debug access), not because peer services need them that way -- every
+# showcase service reaches these by compose DNS (http://keycloak:8080,
+# http://vault:8200), never through Caddy or a host-published port.
+#
+# Run: docker compose -f infra/compose.support.yaml up -d --build
+# Then: docker compose -f infra/compose.support.yaml -f infra/compose.showcase.yaml --profile core up -d --build
+#
+# infra/observability/ (OTel/Grafana/Prometheus/Tempo stack) is separate
+# again, independently bootable -- also "support", but not merged into this
+# file (different lifecycle, different owner this session).
+name: rfq-showcase-support
+
+networks:
+  rfq-showcase:
+    name: rfq-showcase
+
+volumes:
+  keycloak-data:
+  caddy-data:
+
+services:
+  caddy:
+    build:
+      context: ./caddy
+      dockerfile: Dockerfile
+    image: rfq-showcase-caddy
+    container_name: rfq-showcase-caddy
+    ports:
+      - "443:443"
+    volumes:
+      - ./compose/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    networks: [rfq-showcase]
+    restart: unless-stopped
+
+  keycloak:
+    build:
+      context: ./keycloak
+      dockerfile: Dockerfile
+    image: rfq-showcase-keycloak
+    container_name: rfq-showcase-keycloak
+    command: start-dev
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: rfq-dev-admin
+      KC_PROXY_HEADERS: xforwarded
+    ports:
+      - "8081:8080"   # carve-out: admin console direct access
+    volumes:
+      - keycloak-data:/opt/keycloak/data
+    networks: [rfq-showcase]
+    restart: unless-stopped
+
+  vault:
+    image: hashicorp/vault:latest
+    container_name: rfq-showcase-vault
+    ports:
+      - "8200:8200"   # carve-out: seed script / debug access
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: rfq-dev-root
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+    cap_add: [IPC_LOCK]
+    networks: [rfq-showcase]
+    restart: unless-stopped

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+
 import typer
 
 from rfq_common.cli import create_cli
@@ -12,7 +14,7 @@ app = create_cli("ops-dashboard", version="0.1.0")
 
 
 @app.command()
-def serve(host: str = "127.0.0.1", port: int = 8006) -> None:
+def serve(host: str = "127.0.0.1", port: int = int(os.environ.get("SERVICE_PORT", 8006))) -> None:
     """Run the dashboard (login at /login, Swagger UI at /docs)."""
     import uvicorn
 

@@ -1,0 +1,91 @@
+# Caddyfile for the CONSOLIDATED full-topology compose (infra/compose.yaml).
+# Distinct from infra/caddy/Caddyfile (the older standalone setup, which
+# fronts bare HOST PROCESSES via host.docker.internal -- still valid for
+# piecemeal local dev). Here every backend is a container on the SAME
+# compose network, so reverse_proxy targets are compose SERVICE NAMES, not
+# host.docker.internal.
+#
+# Caddy is authoritative external ingress only. Peer service-to-service
+# traffic (agent -> MCP, MCP -> backend) does NOT hairpin through Caddy --
+# it uses compose's own internal DNS directly (see infra/compose.yaml's
+# per-service environment: blocks). This file exists purely for external
+# reachability + the "one entry point, hostname-based identity" showcase
+# property (tmp/caddy-first-routing-analysis.md).
+
+(friendly_errors) {
+    handle_errors {
+        @upstream_down expression {err.status_code} in [502, 503, 504]
+        respond @upstream_down "Backend not reachable ({err.status_code}). It's probably still starting -- check `docker compose -f infra/compose.yaml ps`." 502
+        respond "{err.status_code} {err.status_text}" {err.status_code}
+    }
+}
+
+https://ops-dashboard.rfq-showcase.localhost {
+    import friendly_errors
+    reverse_proxy ops-dashboard:8006
+}
+
+https://qms.rfq-showcase.localhost {
+    import friendly_errors
+    reverse_proxy mock-qms:8007
+}
+
+https://tms.rfq-showcase.localhost {
+    import friendly_errors
+    reverse_proxy mock-tms:8004
+}
+
+https://rate.rfq-showcase.localhost {
+    import friendly_errors
+    reverse_proxy mock-rate:8005
+}
+
+https://fx.rfq-showcase.localhost {
+    import friendly_errors
+    reverse_proxy mock-fx:8001
+}
+
+https://masterdata.rfq-showcase.localhost {
+    import friendly_errors
+    reverse_proxy mock-masterdata:8003
+}
+
+https://keycloak.rfq-showcase.localhost {
+    import friendly_errors
+    reverse_proxy keycloak:8080
+}
+
+https://lane-evaluation-agent.rfq-showcase.localhost {
+    import friendly_errors
+    reverse_proxy lane-evaluation-agent:8204
+}
+
+https://route-decision-agent.rfq-showcase.localhost {
+    import friendly_errors
+    reverse_proxy route-decision-agent:8205
+}
+
+https://commercial-normalization-agent.rfq-showcase.localhost {
+    import friendly_errors
+    reverse_proxy commercial-normalization-agent:8206
+}
+
+https://tms-mcp.rfq-showcase.localhost {
+    import friendly_errors
+    reverse_proxy tms-mcp:8104
+}
+
+https://rate-mcp.rfq-showcase.localhost {
+    import friendly_errors
+    reverse_proxy rate-mcp:8105
+}
+
+https://qms-mcp.rfq-showcase.localhost {
+    import friendly_errors
+    reverse_proxy qms-mcp:8106
+}
+
+https://approval-mcp.rfq-showcase.localhost {
+    import friendly_errors
+    reverse_proxy approval-mcp:8107
+}

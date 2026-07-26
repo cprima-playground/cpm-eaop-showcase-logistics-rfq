@@ -9,6 +9,7 @@ consume via the API, never reconstruct the data locally)."""
 from __future__ import annotations
 
 import json
+import os
 
 import httpx
 import typer
@@ -150,7 +151,7 @@ def reset(base_url: str = typer.Option(None)) -> None:
 
 
 @app.command()
-def serve(host: str = "127.0.0.1", port: int = 8007) -> None:
+def serve(host: str = "127.0.0.1", port: int = int(os.environ.get("SERVICE_PORT", 8007))) -> None:
     """Run the REST API (Swagger UI at /swagger)."""
     import uvicorn
 

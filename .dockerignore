@@ -1,0 +1,19 @@
+# Every Dockerfile in src/*/ builds with the REPO ROOT as context (services
+# read RFQ_ROOT-relative paths like identity/, systems/, authorization/,
+# business/, agents/, themes/, interfaces/ -- not just their own src/<service>
+# dir + rfq_common). This keeps that broad COPY . /app context lean and
+# reproducible -- none of the excluded paths are read at runtime by any
+# service, only used for local dev/tooling/tests.
+.git
+**/.venv
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/uv.lock.tmp
+tmp
+vendor
+node_modules
+**/node_modules
+skills
+docs/vendor
+data

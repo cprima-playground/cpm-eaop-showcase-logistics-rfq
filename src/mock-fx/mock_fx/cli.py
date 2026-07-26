@@ -71,7 +71,7 @@ def stats(base_url: str = typer.Option(None)) -> None:
 
 
 @app.command()
-def serve(host: str = "127.0.0.1", port: int = 8001) -> None:
+def serve(host: str = "127.0.0.1", port: int = int(os.environ.get("SERVICE_PORT", 8001))) -> None:
     """Run the REST API (Swagger UI at /swagger)."""
     import uvicorn
 
