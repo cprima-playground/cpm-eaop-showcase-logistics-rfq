@@ -10,6 +10,7 @@ rates:
   - {route_id: SHA-GOA-MUC, carrier_id: MSC,             currency: EUR, base_cost: 5480,  surcharges: 560,  capacity_status: available}
   - {route_id: NGB-HAM-MUC, carrier_id: COSCO,           currency: CNY, base_cost: 41500, surcharges: 5000, capacity_status: available}
   - {route_id: SHA-GDN-MUC, carrier_id: HAPAG-LLOYD,     currency: EUR, base_cost: 5900, surcharges: 540, capacity_status: available}
+  - {route_id: SHA-CPE-MUC, carrier_id: MAERSK,          currency: EUR, base_cost: 7600, surcharges: 650, capacity_status: available}
   - {route_id: TPA-LAX,     carrier_id: MAERSK,          currency: USD, base_cost: 3200, surcharges: 410, capacity_status: available}
   - {route_id: TPA-OAK,     carrier_id: MSC,             currency: USD, base_cost: 3050, surcharges: 390, capacity_status: available}
   - {route_id: MEA-SUEZ,    carrier_id: MSC,             currency: EUR, base_cost: 2900, surcharges: 350, capacity_status: available}

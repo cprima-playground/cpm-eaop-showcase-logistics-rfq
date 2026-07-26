@@ -36,6 +36,7 @@ Correlation rules (applied on top of the formula):
 | SHA-ANR-MUC | EU ocean carrier | EUR |
 | PVG-FRA-MUC (air) | EU air carrier | EUR |
 | SHA-PIR-MUC / SHA-GOA-MUC | EU ocean carrier | EUR |
+| SHA-CPE-MUC (Cape of Good Hope, Suez-blocked escalation) | EU ocean carrier | EUR |
 
 The contracted Hamburg lane is CNY-priced; the Rotterdam alternative is EUR-priced.
 That single fact is why a route reroute forces an FX normalization
