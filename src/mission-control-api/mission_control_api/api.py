@@ -35,6 +35,7 @@ from rfq_common.mcp_auth import AuthenticationError, authenticate_request, build
 from rfq_common.settings import ServiceSettings
 
 from . import settings
+from .health import health_report
 from .registry import ObservedServiceRegistry
 from .topology import topology as build_topology
 
@@ -102,6 +103,10 @@ def build_app(
     @api_v1.get("/topology")
     def get_topology(_principal=Depends(_require_authenticated)) -> dict:
         return build_topology(registry)
+
+    @api_v1.get("/health")
+    def get_health(_principal=Depends(_require_authenticated)) -> dict:
+        return health_report(registry, root)
 
     app.include_router(api_v1)
 

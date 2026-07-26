@@ -65,6 +65,11 @@ services:
     image: rfq-showcase-mock-fx
     environment:
       <<: *vault-env
+      # Found live via M8.3's health check: without this, mock-fx falls
+      # back to a broken default (http://localhost:8003, itself inside
+      # its own container) and crash-loops on every currency lookup --
+      # a real, pre-existing gap, not new to this milestone.
+      MASTERDATA_URL: http://mock-masterdata:8003
     networks: [rfq-showcase]
     restart: unless-stopped
     profiles: [core, full]
@@ -223,6 +228,13 @@ services:
       RATE_MCP_URL: http://rate-mcp:8105
       QMS_MCP_URL: http://qms-mcp:8106
       APPROVAL_MCP_URL: http://approval-mcp:8107
+      # Health-target roster only (M8.3) -- mission-control-api never
+      # holds these systems' API keys, only checks /healthz reachability.
+      MASTERDATA_URL: http://mock-masterdata:8003
+      TMS_URL: http://mock-tms:8004
+      RATE_URL: http://mock-rate:8005
+      FX_URL: http://mock-fx:8001
+      QMS_URL: http://mock-qms:8007
     networks: [rfq-showcase]
     restart: unless-stopped
     profiles: [control-plane, full]
