@@ -45,15 +45,12 @@ def preconditions():
         pytest.skip(f"Keycloak not running on {KEYCLOAK_URL}")
 
 
-def test_discovers_every_real_machine_identity_used_by_m5_and_m6a(preconditions):
-    """A subset assertion, not exact-set: identity/projections/keycloak.yaml
-    already declares workload entries for rate-mcp/qms-mcp/approval-mcp
-    ahead of M6 actually building those servers (status: planned in
-    identity/credentials-inventory.yaml -- no Vault secret yet, so they'd
-    correctly fail preflight_machine_identity today; this test only
-    documents the M5/M6a-scoped roster this milestone's control covers).
-    Grows automatically as M6 lands real servers for them -- derived from
-    the same catalog.yaml + keycloak.yaml projection data
+def test_discovers_every_real_machine_identity_used_by_m5_and_m6(preconditions):
+    """A subset assertion, not exact-set (see the identities dict-merge
+    note on test_machine_identity_preflight below for why a subset check
+    is still the right shape even now that every M6 Track B server is
+    real). Grows automatically as new agents/workloads land -- derived
+    from the same catalog.yaml + keycloak.yaml projection data
     resolve_principal itself uses, not a separately maintained list."""
     identities = discover_machine_identities(RFQ_ROOT)
     canonical_ids = {i.canonical_id for i in identities}
@@ -63,6 +60,9 @@ def test_discovers_every_real_machine_identity_used_by_m5_and_m6a(preconditions)
         "agent.commercial-normalization",
         "agent.trust-boundary-fixture",
         "workload.tms-mcp",
+        "workload.rate-mcp",
+        "workload.qms-mcp",
+        "workload.approval-mcp",
     }
 
 
@@ -73,13 +73,36 @@ def test_discovers_every_real_machine_identity_used_by_m5_and_m6a(preconditions)
     "agent.commercial-normalization",
     "agent.trust-boundary-fixture",
     "workload.tms-mcp",
+    "workload.rate-mcp",
+    "workload.qms-mcp",
+    "workload.approval-mcp",
 ])
 async def test_machine_identity_preflight(preconditions, canonical_id):
     """secret exists in Vault -> Keycloak accepts a client-credentials
     grant against it -> the resulting token resolves (via the real
     authenticate_request path every MCP/A2A boundary uses) to the
     expected canonical_id. Any one of the three failing is a real
-    deployment defect this repo has hit before -- not a hypothetical."""
+    deployment defect this repo has hit before -- not a hypothetical.
+
+    discover_machine_identities() is provider-blind: since identity/
+    projections/entra.yaml now also carries a real `clients` map (see
+    this session's entra.yaml fix), every machine identity yields TWO
+    MachineIdentity entries -- one per provider -- with DIFFERENT
+    secret_name derivations (Keycloak: "<client_id>-client-secret",
+    e.g. "tms-mcp-svc-client-secret"; Entra path: same f-string applied
+    to Entra's GUID client_id, e.g. "581b537b-...-client-secret", which
+    has no corresponding Vault entry -- Entra machine identities use WIF,
+    not a stored secret, per identity/credentials-inventory.yaml's own
+    "test/prod use WIF -> Entra instead" notes). The dict-comprehension
+    below (`{i.canonical_id: i for i in ...}`) silently keeps whichever
+    entry iterates LAST for a given canonical_id -- currently the
+    Keycloak one, because (provider, client_id) sorts "keycloak" after
+    "entra" -- so this test still exercises the real, secret-backed path.
+    This is accidental correctness, not a designed provider-selection
+    rule; a real fix (secret_name derivation aware of which provider an
+    entry came from, or preflight explicitly scoped to Keycloak-only
+    until an Entra/WIF-based preflight exists) is real, un-invented
+    architecture work, not done here."""
     identities = {i.canonical_id: i for i in discover_machine_identities(RFQ_ROOT)}
     identity = identities[canonical_id]
     result = await preflight_machine_identity(identity, oidc_issuer_url=KEYCLOAK_URL, root=RFQ_ROOT)
