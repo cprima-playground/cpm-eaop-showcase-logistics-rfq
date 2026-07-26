@@ -36,15 +36,19 @@ from rfq_common.pep.preflight import MachineIdentity, PreflightResult, preflight
 logger = logging.getLogger("rfq_common.descriptor")
 
 # Bump on any breaking change to ServiceDescriptor's shape (field removed,
-# renamed, or its meaning changed) once a registry has real consumers of
-# this schema -- today there are only 4 producers and 0 consumers, so
-# freezing this now is nearly free; it stops being free the moment a
-# registry (or any other consumer) starts parsing /descriptor for real.
-DESCRIPTOR_SCHEMA_VERSION = "1.0"
+# renamed, or its meaning changed). 1.0 -> 1.1 (M8): additive only --
+# kind gained "control-plane", ProtocolInfo.type gained "rest", for
+# mission-control-api, the first real consumer of this schema (there
+# were 7 producers and 0 consumers before it). Producers are
+# unaffected; a consumer must be written tolerant of unknown kind/
+# protocol.type values (controlplane.md's own compatibility rule,
+# applied as code here, not just prose) rather than assuming every
+# future addition bumps this version.
+DESCRIPTOR_SCHEMA_VERSION = "1.1"
 
 
 class ProtocolInfo(BaseModel):
-    type: Literal["a2a", "mcp"]
+    type: Literal["a2a", "mcp", "rest"]
     version: str | None = None
 
 
@@ -85,7 +89,7 @@ class ServiceDescriptor(BaseModel):
 
     schema_version: str = DESCRIPTOR_SCHEMA_VERSION
     canonical_id: str
-    kind: Literal["a2a-agent", "mcp-server"]
+    kind: Literal["a2a-agent", "mcp-server", "control-plane"]
     instance_id: str
     endpoints: EndpointInfo
     identity: IdentityInfo
@@ -104,10 +108,10 @@ def new_instance_id() -> str:
 def build_descriptor(
     *,
     canonical_id: str,
-    kind: Literal["a2a-agent", "mcp-server"],
+    kind: Literal["a2a-agent", "mcp-server", "control-plane"],
     instance_id: str,
     base_url: str,
-    protocol_type: Literal["a2a", "mcp"],
+    protocol_type: Literal["a2a", "mcp", "rest"],
     protocol_version: str | None = None,
     trust_domain: str | None = None,
     capability_source: str,

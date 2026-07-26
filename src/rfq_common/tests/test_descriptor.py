@@ -49,6 +49,23 @@ def test_build_descriptor_shape_matches_the_projection_contract():
     assert descriptor.status.readiness == "ready"
 
 
+def test_build_descriptor_accepts_control_plane_kind_and_rest_protocol():
+    """M8 (1.0 -> 1.1): additive schema extension for mission-control-api,
+    the schema's first real consumer -- kind="control-plane" and
+    protocol_type="rest" must build cleanly, same as every existing
+    a2a-agent/mcp-server descriptor does."""
+    descriptor = build_descriptor(
+        canonical_id="workload.mission-control", kind="control-plane", instance_id="test-instance-1",
+        base_url="https://mission-control.rfq-showcase.localhost", protocol_type="rest",
+        capability_source="openapi:/api/v1/openapi.json",
+    )
+    assert descriptor.schema_version == "1.1" == DESCRIPTOR_SCHEMA_VERSION
+    assert descriptor.kind == "control-plane"
+    assert descriptor.endpoints.protocol.type == "rest"
+    assert descriptor.capabilities.skills == []
+    assert descriptor.capabilities.tools == []
+
+
 def test_canonical_id_is_stable_across_instances_instance_id_is_not():
     """canonical_id = logical service identity (what a future registry's
     RESOLVE keys by); instance_id = this one process (new every boot).
