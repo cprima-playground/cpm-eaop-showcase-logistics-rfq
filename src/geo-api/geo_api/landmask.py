@@ -40,7 +40,7 @@ from shapely import vectorized
 from shapely.geometry import LineString, MultiLineString, Point, Polygon, shape
 from shapely.ops import unary_union
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[3]
 LAND_SHP = (
     REPO_ROOT / "data/vendor/naturalearth/10m-physical/ne_10m_land/ne_10m_land.shp"
 )

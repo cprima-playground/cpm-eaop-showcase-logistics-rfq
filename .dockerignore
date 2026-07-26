@@ -18,8 +18,10 @@ skills
 docs/vendor
 # NOT a blanket `data` exclusion (M8): mission-control-api reads
 # data/identity/machine-identity-inventory.yaml at runtime (topology.py).
-# Only the genuinely unused subtrees are excluded -- large vendored geo
-# basemap data and unrelated narrative content, neither ever read by any
-# service.
-data/vendor
+# data/vendor is NO LONGER excluded (M10, D11): geo-api's Dockerfile bakes
+# data/vendor/naturalearth into its own image (~7.8 MB added to every
+# service's build context, accepted -- immutable routing inputs belong
+# versioned with the code that consumes them, not a separately-managed
+# mutable volume). Only data/story remains excluded -- unrelated narrative
+# content, never read by any service.
 data/story

@@ -113,6 +113,26 @@ class StubQmsClient:
         return {"count": 0, "approx_bytes": 0}
 
 
+class StubGeoClient:
+    """M10 -- get_leg_geometry() returns a fixed, obviously-fake curved
+    geometry so tests can assert the proxy route passes it through, without
+    a live geo-api or a real OIDC token."""
+
+    base_url = "http://stub-geo"
+
+    def __init__(self):
+        self.calls: list[dict] = []
+
+    def get_leg_geometry(self, *, from_locode: str, to_locode: str, mode: str) -> dict:
+        self.calls.append({"from": from_locode, "to": to_locode, "mode": mode})
+        return {
+            "from": from_locode, "to": to_locode, "mode": mode,
+            "geometry": {"type": "LineString", "coordinates": [[0.0, 0.0], [1.0, 1.0]]},
+            "distance_km": 1.0,
+            "routing_version": "stub-version",
+        }
+
+
 @pytest.fixture(autouse=True)
 def _session_secret(monkeypatch):
     monkeypatch.setenv("OPS_DASHBOARD_SESSION_SECRET", TEST_SESSION_SECRET)
@@ -123,12 +143,13 @@ def _session_secret(monkeypatch):
 
 @pytest.fixture
 def stub_clients():
-    return StubTmsClient(), StubRateClient(), StubMasterdataClient(), StubFxClient(), StubQmsClient()
+    return StubTmsClient(), StubRateClient(), StubMasterdataClient(), StubFxClient(), StubQmsClient(), StubGeoClient()
 
 
 @pytest.fixture
 def app(stub_clients):
-    tms, rate, masterdata, fx, qms = stub_clients
+    tms, rate, masterdata, fx, qms, geo = stub_clients
     return api_module.build_app(
         tms_client=tms, rate_client=rate, masterdata_client=masterdata, fx_client=fx, qms_client=qms,
+        geo_client=geo,
     )

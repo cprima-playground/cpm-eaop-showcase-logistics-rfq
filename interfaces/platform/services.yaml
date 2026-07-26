@@ -1,0 +1,14 @@
+# Real, always-on platform workloads (M10) -- none of a mock backend, an
+# MCP server, an A2A agent, or Mission Control's own control-plane, so they
+# don't belong in agents/catalog.yaml or interfaces/mcp/tools.yaml. This is
+# the third roster-derivation source mission-control-api's registry_roster()
+# reads (D7), mechanical -- same "read the file, don't hand-maintain a
+# second list" discipline as the other two sources.
+#
+# workload.mission-control itself is deliberately NOT listed here -- it
+# observes this roster, it doesn't poll itself.
+
+services:
+  - id: geo-api
+    purpose: On-the-fly route-geometry compute (route.geometry.compute) -- coastline-aware
+      ocean routing + geodesic air legs, cached (SQLite, keyed on from/to/mode/routing_version).

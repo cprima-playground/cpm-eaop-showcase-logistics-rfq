@@ -96,6 +96,11 @@ https://mission-control.rfq-showcase.localhost {
     reverse_proxy mission-control-api:8300
 }
 
+https://geo.rfq-showcase.localhost {
+    import friendly_errors
+    reverse_proxy geo-api:8400
+}
+
 https://a2a-inspector.rfq-showcase.localhost {
     import friendly_errors
     reverse_proxy a2a-inspector:8080

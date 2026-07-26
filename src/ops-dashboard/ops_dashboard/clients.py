@@ -27,6 +27,10 @@ class QmsUnavailableError(RuntimeError):
     pass
 
 
+class GeoUnavailableError(RuntimeError):
+    pass
+
+
 class TmsClient:
     def __init__(self, base_url: str | None = None, api_key: str | None = None, timeout: float = 5.0):
         self._base_url = base_url or os.environ.get("TMS_URL", "http://127.0.0.1:8004")
@@ -177,5 +181,43 @@ class QmsClient:
             )
         except httpx.HTTPError as exc:
             raise QmsUnavailableError(f"QMS unreachable at {self._base_url}: {exc}") from exc
+        r.raise_for_status()
+        return r.json()
+
+
+class GeoClient:
+    """geo-api (M10) is OIDC-protected, not API-key-protected (D4) -- the
+    ONE client in this file that authenticates with a bearer token instead
+    of X-API-Key. `token_provider` is a callable, not a static string:
+    ops-dashboard's own machine-identity token expires and must be fetched
+    fresh/cached elsewhere (geo_auth.py), never held as a fixed value here."""
+
+    def __init__(
+        self, base_url: str | None = None, token_provider=None, timeout: float = 60.0,
+    ):
+        # Longer than every other client's 5s default -- a cache-miss ocean
+        # leg runs a real A* pass against the coastline (tens of seconds,
+        # see geo-api/README.md); a cache hit is near-instant. This call
+        # happens async, after the page's initial straight-line render, so
+        # a slow first hit never blocks anything the user is looking at.
+        self._base_url = base_url or os.environ.get("GEO_API_URL", "http://127.0.0.1:8400")
+        self._token_provider = token_provider
+        self._timeout = timeout
+
+    @property
+    def base_url(self) -> str:
+        return self._base_url
+
+    def get_leg_geometry(self, *, from_locode: str, to_locode: str, mode: str) -> dict:
+        token = self._token_provider() if self._token_provider else ""
+        try:
+            r = httpx.get(
+                f"{self._base_url}/v1/legs/geometry",
+                params={"from": from_locode, "to": to_locode, "mode": mode},
+                headers={"Authorization": f"Bearer {token}"},
+                timeout=self._timeout,
+            )
+        except httpx.HTTPError as exc:
+            raise GeoUnavailableError(f"geo-api unreachable at {self._base_url}: {exc}") from exc
         r.raise_for_status()
         return r.json()

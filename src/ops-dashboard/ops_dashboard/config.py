@@ -15,6 +15,7 @@ INVENTORY_PATH = RFQ_ROOT / "identity" / "credentials-inventory.yaml"
 
 _cached_client_secret: str | None = None
 _cached_session_secret: str | None = None
+_cached_svc_client_secret: str | None = None
 
 
 class CredentialUnavailableError(RuntimeError):
@@ -83,6 +84,40 @@ def keycloak_client_secret() -> str:
             "infra/vault/, terraform apply in infra/keycloak/terraform/, then write "
             "`terraform output ops_dashboard_web_client_secret` into Vault -- see "
             "infra/keycloak/README.md). Refusing to fall back to a known default."
+        ) from exc
+
+
+def ops_dashboard_svc_client_id() -> str:
+    """workload.ops-dashboard's OWN Keycloak client (client_credentials grant,
+    M10) -- distinct from keycloak_client_id() above (ops-dashboard-web, the
+    human-SSO Authorization Code client). Used only to obtain a bearer token
+    for calling other bearer-token-protected workloads (geo-api)."""
+    return os.environ.get("OPS_DASHBOARD_SVC_CLIENT_ID", "ops-dashboard-svc")
+
+
+def ops_dashboard_svc_client_secret() -> str:
+    global _cached_svc_client_secret
+    if _cached_svc_client_secret is not None:
+        return _cached_svc_client_secret
+
+    env_value = os.environ.get("OPS_DASHBOARD_SVC_CLIENT_SECRET")
+    if env_value:
+        _cached_svc_client_secret = env_value
+        return _cached_svc_client_secret
+
+    try:
+        _cached_svc_client_secret = SecretsClient("dev", inventory_path=INVENTORY_PATH).get(
+            "ops-dashboard-svc-client-secret"
+        )
+        return _cached_svc_client_secret
+    except Exception as exc:
+        raise CredentialUnavailableError(
+            "ops-dashboard-svc-client-secret is not available: OPS_DASHBOARD_SVC_CLIENT_SECRET "
+            "is unset and Vault could not supply it (docker compose up -d in "
+            "infra/vault/, terraform apply in infra/keycloak/terraform/, then fetch the "
+            "ops-dashboard-svc client's secret via the Keycloak admin API and write it into "
+            "Vault -- see identity/credentials-inventory.yaml's ops-dashboard-svc-client-secret "
+            "entry). Refusing to fall back to a known default."
         ) from exc
 
 

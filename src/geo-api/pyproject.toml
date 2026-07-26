@@ -1,0 +1,34 @@
+[project]
+name = "geo-api"
+version = "0.1.0"
+description = "M10: on-the-fly route-geometry compute service (route.geometry.compute). Coastline-aware ocean routing (A* + Natural Earth land masks) and geodesic air legs, computed live per request and cached (SQLite, keyed on from/to/mode/routing_version) -- replaces tools/geo's precompute-and-commit batch CLI. OIDC AuthN via rfq_common.mcp_auth, no Cedar authorization decision."
+requires-python = ">=3.11"
+dependencies = [
+    "rfq-common",
+    "uvicorn>=0.30",
+    "httpx>=0.27",
+    "pyproj>=3.6",
+    "pyyaml>=6.0",
+    "shapely>=2.0",
+    "pyshp>=2.3",
+    "numpy>=1.26",
+]
+
+[dependency-groups]
+dev = ["pytest>=8.0"]
+
+[tool.uv.sources]
+rfq-common = { path = "../rfq_common", editable = true }
+
+[tool.uv]
+package = true
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["geo_api"]
+
+[project.scripts]
+geo-api = "geo_api.cli:main"

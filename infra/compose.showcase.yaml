@@ -21,6 +21,9 @@
 #                      service's own /descriptor -- no write ops, no
 #                      dependency other than reaching its peers' /descriptor
 #                      endpoints and cedar-agent's live policy list)
+#   platform       -- + geo-api (M10, on-the-fly route-geometry compute --
+#                      real always-on service, neither a mock/MCP/agent/
+#                      control-plane; port tier 840x)
 #   full           -- everything
 #
 # Run (support stack must already be up):
@@ -200,6 +203,10 @@ services:
       TMS_URL: http://mock-tms:8004
       QMS_URL: http://mock-qms:8007
       GATEWAY_HOST: gateway   # ops-dashboard's own gateway-fronted checks (_check_frontend etc.)
+      # M10: ops-dashboard's /map proxies live route geometry from geo-api,
+      # server-side (browser stays same-origin) -- needs the `platform`
+      # profile joined too, or this proxy call fails open to straight lines.
+      GEO_API_URL: http://geo-api:8400
     networks: [rfq-showcase]
     restart: unless-stopped
     profiles: [core, full]
@@ -416,6 +423,45 @@ services:
       # Control's own read path to Tempo, not the write path from every
       # other service.
       TEMPO_URL: http://tempo:3200
+      # M10: geo-api joins the observed registry too (D7) -- registry_roster()
+      # gains a third derivation source alongside agents/catalog.yaml +
+      # interfaces/mcp/tools.yaml.
+      GEO_API_URL: http://geo-api:8400
     networks: [rfq-showcase]
     restart: unless-stopped
     profiles: [control-plane, full]
+
+  # -------------------------------------------------------------- platform
+  geo-api:
+    build:
+      context: ..
+      dockerfile: src/geo-api/Dockerfile
+      # Explicit local cache dir, independent of wherever Docker Desktop's
+      # own VM disk lives -- point DOCKER_BUILDCACHE_DIR at a fast/large
+      # drive (e.g. T:\docker-buildcache) if the default in-repo location
+      # isn't right for this machine. mode=max on cache_to so uv sync's
+      # dependency-download layer specifically gets cached, not just the
+      # final layer.
+      cache_from:
+        - type=local,src=${DOCKER_BUILDCACHE_DIR:-.buildcache}/geo-api
+      cache_to:
+        - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/geo-api,mode=max
+    image: rfq-showcase-geo-api
+    environment:
+      <<: [*vault-env, *keycloak-env]
+      SERVICE_PUBLIC_URL: https://geo.rfq-showcase.localhost
+      MASTERDATA_URL: http://mock-masterdata:8003
+      # D13: cache state is never authoritative (geometry computation is
+      # deterministic) -- this named volume is a local-Compose optimization
+      # choice, not a correctness requirement. A future horizontally-scaled
+      # deployment may choose per-instance caches, a shared cache, or a
+      # cache service instead, without changing the API contract.
+      GEO_API_CACHE_DB: /data/cache/geo-api-cache.sqlite3
+    volumes:
+      - geo-api-cache:/data/cache
+    networks: [rfq-showcase]
+    restart: unless-stopped
+    profiles: [platform, full]
+
+volumes:
+  geo-api-cache:

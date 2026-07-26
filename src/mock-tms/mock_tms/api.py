@@ -37,8 +37,8 @@ class AvailabilityUpdate(BaseModel):
 class ResolvedRouteLeg(BaseModel):
     """API-response-only projection (never a shared domain/storage type,
     see mock_tms/api.py's own route handlers) -- a route's edges resolved
-    into a denormalized leg view for consumers (ops-dashboard, tools/geo)
-    that don't need to know about the edge pool."""
+    into a denormalized leg view for consumers (ops-dashboard) that don't
+    need to know about the edge pool."""
 
     origin_id: str
     destination_id: str

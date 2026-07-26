@@ -67,17 +67,25 @@ function splitAtAntimeridian(from, to) {
   ];
 }
 
-// routes: [{id, lane, status, points: [[lat,lon], ...]}, ...]
+// routes: [{id, lane, status, points: [[lat,lon], ...], legs: [{from,to,mode}, ...]}, ...]
 // opts.onLine(route, leafletLine): optional per-line callback (e.g. bindPopup)
+// Returns legLayers: legLayers[routeIndex][legIndex] = [leafletLine, ...] --
+// every straight-line layer drawn for that leg (1 or 2 antimeridian-split
+// segments x 3 shifted basemap copies each), so a caller (M10:
+// rmEnrichCurvedGeometry) can later remove EXACTLY those layers once a real
+// curved replacement is ready, never guessing which layer belongs to which leg.
 function rmDrawRoutes(map, routes, opts) {
   opts = opts || {};
   const allPoints = [];
+  const legLayers = [];
   for (const r of routes) {
     const color = RouteMapStatusColor[r.status] || RouteMapStatusColor.unknown;
+    const routeLegLayers = [];
     // r.points has every leg boundary (real waypoints), not just origin/dest --
     // draw one segment per consecutive pair so multi-leg routes actually bend
     // through their intermediate ports instead of looking like a direct route.
     for (let i = 0; i < r.points.length - 1; i++) {
+      const layers = [];
       for (const segment of splitAtAntimeridian(r.points[i], r.points[i + 1])) {
         // Routes must appear in the shifted basemap copies too, or panning to
         // one shows landmasses with no route lines on them.
@@ -85,9 +93,12 @@ function rmDrawRoutes(map, routes, opts) {
           const shifted = segment.map(([lat, lon]) => [lat, lon + delta]);
           const line = L.polyline(shifted, { color, weight: 3, opacity: 0.85 }).addTo(map);
           if (opts.onLine) opts.onLine(r, line);
+          layers.push(line);
         }
       }
+      routeLegLayers.push(layers);
     }
+    legLayers.push(routeLegLayers);
     allPoints.push(...r.points);
   }
   if (allPoints.length) {
@@ -100,6 +111,44 @@ function rmDrawRoutes(map, routes, opts) {
     map.setMinZoom(map.getZoom());
     map.setMaxBounds(map.getBounds().pad(0.5));
   }
+  return legLayers;
+}
+
+// M10: async, best-effort enrichment -- swaps each leg's straight-line
+// fallback (already drawn by rmDrawRoutes, instantly) for geo-api's real
+// curved geometry, fetched via ops-dashboard's own same-origin proxy
+// (geometryUrl, default /map/legs/geometry). Fails OPEN per leg: a non-2xx
+// response or a network error (geo-api down, slow, whatever) just leaves
+// that leg's straight line in place -- a line is never removed unless its
+// curved replacement is already drawn and ready.
+function rmEnrichCurvedGeometry(map, routes, legLayers, opts) {
+  opts = opts || {};
+  const geometryUrl = opts.geometryUrl || "/map/legs/geometry";
+  routes.forEach((r, routeIndex) => {
+    const legs = r.legs || [];
+    legs.forEach((leg, legIndex) => {
+      const url = `${geometryUrl}?from=${encodeURIComponent(leg.from)}&to=${encodeURIComponent(leg.to)}&mode=${encodeURIComponent(leg.mode)}`;
+      fetch(url)
+        .then((resp) => (resp.ok ? resp.json() : null))
+        .then((data) => {
+          if (!data || !data.geometry) return;
+          const color = RouteMapStatusColor[r.status] || RouteMapStatusColor.unknown;
+          const feature = { type: "Feature", properties: {}, geometry: data.geometry };
+          const collection = { type: "FeatureCollection", features: [feature] };
+          const newLayers = [];
+          for (const delta of [-360, 0, 360]) {
+            const layer = L.geoJSON(rmShiftGeoJSON(collection, delta), {
+              style: { color, weight: 3, opacity: 0.85 },
+            }).addTo(map);
+            if (opts.onLine) opts.onLine(r, layer);
+            newLayers.push(layer);
+          }
+          const oldLayers = ((legLayers[routeIndex] || [])[legIndex]) || [];
+          for (const oldLayer of oldLayers) map.removeLayer(oldLayer);
+        })
+        .catch(() => {}); // network error -- fails open, straight line stays
+    });
+  });
 }
 
 function rmInitMap(elementId, opts) {

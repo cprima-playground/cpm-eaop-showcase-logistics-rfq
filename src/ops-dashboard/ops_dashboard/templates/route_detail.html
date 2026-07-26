@@ -28,9 +28,11 @@
   {% if route_json %}
   <div id="route-detail-map" class="border rounded shrink-0"></div>
   <script>
+  const routes = {{ route_json|safe }};
   const map = rmInitMap("route-detail-map", { mini: true });
   rmAddBasemap(map);
-  rmDrawRoutes(map, {{ route_json|safe }}, { padding: [10, 10] });
+  const legLayers = rmDrawRoutes(map, routes, { padding: [10, 10] });
+  rmEnrichCurvedGeometry(map, routes, legLayers);
   </script>
   {% endif %}
 </div>

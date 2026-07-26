@@ -19,7 +19,12 @@ Roster derivation, mechanical, not hand-maintained:
       trust-boundary-fixture-agent -- a real Cedar test fixture, never a
       registry entry)
   + interfaces/mcp/tools.yaml
-  -> 3 agent canonical ids + 4 MCP-server canonical ids = 7 total.
+  + interfaces/platform/services.yaml (M10, D7 -- real always-on platform
+      workloads that are none of a mock/MCP/agent/control-plane; excluding
+      them from this registry would create a second, invisible class of
+      service, contradicting the registry's own purpose)
+  -> 3 agent canonical ids + 4 MCP-server canonical ids + 1 platform
+     canonical id = 8 total.
 
 mock-* business systems are deliberately NEVER registry entries (no
 `/descriptor` exists on any of them) -- they appear only as dependency
@@ -56,6 +61,7 @@ _ENDPOINT_ENV_BY_CANONICAL_ID = {
     "workload.rate-mcp": "RATE_MCP_URL",
     "workload.qms-mcp": "QMS_MCP_URL",
     "workload.approval-mcp": "APPROVAL_MCP_URL",
+    "workload.geo-api": "GEO_API_URL",
 }
 
 DEFAULT_TTL_SECONDS = 15.0
@@ -67,9 +73,9 @@ def _resolver() -> EnvironmentServiceResolver:
 
 def registry_roster(root: Path | None = None) -> list[str]:
     """The canonical ids ObservedServiceRegistry polls -- 3 real agents
-    (fixture excluded) + 4 real MCP servers, derived from the same files
-    every other identity/capability consumer in this repo reads, never a
-    separately maintained list."""
+    (fixture excluded) + 4 real MCP servers + 1 real platform workload
+    (M10), derived from the same files every other identity/capability
+    consumer in this repo reads, never a separately maintained list."""
     root = root or RFQ_ROOT
     catalog = yaml.safe_load((root / "agents" / "catalog.yaml").read_text(encoding="utf-8"))
     agent_ids = [
@@ -79,7 +85,11 @@ def registry_roster(root: Path | None = None) -> list[str]:
     ]
     tools = yaml.safe_load((root / "interfaces" / "mcp" / "tools.yaml").read_text(encoding="utf-8"))
     workload_ids = ["workload." + s["id"] for s in tools["servers"]]
-    return agent_ids + workload_ids
+    platform_services = yaml.safe_load(
+        (root / "interfaces" / "platform" / "services.yaml").read_text(encoding="utf-8")
+    )
+    platform_ids = ["workload." + s["id"] for s in platform_services["services"]]
+    return agent_ids + workload_ids + platform_ids
 
 
 @dataclass

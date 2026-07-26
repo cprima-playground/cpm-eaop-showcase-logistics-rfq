@@ -191,6 +191,48 @@ def test_map_static_geojson_served(app):
     assert r.json()["type"] == "FeatureCollection"
 
 
+def test_map_routes_json_carries_per_leg_from_to_mode(app, monkeypatch):
+    """M10: routes_json must carry {from, to, mode} per leg boundary, not
+    just the flattened points array -- route-map.js needs this to know
+    what to ask geo-api for."""
+    monkeypatch.setattr(api_module, "_current_principal", lambda request: VIEWER)
+    r = TestClient(app).get("/map")
+    assert r.status_code == 200
+    assert '"from": "CNSHA"' in r.text or '"from":"CNSHA"' in r.text
+    assert '"mode": "ocean"' in r.text or '"mode":"ocean"' in r.text
+
+
+def test_map_legs_geometry_proxies_geo_client(app, monkeypatch, stub_clients):
+    """M10: the same-origin proxy route passes the query straight through
+    to GeoClient and returns whatever it returns."""
+    monkeypatch.setattr(api_module, "_current_principal", lambda request: VIEWER)
+    _, _, _, _, _, geo = stub_clients
+    r = TestClient(app).get("/map/legs/geometry", params={"from": "CNSHA", "to": "DEHAM", "mode": "ocean"})
+    assert r.status_code == 200
+    assert r.json()["distance_km"] == 1.0
+    assert geo.calls == [{"from": "CNSHA", "to": "DEHAM", "mode": "ocean"}]
+
+
+def test_map_legs_geometry_requires_role(app):
+    r = TestClient(app).get(
+        "/map/legs/geometry", params={"from": "CNSHA", "to": "DEHAM", "mode": "ocean"}, follow_redirects=False,
+    )
+    assert r.status_code in (302, 303, 307)
+
+
+def test_map_legs_geometry_fails_with_502_when_geo_unavailable(app, monkeypatch, stub_clients):
+    monkeypatch.setattr(api_module, "_current_principal", lambda request: VIEWER)
+    _, _, _, _, _, geo = stub_clients
+
+    def _raise(**kwargs):
+        from ops_dashboard.clients import GeoUnavailableError
+        raise GeoUnavailableError("geo-api unreachable")
+
+    monkeypatch.setattr(geo, "get_leg_geometry", _raise)
+    r = TestClient(app).get("/map/legs/geometry", params={"from": "CNSHA", "to": "DEHAM", "mode": "ocean"})
+    assert r.status_code == 502
+
+
 def _fake_healthz_response(status_code=200):
     return httpx.Response(status_code, request=httpx.Request("GET", "http://stub/healthz"))
 

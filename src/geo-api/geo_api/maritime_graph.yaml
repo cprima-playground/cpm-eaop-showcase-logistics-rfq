@@ -4,14 +4,14 @@
 # no longer a naive direct geodesic: a raw geodesic chord can cut straight
 # across land between two water points (e.g. Cape-of-Good-Hope->Hamburg, or
 # Malacca->Suez through India/Iran -- both bulge toward the pole and land in
-# between). Every edge is instead resolved by tools/geo/ocean_astar.py against the
+# between). Every edge is instead resolved by geo_api/ocean_astar.py against the
 # real Natural Earth coastline, except `kind: canal`, which is an artificial
 # waterway too narrow for any coastline dataset to represent and is instead
 # a trusted straight hop between its two hand-placed endpoints.
 #
-# Ports are graph nodes in their own right (coords copied from locations.jsonl),
-# so port->graph snapping is exact (zero-length connector) rather than nearest-
-# neighbor.
+# Ports are graph nodes in their own right (coords resolved live from
+# mock-masterdata at request time, D9), so port->graph snapping is exact
+# (zero-length connector) rather than nearest-neighbor.
 
 nodes:
   # chokepoints

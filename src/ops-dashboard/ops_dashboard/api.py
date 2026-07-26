@@ -13,7 +13,7 @@ import time
 from pathlib import Path
 
 import httpx
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -27,7 +27,8 @@ from rfq_common.theme import load_theme
 from rfq_common.webapp import SHARED_STATIC_DIR, SHARED_TEMPLATES_DIR, install_error_handlers
 
 from . import config
-from .clients import FxClient, QmsClient, RateClient, TmsClient
+from .clients import FxClient, GeoClient, GeoUnavailableError, QmsClient, RateClient, TmsClient
+from .geo_auth import TokenUnavailableError, default_token_provider
 from .sso import router as sso_router
 
 RFQ_ROOT = Path(__file__).resolve().parents[3]
@@ -100,6 +101,16 @@ def _qms_client() -> QmsClient:
     if not api_key:
         api_key = SecretsClient("dev", inventory_path=INVENTORY_PATH).get("qms-api-key")
     return QmsClient(base_url=os.environ.get("QMS_URL", "http://127.0.0.1:8007"), api_key=api_key)
+
+
+def _geo_client() -> GeoClient:
+    """OIDC-protected, not API-key-protected (D4) -- token_provider is a
+    callable so a cached client_credentials token gets refreshed on its own
+    schedule, never held as a fixed string here."""
+    return GeoClient(
+        base_url=os.environ.get("GEO_API_URL", "http://127.0.0.1:8400"),
+        token_provider=default_token_provider().get_token,
+    )
 
 
 def _check_service(name: str, base_url: str, auth_probe, *, kind: str = "api", auth_basis: str = "an authenticated call") -> dict:
@@ -313,13 +324,20 @@ def _check_identity_provider(name: str, issuer_url: str) -> dict:
     return result
 
 
-def _route_waypoints(route: dict, location_lookup) -> list[list[float]] | None:
+def _route_waypoints(route: dict, location_lookup) -> tuple[list[list[float]], list[dict]] | None:
     """Every leg boundary is a real waypoint (leg[i].to == leg[i+1].from) --
     used for both /map (all routes) and a route's own mini-map, so a
     multi-leg route (e.g. SHA-RTM-MUC: CNSHA->Rotterdam->Duisburg->Munich)
     bends through its real intermediate ports instead of looking direct
     (KNOWN-ISSUES.md #12/#13). Returns None if any waypoint's coordinates
-    are unavailable -- never fabricate a line."""
+    are unavailable -- never fabricate a line.
+
+    Returns (points, legs): `points` is the flattened straight-line
+    waypoint list (unchanged shape, still what renders immediately);
+    `legs` is `[{from, to, mode}, ...]`, one entry per leg boundary pair in
+    `points` (M10) -- route-map.js uses this to async-fetch each leg's
+    curved geometry from geo-api and swap it in, without losing the
+    mode/from/to that flattening `points` alone would discard."""
     legs = route.get("legs") or []
     if not legs:
         return None
@@ -327,7 +345,11 @@ def _route_waypoints(route: dict, location_lookup) -> list[list[float]] | None:
     points = [location_lookup(code) for code in codes]
     if any(p is None for p in points):
         return None
-    return [[p["lat"], p["lon"]] for p in points]
+    leg_meta = [
+        {"from": leg["origin_id"], "to": leg["destination_id"], "mode": leg.get("mode", "road")}
+        for leg in legs
+    ]
+    return [[p["lat"], p["lon"]] for p in points], leg_meta
 
 
 def _current_principal(request: Request) -> Principal | None:
@@ -354,12 +376,14 @@ def build_app(
     masterdata_client: MasterdataClient | None = None,
     fx_client: FxClient | None = None,
     qms_client: QmsClient | None = None,
+    geo_client: GeoClient | None = None,
 ) -> FastAPI:
     tms = tms_client or _tms_client()
     rate = rate_client or _rate_client()
     masterdata = masterdata_client or _masterdata_client()
     fx = fx_client or _fx_client()
     qms = qms_client or _qms_client()
+    geo = geo_client or _geo_client()
 
     theme_pack = None
     try:
@@ -373,6 +397,7 @@ def build_app(
     app.state.masterdata = masterdata
     app.state.fx = fx
     app.state.qms = qms
+    app.state.geo = geo
     app.add_middleware(SessionMiddleware, secret_key=config.session_secret())
     app.include_router(sso_router)
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
@@ -427,14 +452,16 @@ def build_app(
                 location_cache[code] = masterdata.get("locations", code)
             return location_cache[code]
 
-        waypoints = _route_waypoints(route, _location)
+        route_waypoints = _route_waypoints(route, _location)
         route_json = None
-        if waypoints is not None:
+        if route_waypoints is not None:
+            points, legs_meta = route_waypoints
             route_json = json.dumps([{
                 "id": route["id"],
                 "lane": route["lane_id"],
                 "status": (availability or {}).get("status", "unknown"),
-                "points": waypoints,
+                "points": points,
+                "legs": legs_meta,
             }])
 
         return templates.TemplateResponse(
@@ -504,21 +531,54 @@ def build_app(
 
         map_routes = []
         for r in routes:
-            points = _route_waypoints(r, _location)
-            if points is None:
+            route_waypoints = _route_waypoints(r, _location)
+            if route_waypoints is None:
                 continue  # no legs, or masterdata has no coordinates for some waypoint -- skip, don't fabricate a line
+            points, legs_meta = route_waypoints
             avail = tms.get_availability(r["id"]) or {}
             map_routes.append({
                 "id": r["id"],
                 "lane": r["lane_id"],
                 "status": avail.get("status", "unknown"),
                 "points": points,
+                "legs": legs_meta,
             })
 
         return templates.TemplateResponse(
             request, "map.html",
             _ctx(request, routes_json=json.dumps(map_routes), principal=principal),
         )
+
+    @app.get("/map/legs/geometry")
+    def map_leg_geometry(
+        request: Request,
+        from_locode: str = Query(..., alias="from"),
+        to_locode: str = Query(..., alias="to"),
+        mode: str = Query(...),
+    ):
+        """M10: thin server-side proxy to geo-api's GET /v1/legs/geometry --
+        the browser stays same-origin (no new CORS/auth surface for it), and
+        ops-dashboard's own machine identity (workload.ops-dashboard) does
+        the OIDC bearer-token auth geo-api requires. UI composition, not
+        service ownership -- this shouldn't calcify into a second permanent
+        integration hub duplicating what Mission Control's registry already
+        knows about geo-api.
+
+        Deliberately requires the same session role as the page that calls
+        it (`ops-viewer`) -- an unauthenticated browser can't reach this any
+        more than it can reach /map itself. Failure here must never break
+        the page: route-map.js's async fetch catches a non-2xx/network
+        error and simply keeps the straight-line fallback already drawn."""
+        _require_role(request, "ops-viewer")
+        try:
+            return geo.get_leg_geometry(from_locode=from_locode, to_locode=to_locode, mode=mode)
+        except (GeoUnavailableError, TokenUnavailableError) as exc:
+            raise HTTPException(status_code=502, detail=f"geo-api unavailable: {exc}") from exc
+        except httpx.HTTPStatusError as exc:
+            # A real response FROM geo-api (e.g. 404 unknown locode, 422 no
+            # maritime path) -- pass its status/detail through rather than
+            # flattening every non-2xx into the same 502 "unavailable".
+            raise HTTPException(status_code=exc.response.status_code, detail=exc.response.text) from exc
 
     @app.get("/status", response_class=HTMLResponse)
     def status_page(request: Request):

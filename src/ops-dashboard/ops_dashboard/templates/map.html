@@ -10,9 +10,11 @@
 <h1 class="text-2xl font-bold mb-4">Route map</h1>
 <div id="route-map" class="border rounded mb-3"></div>
 <p class="text-sm text-gray-500">
-  Straight lines between each real leg boundary (port-to-port, not just
-  origin-to-destination) -- <code>RouteLeg</code> still carries no curved
-  polyline data, only locodes (see <code>KNOWN-ISSUES.md</code>).
+  Straight lines render immediately between each real leg boundary
+  (port-to-port, not just origin-to-destination); curved, coastline-aware
+  geometry swaps in shortly after, fetched live per leg from
+  <code>geo-api</code> (M10) -- a leg's straight line stays if that fetch is
+  slow, fails, or geo-api is down, it never blocks the page.
   Basemap: <a class="underline" href="https://www.naturalearthdata.com/" target="_blank" rel="noopener">Natural Earth</a>
   (public domain, vendored locally, no external tile server).
 </p>
@@ -21,8 +23,8 @@
 const routes = {{ routes_json|safe }};
 const map = rmInitMap("route-map");
 rmAddBasemap(map);
-rmDrawRoutes(map, routes, {
-  onLine: (r, line) => line.bindPopup(`<a href="/routes/${r.id}">${r.id}</a><br>${r.lane}<br>${r.status}`),
-});
+const onLine = (r, line) => line.bindPopup(`<a href="/routes/${r.id}">${r.id}</a><br>${r.lane}<br>${r.status}`);
+const legLayers = rmDrawRoutes(map, routes, { onLine });
+rmEnrichCurvedGeometry(map, routes, legLayers, { onLine });
 </script>
 {% endblock %}
