@@ -43,8 +43,11 @@ logger = logging.getLogger("rfq_common.descriptor")
 # unaffected; a consumer must be written tolerant of unknown kind/
 # protocol.type values (controlplane.md's own compatibility rule,
 # applied as code here, not just prose) rather than assuming every
-# future addition bumps this version.
-DESCRIPTOR_SCHEMA_VERSION = "1.1"
+# future addition bumps this version. 1.1 -> 1.2 (M10): additive only --
+# kind gained "platform", for geo-api -- a real, always-on service that
+# is neither an a2a-agent, an mcp-server, nor mission-control's own
+# control-plane, so reusing any of those three would misdescribe it.
+DESCRIPTOR_SCHEMA_VERSION = "1.2"
 
 
 class ProtocolInfo(BaseModel):
@@ -89,7 +92,7 @@ class ServiceDescriptor(BaseModel):
 
     schema_version: str = DESCRIPTOR_SCHEMA_VERSION
     canonical_id: str
-    kind: Literal["a2a-agent", "mcp-server", "control-plane"]
+    kind: Literal["a2a-agent", "mcp-server", "control-plane", "platform"]
     instance_id: str
     endpoints: EndpointInfo
     identity: IdentityInfo
@@ -108,7 +111,7 @@ def new_instance_id() -> str:
 def build_descriptor(
     *,
     canonical_id: str,
-    kind: Literal["a2a-agent", "mcp-server", "control-plane"],
+    kind: Literal["a2a-agent", "mcp-server", "control-plane", "platform"],
     instance_id: str,
     base_url: str,
     protocol_type: Literal["a2a", "mcp", "rest"],

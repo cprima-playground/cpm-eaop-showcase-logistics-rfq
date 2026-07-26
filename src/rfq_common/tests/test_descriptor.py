@@ -59,11 +59,26 @@ def test_build_descriptor_accepts_control_plane_kind_and_rest_protocol():
         base_url="https://mission-control.rfq-showcase.localhost", protocol_type="rest",
         capability_source="openapi:/api/v1/openapi.json",
     )
-    assert descriptor.schema_version == "1.1" == DESCRIPTOR_SCHEMA_VERSION
+    assert descriptor.schema_version == DESCRIPTOR_SCHEMA_VERSION
     assert descriptor.kind == "control-plane"
     assert descriptor.endpoints.protocol.type == "rest"
     assert descriptor.capabilities.skills == []
     assert descriptor.capabilities.tools == []
+
+
+def test_build_descriptor_accepts_platform_kind():
+    """M10 (1.1 -> 1.2): additive schema extension for geo-api -- a real,
+    always-on service that is none of a2a-agent/mcp-server/control-plane,
+    so kind="platform" must build cleanly, same as every other kind."""
+    descriptor = build_descriptor(
+        canonical_id="workload.geo-api", kind="platform", instance_id="test-instance-1",
+        base_url="https://geo.rfq-showcase.localhost", protocol_type="rest",
+        capability_source="static:route.geometry.compute", skills=["route.geometry.compute"],
+    )
+    assert descriptor.schema_version == DESCRIPTOR_SCHEMA_VERSION
+    assert descriptor.kind == "platform"
+    assert descriptor.endpoints.protocol.type == "rest"
+    assert descriptor.capabilities.skills == ["route.geometry.compute"]
 
 
 def test_canonical_id_is_stable_across_instances_instance_id_is_not():
