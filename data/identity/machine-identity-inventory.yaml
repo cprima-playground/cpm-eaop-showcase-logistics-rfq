@@ -1,0 +1,227 @@
+# GENERATED -- do not hand-edit. Run tools/identity/gen_machine_identity_inventory.py.
+edges:
+- caller: approval-mcp
+  target: Keycloak (token introspection, RFC 7662)
+  mechanism: OIDC confidential client, workload's own identity (approval-mcp-svc-client-secret)
+  status: real
+  note: value comes from the approval-mcp-svc client Keycloak already provisions (infra/keycloak/terraform's
+    machine_identities for_each) -- fetched live via the Keycloak admin API and recorded
+    here, same posture as qms-mcp-svc-client-secret above; seed.py must not overwrite
+    it with a random value.
+- caller: approval-mcp
+  target: mock-qms
+  mechanism: shared API key (qms-api-key)
+  status: real
+  note: '(credential-level note, shared by every consumer of qms-api-key) qms-mcp
+    AND approval-mcp both reuse this shared key as their own
+
+    transport credential to mock-qms (M6, same posture tms-mcp/
+
+    tms-api-key established) rather than minting a per-MCP-server key
+
+    -- decision #8''s accepted weaker-than-per-workload-token granularity
+
+    for this hop. The two servers sharing mock-qms is only valid under
+
+    ADR-002 because their EXPOSED action sets are disjoint (mechanically
+
+    checked, see src/qms-mcp/tests/test_adr002_disjointness.py) -- this
+
+    shared-key note documents the transport layer, not the authorization
+
+    layer, and does not itself relax that requirement.'
+- caller: commercial-normalization-agent
+  target: mock-fx
+  mechanism: shared API key (fx-api-key)
+  status: real
+  note: '(credential-level note, shared by every consumer of fx-api-key) qms-mcp''s
+    route-cost.normalize tool consults mock-fx directly (real
+
+    fx_age_seconds for D2''s already-decided freshness gate, then the
+
+    real conversion via mock-fx''s own /convert) -- reuses the shared
+
+    key, same posture as tms-mcp/tms-api-key et al (decision #8).'
+- caller: commercial-normalization-agent
+  target: mock-masterdata
+  mechanism: shared API key (masterdata-api-key)
+  status: real
+  note: null
+- caller: commercial-normalization-agent
+  target: mock-qms
+  mechanism: shared API key (qms-api-key)
+  status: real
+  note: '(credential-level note, shared by every consumer of qms-api-key) qms-mcp
+    AND approval-mcp both reuse this shared key as their own
+
+    transport credential to mock-qms (M6, same posture tms-mcp/
+
+    tms-api-key established) rather than minting a per-MCP-server key
+
+    -- decision #8''s accepted weaker-than-per-workload-token granularity
+
+    for this hop. The two servers sharing mock-qms is only valid under
+
+    ADR-002 because their EXPOSED action sets are disjoint (mechanically
+
+    checked, see src/qms-mcp/tests/test_adr002_disjointness.py) -- this
+
+    shared-key note documents the transport layer, not the authorization
+
+    layer, and does not itself relax that requirement.'
+- caller: infra/keycloak/terraform (Terraform apply, human-triggered)
+  target: Keycloak admin API
+  mechanism: keycloak-realm-admin-password (identity/credentials-inventory.yaml)
+  status: real
+  note: Provisions realm/clients/workload identities -- not a runtime service edge,
+    an operator edge.
+- caller: lane-evaluation-agent
+  target: mock-masterdata
+  mechanism: shared API key (masterdata-api-key)
+  status: real
+  note: null
+- caller: lane-evaluation-agent
+  target: mock-rate
+  mechanism: shared API key (rate-api-key)
+  status: real
+  note: '(credential-level note, shared by every consumer of rate-api-key) rate-mcp
+    reuses this shared key as its own transport credential to
+
+    mock-rate (M6, same posture tms-mcp/tms-api-key established in M6a)
+
+    rather than minting a per-MCP-server key -- decision #8''s accepted
+
+    weaker-than-per-workload-token granularity for this hop.'
+- caller: lane-evaluation-agent
+  target: mock-tms
+  mechanism: shared API key (tms-api-key)
+  status: real
+  note: '(credential-level note, shared by every consumer of tms-api-key) tms-mcp
+    reuses this shared key as its own transport credential to mock-tms
+
+    (M6a) rather than minting a per-MCP-server key -- decision #8''s accepted
+
+    weaker-than-per-workload-token granularity, already the repo''s existing
+
+    posture for this hop (unchanged behavior for the other two consumers).
+
+    A dedicated tms-mcp-api-key entry remains status:planned below for a
+
+    future tightening, not activated by this milestone.'
+- caller: mock-fx
+  target: mock-masterdata
+  mechanism: shared API key (masterdata-api-key)
+  status: real
+  note: null
+- caller: mock-rate
+  target: mock-masterdata
+  mechanism: shared API key (masterdata-api-key)
+  status: real
+  note: null
+- caller: mock-tms
+  target: mock-masterdata
+  mechanism: shared API key (masterdata-api-key)
+  status: real
+  note: null
+- caller: qms-mcp
+  target: Keycloak (token introspection, RFC 7662)
+  mechanism: OIDC confidential client, workload's own identity (qms-mcp-svc-client-secret)
+  status: real
+  note: value comes from the qms-mcp-svc client Keycloak already provisions (infra/keycloak/terraform's
+    machine_identities for_each) -- fetched live via the Keycloak admin API and recorded
+    here, same posture as tms-mcp-svc-client-secret/rate-mcp-svc-client-secret above;
+    seed.py must not overwrite it with a random value.
+- caller: qms-mcp
+  target: mock-fx
+  mechanism: shared API key (fx-api-key)
+  status: real
+  note: '(credential-level note, shared by every consumer of fx-api-key) qms-mcp''s
+    route-cost.normalize tool consults mock-fx directly (real
+
+    fx_age_seconds for D2''s already-decided freshness gate, then the
+
+    real conversion via mock-fx''s own /convert) -- reuses the shared
+
+    key, same posture as tms-mcp/tms-api-key et al (decision #8).'
+- caller: qms-mcp
+  target: mock-qms
+  mechanism: shared API key (qms-api-key)
+  status: real
+  note: '(credential-level note, shared by every consumer of qms-api-key) qms-mcp
+    AND approval-mcp both reuse this shared key as their own
+
+    transport credential to mock-qms (M6, same posture tms-mcp/
+
+    tms-api-key established) rather than minting a per-MCP-server key
+
+    -- decision #8''s accepted weaker-than-per-workload-token granularity
+
+    for this hop. The two servers sharing mock-qms is only valid under
+
+    ADR-002 because their EXPOSED action sets are disjoint (mechanically
+
+    checked, see src/qms-mcp/tests/test_adr002_disjointness.py) -- this
+
+    shared-key note documents the transport layer, not the authorization
+
+    layer, and does not itself relax that requirement.'
+- caller: rate-mcp
+  target: Keycloak (token introspection, RFC 7662)
+  mechanism: OIDC confidential client, workload's own identity (rate-mcp-svc-client-secret)
+  status: real
+  note: value comes from the rate-mcp-svc client Keycloak already provisions (infra/keycloak/terraform's
+    machine_identities for_each) -- fetched live via the Keycloak admin API and recorded
+    here, same posture as tms-mcp-svc-client-secret above; seed.py must not overwrite
+    it with a random value.
+- caller: rate-mcp
+  target: mock-rate
+  mechanism: shared API key (rate-api-key)
+  status: real
+  note: '(credential-level note, shared by every consumer of rate-api-key) rate-mcp
+    reuses this shared key as its own transport credential to
+
+    mock-rate (M6, same posture tms-mcp/tms-api-key established in M6a)
+
+    rather than minting a per-MCP-server key -- decision #8''s accepted
+
+    weaker-than-per-workload-token granularity for this hop.'
+- caller: rfq_common.pdp.PDPClient (every service that authorizes)
+  target: cedar-agent
+  mechanism: none -- network-only trust
+  status: accepted exception
+  note: cedar-agent is never published on a host port and only reachable over the
+    internal compose network (infra/compose.support.yaml has no cedar-agent service
+    today; the real cedar-agent runs standalone, container_name rfq-showcase-cedar-agent,
+    compose-internal-only). No request credential is checked on POST /v1/is_authorized.
+    Accepted for this showcase's scope because the only callers are this repo's own
+    trusted services on a private network, never an external caller -- same class
+    of deliberate scope call as the shared-API-key transport edges below, not an oversight.
+- caller: route-decision-agent
+  target: mock-masterdata
+  mechanism: shared API key (masterdata-api-key)
+  status: real
+  note: null
+- caller: tms-mcp
+  target: Keycloak (token introspection, RFC 7662)
+  mechanism: OIDC confidential client, workload's own identity (tms-mcp-svc-client-secret)
+  status: real
+  note: value comes from the tms-mcp-svc client Keycloak already provisions (infra/keycloak/terraform's
+    machine_identities for_each) -- fetched live via the Keycloak admin API and recorded
+    here, same posture as qms-web-client-secret/ops-dashboard-web-client-secret above;
+    seed.py must not overwrite it with a random value.
+- caller: tms-mcp
+  target: mock-tms
+  mechanism: shared API key (tms-api-key)
+  status: real
+  note: '(credential-level note, shared by every consumer of tms-api-key) tms-mcp
+    reuses this shared key as its own transport credential to mock-tms
+
+    (M6a) rather than minting a per-MCP-server key -- decision #8''s accepted
+
+    weaker-than-per-workload-token granularity, already the repo''s existing
+
+    posture for this hop (unchanged behavior for the other two consumers).
+
+    A dedicated tms-mcp-api-key entry remains status:planned below for a
+
+    future tightening, not activated by this milestone.'

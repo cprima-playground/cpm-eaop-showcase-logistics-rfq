@@ -1,5 +1,6 @@
-# Caddyfile for the CONSOLIDATED full-topology compose (infra/compose.yaml).
-# Distinct from infra/caddy/Caddyfile (the older standalone setup, which
+# Caddyfile for the SUPPORT+SHOWCASE compose split (infra/compose.support.yaml
+# + infra/compose.showcase.yaml) -- mounted by compose.support.yaml's caddy
+# service. Distinct from infra/caddy/Caddyfile (the older standalone setup, which
 # fronts bare HOST PROCESSES via host.docker.internal -- still valid for
 # piecemeal local dev). Here every backend is a container on the SAME
 # compose network, so reverse_proxy targets are compose SERVICE NAMES, not
