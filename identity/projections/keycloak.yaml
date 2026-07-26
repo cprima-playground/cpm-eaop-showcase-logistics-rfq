@@ -1,0 +1,36 @@
+# Keycloak-specific projection config (M3.5). Provider-specific naming ONLY
+# -- never merged into identity/actors.yaml (decision #11). Consumed by
+# tools/identity/gen_keycloak.py alongside the Validated Identity Model.
+#
+# Client ids for the 3 agents match agents/catalog.yaml's existing
+# caller_identity.keycloak_client values (that file remains the source
+# identity resolution actually scans, per its own header comment) --
+# duplicated here only so the generator has one place to read every
+# machine identity's Keycloak naming from, agents and workloads alike.
+
+realm: rfq
+
+clients:
+  agent.lane-evaluation: {client_id: lane-evaluation-agent-svc}
+  agent.commercial-normalization: {client_id: commercial-normalization-agent-svc}
+  agent.route-decision: {client_id: route-decision-agent-svc}
+  workload.tms-mcp: {client_id: tms-mcp-svc}
+  workload.rate-mcp: {client_id: rate-mcp-svc}
+  workload.qms-mcp: {client_id: qms-mcp-svc}
+  workload.approval-mcp: {client_id: approval-mcp-svc}
+  agent.trust-boundary-fixture: {client_id: trust-boundary-fixture-agent-svc}
+
+# Humans get Keycloak users, not clients -- username = canonical actor id
+# directly, no projection entry needed unless a username ever needs to
+# diverge from the id (none do today).
+
+# oid_overrides (M3.2a hybrid migration): oid's VALUE is inert (see
+# MIGRATION.md's investigation -- rfq_common.identity only checks its
+# PRESENCE, not the value), but Stage A's zero-diff requirement means the
+# 3 already-live users must keep their exact existing GUIDs, not a freshly
+# generated one. New users (Stage B) get tools/identity/gen_keycloak.py's
+# generated oid -- no override needed.
+oid_overrides:
+  diane.delgado: "8e41c2b0-0000-4000-9000-000000000010"
+  mona.commercial: "8e41c2b0-0000-4000-9000-000000000011"
+  sam.pricing: "8e41c2b0-0000-4000-9000-000000000012"

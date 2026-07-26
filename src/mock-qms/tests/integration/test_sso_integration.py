@@ -88,7 +88,10 @@ def test_sam_resolves_with_pricing_manager_role(client_secret):
     principal = resolve_principal(_verify(_token_for("sam.pricing", client_secret)).claims)
     assert principal.has_role("pricing-manager")
     assert principal.groups == ["/rfq-pricing-emea"]
-    assert principal.manager == "diane.delgado"
+    # sam.pricing reports to the Pricing Manager, not the Regional Director
+    # directly (capability-profile review correction, identity/actors.yaml's
+    # own comment on this entry) -- was stale here since that correction.
+    assert principal.manager == "mona.commercial"
     assert principal.approval_limit_eur_cents is None
 
 

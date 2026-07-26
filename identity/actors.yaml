@@ -301,5 +301,17 @@ actors:
     persona: RouteDecisionAgent
     trust_domain: internal
 
+  # M6a Integration Checkpoint 1 trust-boundary FIXTURE, not a business
+  # persona: proves D10 (agent-may-check-capacity) actually denies a real,
+  # validly-authenticated agent whose trust_domain is not "internal" --
+  # exercised via a real Keycloak client-credentials token, same as the
+  # 3 persona-backed agents above. owned_actions: [] deliberately (a
+  # cross-trust-domain caller shouldn't own anything yet, not just
+  # capacity.check) -- see agents/catalog.yaml's matching entry.
+  - id: agent.trust-boundary-fixture
+    kind: agent
+    persona: null
+    trust_domain: external
+
 # Groups referenced above now live in identity/groups.yaml (promoted out of
 # this file's earlier 2-entry EMEA-only inline sketch, M2).
