@@ -1,0 +1,184 @@
+{
+  "services": [
+    {
+      "stack": "eaop-infra",
+      "name": "a2a-inspector",
+      "image": "rfq-showcase-a2a-inspector",
+      "build": "D:\\github.com\\cprima\\cpm-eaop-showcase-logistics-rfq\\infra\\a2a-inspector",
+      "ports": [],
+      "volumes": [
+        "D:\\github.com\\cprima\\cpm-eaop-showcase-logistics-rfq\\infra\\caddy\\root.crt:/usr/local/share/ca-certificates/gateway-root.crt"
+      ],
+      "networks": [
+        "eaop-infra"
+      ],
+      "profiles": null
+    },
+    {
+      "stack": "eaop-infra",
+      "name": "gateway",
+      "image": "rfq-showcase-gateway",
+      "build": "D:\\github.com\\cprima\\cpm-eaop-showcase-logistics-rfq\\infra\\caddy",
+      "ports": [
+        "443:443"
+      ],
+      "volumes": [
+        "D:\\github.com\\cprima\\cpm-eaop-showcase-logistics-rfq\\infra\\compose\\Caddyfile:/etc/caddy/Caddyfile",
+        "caddy-data:/data"
+      ],
+      "networks": [
+        "eaop-infra"
+      ],
+      "profiles": null
+    },
+    {
+      "stack": "eaop-infra",
+      "name": "keycloak",
+      "image": "rfq-showcase-keycloak",
+      "build": "D:\\github.com\\cprima\\cpm-eaop-showcase-logistics-rfq\\infra\\keycloak",
+      "ports": [
+        "8081:8080"
+      ],
+      "volumes": [
+        "keycloak-data:/opt/keycloak/data"
+      ],
+      "networks": [
+        "eaop-infra"
+      ],
+      "profiles": null
+    },
+    {
+      "stack": "eaop-infra",
+      "name": "mcp-inspector",
+      "image": "rfq-showcase-mcp-inspector",
+      "build": "D:\\github.com\\cprima\\cpm-eaop-showcase-logistics-rfq\\infra\\mcp-inspector",
+      "ports": [],
+      "volumes": [
+        null
+      ],
+      "networks": [
+        "eaop-infra"
+      ],
+      "profiles": null
+    },
+    {
+      "stack": "eaop-infra",
+      "name": "vault",
+      "image": "hashicorp/vault:latest",
+      "build": null,
+      "ports": [
+        "8200:8200"
+      ],
+      "volumes": [
+        null
+      ],
+      "networks": [
+        "eaop-infra"
+      ],
+      "profiles": null
+    },
+    {
+      "stack": "eaop-infra",
+      "name": "web",
+      "image": "nginx:alpine",
+      "build": null,
+      "ports": [],
+      "volumes": [
+        "D:\\github.com\\cprima\\cpm-eaop-showcase-logistics-rfq\\web:/usr/share/nginx/html"
+      ],
+      "networks": [
+        "eaop-infra"
+      ],
+      "profiles": null
+    },
+    {
+      "stack": "eaop-observability",
+      "name": "grafana",
+      "image": "grafana/grafana-oss:11.3.1",
+      "build": null,
+      "ports": [
+        "3000:3000"
+      ],
+      "volumes": [
+        "D:\\github.com\\cprima\\cpm-eaop-showcase-logistics-rfq\\infra\\observability\\grafana-provisioning:/etc/grafana/provisioning"
+      ],
+      "networks": [
+        "eaop-infra"
+      ],
+      "profiles": null
+    },
+    {
+      "stack": "eaop-observability",
+      "name": "otel-collector",
+      "image": "otel/opentelemetry-collector-contrib:0.112.0",
+      "build": null,
+      "ports": [
+        "4317:4317",
+        "4318:4318"
+      ],
+      "volumes": [
+        "D:\\github.com\\cprima\\cpm-eaop-showcase-logistics-rfq\\infra\\observability\\otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml"
+      ],
+      "networks": [
+        "eaop-infra"
+      ],
+      "profiles": null
+    },
+    {
+      "stack": "eaop-observability",
+      "name": "prometheus",
+      "image": "prom/prometheus:v2.55.1",
+      "build": null,
+      "ports": [
+        "9090:9090"
+      ],
+      "volumes": [
+        "D:\\github.com\\cprima\\cpm-eaop-showcase-logistics-rfq\\infra\\observability\\prometheus.yml:/etc/prometheus/prometheus.yml"
+      ],
+      "networks": [
+        "eaop-infra"
+      ],
+      "profiles": null
+    },
+    {
+      "stack": "eaop-observability",
+      "name": "tempo",
+      "image": "grafana/tempo:2.6.1",
+      "build": null,
+      "ports": [
+        "3200:3200"
+      ],
+      "volumes": [
+        "D:\\github.com\\cprima\\cpm-eaop-showcase-logistics-rfq\\infra\\observability\\tempo.yaml:/etc/tempo.yaml"
+      ],
+      "networks": [
+        "eaop-infra"
+      ],
+      "profiles": null
+    }
+  ],
+  "volumes": [
+    {
+      "stack": "eaop-infra",
+      "name": "caddy-data",
+      "external": true
+    },
+    {
+      "stack": "eaop-infra",
+      "name": "keycloak-data",
+      "external": true
+    }
+  ],
+  "networks": [
+    {
+      "stack": "eaop-infra",
+      "name": "eaop-infra",
+      "external": false
+    },
+    {
+      "stack": "eaop-observability",
+      "name": "eaop-infra",
+      "external": true
+    }
+  ]
+}

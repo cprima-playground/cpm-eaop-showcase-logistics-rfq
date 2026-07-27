@@ -1,0 +1,217 @@
+{
+  "name": "eaop-infra",
+  "networks": {
+    "eaop-infra": {
+      "name": "eaop-infra",
+      "ipam": {}
+    }
+  },
+  "services": {
+    "a2a-inspector": {
+      "build": {
+        "context": "D:\\github.com\\cprima\\cpm-eaop-showcase-logistics-rfq\\infra\\a2a-inspector",
+        "dockerfile": "Dockerfile",
+        "args": {
+          "A2A_INSPECTOR_REF": "fix/streaming-false-0.3.10"
+        },
+        "cache_from": [
+          "type=local,src=T:/docker-buildcache/a2a-inspector"
+        ],
+        "cache_to": [
+          "type=local,dest=T:/docker-buildcache/a2a-inspector,mode=max"
+        ]
+      },
+      "command": [
+        "sh",
+        "-c",
+        "cat /etc/ssl/certs/ca-certificates.crt /usr/local/share/ca-certificates/gateway-root.crt \u003e /tmp/combined-ca.pem \u0026\u0026 cd /app/backend \u0026\u0026 SSL_CERT_FILE=/tmp/combined-ca.pem /app/.venv/bin/python -m uvicorn app:app --host 0.0.0.0 --port 8080"
+      ],
+      "entrypoint": null,
+      "image": "rfq-showcase-a2a-inspector",
+      "networks": {
+        "eaop-infra": null
+      },
+      "restart": "unless-stopped",
+      "volumes": [
+        {
+          "type": "bind",
+          "source": "D:\\github.com\\cprima\\cpm-eaop-showcase-logistics-rfq\\infra\\caddy\\root.crt",
+          "target": "/usr/local/share/ca-certificates/gateway-root.crt",
+          "read_only": true,
+          "bind": {}
+        }
+      ]
+    },
+    "gateway": {
+      "build": {
+        "context": "D:\\github.com\\cprima\\cpm-eaop-showcase-logistics-rfq\\infra\\caddy",
+        "dockerfile": "Dockerfile"
+      },
+      "command": null,
+      "entrypoint": null,
+      "image": "rfq-showcase-gateway",
+      "networks": {
+        "eaop-infra": {
+          "aliases": [
+            "ops-dashboard.eaop-logistics.localhost",
+            "qms.eaop-logistics.localhost",
+            "tms.eaop-logistics.localhost",
+            "rate.eaop-logistics.localhost",
+            "fx.eaop-logistics.localhost",
+            "masterdata.eaop-logistics.localhost",
+            "keycloak.eaop-logistics.localhost",
+            "lane-evaluation-agent.eaop-logistics.localhost",
+            "route-decision-agent.eaop-logistics.localhost",
+            "commercial-normalization-agent.eaop-logistics.localhost",
+            "tms-mcp.eaop-logistics.localhost",
+            "rate-mcp.eaop-logistics.localhost",
+            "qms-mcp.eaop-logistics.localhost",
+            "approval-mcp.eaop-logistics.localhost",
+            "mission-control.eaop-logistics.localhost",
+            "a2a-inspector.eaop-logistics.localhost",
+            "mcp-inspector.eaop-logistics.localhost",
+            "mcp-inspector-proxy.eaop-logistics.localhost",
+            "web.eaop-logistics.localhost"
+          ]
+        }
+      },
+      "ports": [
+        {
+          "mode": "ingress",
+          "target": 443,
+          "published": "443",
+          "protocol": "tcp"
+        }
+      ],
+      "restart": "unless-stopped",
+      "volumes": [
+        {
+          "type": "bind",
+          "source": "D:\\github.com\\cprima\\cpm-eaop-showcase-logistics-rfq\\infra\\compose\\Caddyfile",
+          "target": "/etc/caddy/Caddyfile",
+          "read_only": true,
+          "bind": {}
+        },
+        {
+          "type": "volume",
+          "source": "caddy-data",
+          "target": "/data",
+          "volume": {}
+        }
+      ]
+    },
+    "keycloak": {
+      "build": {
+        "context": "D:\\github.com\\cprima\\cpm-eaop-showcase-logistics-rfq\\infra\\keycloak",
+        "dockerfile": "Dockerfile"
+      },
+      "command": [
+        "start-dev"
+      ],
+      "entrypoint": null,
+      "environment": {
+        "KC_BOOTSTRAP_ADMIN_PASSWORD": "rfq-dev-admin",
+        "KC_BOOTSTRAP_ADMIN_USERNAME": "admin",
+        "KC_HOSTNAME": "https://keycloak.eaop-logistics.localhost",
+        "KC_PROXY_HEADERS": "xforwarded"
+      },
+      "image": "rfq-showcase-keycloak",
+      "networks": {
+        "eaop-infra": null
+      },
+      "ports": [
+        {
+          "mode": "ingress",
+          "target": 8080,
+          "published": "8081",
+          "protocol": "tcp"
+        }
+      ],
+      "restart": "unless-stopped",
+      "volumes": [
+        {
+          "type": "volume",
+          "source": "keycloak-data",
+          "target": "/opt/keycloak/data",
+          "volume": {}
+        }
+      ]
+    },
+    "mcp-inspector": {
+      "build": {
+        "context": "D:\\github.com\\cprima\\cpm-eaop-showcase-logistics-rfq\\infra\\mcp-inspector",
+        "dockerfile": "Dockerfile",
+        "cache_from": [
+          "type=local,src=T:/docker-buildcache/mcp-inspector"
+        ],
+        "cache_to": [
+          "type=local,dest=T:/docker-buildcache/mcp-inspector,mode=max"
+        ]
+      },
+      "command": null,
+      "entrypoint": null,
+      "environment": {
+        "ALLOWED_ORIGINS": "https://mcp-inspector.eaop-logistics.localhost",
+        "DANGEROUSLY_OMIT_AUTH": "true",
+        "HOST": "0.0.0.0"
+      },
+      "image": "rfq-showcase-mcp-inspector",
+      "networks": {
+        "eaop-infra": null
+      },
+      "restart": "unless-stopped"
+    },
+    "vault": {
+      "cap_add": [
+        "IPC_LOCK"
+      ],
+      "command": null,
+      "entrypoint": null,
+      "environment": {
+        "VAULT_DEV_LISTEN_ADDRESS": "0.0.0.0:8200",
+        "VAULT_DEV_ROOT_TOKEN_ID": "rfq-dev-root"
+      },
+      "image": "hashicorp/vault:latest",
+      "networks": {
+        "eaop-infra": null
+      },
+      "ports": [
+        {
+          "mode": "ingress",
+          "target": 8200,
+          "published": "8200",
+          "protocol": "tcp"
+        }
+      ],
+      "restart": "unless-stopped"
+    },
+    "web": {
+      "command": null,
+      "entrypoint": null,
+      "image": "nginx:alpine",
+      "networks": {
+        "eaop-infra": null
+      },
+      "restart": "unless-stopped",
+      "volumes": [
+        {
+          "type": "bind",
+          "source": "D:\\github.com\\cprima\\cpm-eaop-showcase-logistics-rfq\\web",
+          "target": "/usr/share/nginx/html",
+          "read_only": true,
+          "bind": {}
+        }
+      ]
+    }
+  },
+  "volumes": {
+    "caddy-data": {
+      "name": "eaop-caddy-data",
+      "external": true
+    },
+    "keycloak-data": {
+      "name": "eaop-keycloak-data",
+      "external": true
+    }
+  }
+}

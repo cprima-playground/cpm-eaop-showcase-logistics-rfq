@@ -1,0 +1,28 @@
+# SBOM generation via syft's official container -- pinned version, not a
+# host-installed binary (same reasoning as infra/a2a-inspector,
+# infra/mcp-inspector, infra/publishing). Two independent scan modes,
+# both driven by tools/sbom/generate.ps1:
+#   image:<ref>  -- built Docker images, read from the local daemon via
+#                    the mounted socket.
+#   dir:/repo    -- this repo's file-based dependency manifests
+#                    (pyproject.toml/uv.lock, package.json, requirements*.txt,
+#                    ...) -- catches dependencies that never become a
+#                    container image at all (host tooling, CI scripts),
+#                    which pure image-scanning always misses.
+# Own project name (NOT eaop-infra) -- this file scans via the Docker
+# socket + file mounts only, no network dependency on the app stack, so
+# there's no reason to share its project identity. Found live: sharing
+# `eaop-infra` made every `run` flag the support stack's containers as
+# "orphan containers" of this file (which doesn't declare them) -- pure
+# noise, not a real orphan.
+name: eaop-sbom
+
+services:
+  syft:
+    image: anchore/syft:v1.18.0
+    profiles: ["tools"]
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ../..:/repo:ro
+      - ../../data/inventory/sbom:/sbom
+    working_dir: /repo

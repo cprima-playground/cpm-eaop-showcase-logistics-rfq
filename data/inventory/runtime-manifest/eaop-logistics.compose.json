@@ -1,0 +1,16 @@
+{
+  "name": "eaop-logistics",
+  "services": {},
+  "x-cedar-env": {
+    "CEDAR_URL": "http://cedar-agent:8180"
+  },
+  "x-keycloak-env": {
+    "KEYCLOAK_BASE_URL": "http://keycloak:8080"
+  },
+  "x-otel-env": {
+    "OTEL_EXPORTER_OTLP_ENDPOINT": "http://otel-collector:4317"
+  },
+  "x-vault-env": {
+    "VAULT_ADDR": "http://vault:8200"
+  }
+}

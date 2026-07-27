@@ -1,0 +1,192 @@
+{
+  "name": "eaop-infra",
+  "networks": {
+    "eaop-infra": {
+      "name": "eaop-infra",
+      "ipam": {},
+      "external": true
+    }
+  },
+  "services": {
+    "grafana": {
+      "command": null,
+      "depends_on": {
+        "prometheus": {
+          "condition": "service_healthy",
+          "required": true
+        },
+        "tempo": {
+          "condition": "service_healthy",
+          "required": true
+        }
+      },
+      "entrypoint": null,
+      "environment": {
+        "GF_AUTH_ANONYMOUS_ENABLED": "true",
+        "GF_AUTH_ANONYMOUS_ORG_ROLE": "Admin"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3000/api/health"
+        ],
+        "timeout": "3s",
+        "interval": "10s",
+        "retries": 5,
+        "start_period": "2m0s"
+      },
+      "image": "grafana/grafana-oss:11.3.1",
+      "networks": {
+        "eaop-infra": null
+      },
+      "ports": [
+        {
+          "mode": "ingress",
+          "target": 3000,
+          "published": "3000",
+          "protocol": "tcp"
+        }
+      ],
+      "restart": "unless-stopped",
+      "volumes": [
+        {
+          "type": "bind",
+          "source": "D:\\github.com\\cprima\\cpm-eaop-showcase-logistics-rfq\\infra\\observability\\grafana-provisioning",
+          "target": "/etc/grafana/provisioning",
+          "read_only": true,
+          "bind": {}
+        }
+      ]
+    },
+    "otel-collector": {
+      "command": null,
+      "depends_on": {
+        "tempo": {
+          "condition": "service_healthy",
+          "required": true
+        }
+      },
+      "entrypoint": null,
+      "image": "otel/opentelemetry-collector-contrib:0.112.0",
+      "networks": {
+        "eaop-infra": null
+      },
+      "ports": [
+        {
+          "mode": "ingress",
+          "target": 4317,
+          "published": "4317",
+          "protocol": "tcp"
+        },
+        {
+          "mode": "ingress",
+          "target": 4318,
+          "published": "4318",
+          "protocol": "tcp"
+        }
+      ],
+      "restart": "unless-stopped",
+      "volumes": [
+        {
+          "type": "bind",
+          "source": "D:\\github.com\\cprima\\cpm-eaop-showcase-logistics-rfq\\infra\\observability\\otel-collector-config.yaml",
+          "target": "/etc/otelcol-contrib/config.yaml",
+          "read_only": true,
+          "bind": {}
+        }
+      ]
+    },
+    "prometheus": {
+      "command": null,
+      "depends_on": {
+        "otel-collector": {
+          "condition": "service_started",
+          "required": true
+        }
+      },
+      "entrypoint": null,
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:9090/-/healthy"
+        ],
+        "timeout": "3s",
+        "interval": "10s",
+        "retries": 5,
+        "start_period": "10s"
+      },
+      "image": "prom/prometheus:v2.55.1",
+      "networks": {
+        "eaop-infra": null
+      },
+      "ports": [
+        {
+          "mode": "ingress",
+          "target": 9090,
+          "published": "9090",
+          "protocol": "tcp"
+        }
+      ],
+      "restart": "unless-stopped",
+      "volumes": [
+        {
+          "type": "bind",
+          "source": "D:\\github.com\\cprima\\cpm-eaop-showcase-logistics-rfq\\infra\\observability\\prometheus.yml",
+          "target": "/etc/prometheus/prometheus.yml",
+          "read_only": true,
+          "bind": {}
+        }
+      ]
+    },
+    "tempo": {
+      "command": [
+        "-config.file=/etc/tempo.yaml"
+      ],
+      "entrypoint": null,
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3200/ready"
+        ],
+        "timeout": "3s",
+        "interval": "10s",
+        "retries": 5,
+        "start_period": "10s"
+      },
+      "image": "grafana/tempo:2.6.1",
+      "networks": {
+        "eaop-infra": null
+      },
+      "ports": [
+        {
+          "mode": "ingress",
+          "target": 3200,
+          "published": "3200",
+          "protocol": "tcp"
+        }
+      ],
+      "restart": "unless-stopped",
+      "volumes": [
+        {
+          "type": "bind",
+          "source": "D:\\github.com\\cprima\\cpm-eaop-showcase-logistics-rfq\\infra\\observability\\tempo.yaml",
+          "target": "/etc/tempo.yaml",
+          "read_only": true,
+          "bind": {}
+        }
+      ]
+    }
+  }
+}
