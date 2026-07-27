@@ -21,15 +21,23 @@
 # infra/observability/ (OTel/Grafana/Prometheus/Tempo stack) is separate
 # again, independently bootable -- also "support", but not merged into this
 # file (different lifecycle, different owner this session).
-name: rfq-showcase-support
+name: eaop-support
 
 networks:
   rfq-showcase:
     name: rfq-showcase
 
 volumes:
+  # Explicit name -- otherwise Compose prefixes with the project name, and a
+  # project rename (or invocation-directory drift, same root cause) silently
+  # orphans the old volume and starts a fresh empty one. Bit us live: gateway
+  # generated a brand-new root CA on an orphaned caddy-data volume after the
+  # rfq-showcase-support -> eaop-support rename, breaking every browser's
+  # existing trust of the old CA.
   keycloak-data:
+    name: eaop-keycloak-data
   caddy-data:
+    name: eaop-caddy-data
 
 services:
   gateway:
@@ -139,11 +147,12 @@ services:
         - type=local,src=${DOCKER_BUILDCACHE_DIR:-.buildcache}/a2a-inspector
       cache_to:
         - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/a2a-inspector,mode=max
-      # Only the git-clone stage skips cache -- always pulls the fork's
-      # current branch HEAD. npm ci / uv sync in later stages still cache
-      # normally (mode=max above covers them too).
-      no_cache_filter:
-        - source
+      # source stage now caches like everything else -- fork checkout is
+      # pinned to A2A_INSPECTOR_REF above, so "fresh every build" bought
+      # nothing but a slow rebuild (npm/vite redone from scratch each time,
+      # see build-cache explanation in conversation). Pick up a new fork
+      # commit with `docker compose build --no-cache a2a-inspector`, or bump
+      # A2A_INSPECTOR_REF for a real ref change.
     image: rfq-showcase-a2a-inspector
     container_name: rfq-showcase-a2a-inspector
     volumes:
@@ -181,8 +190,10 @@ services:
         - type=local,src=${DOCKER_BUILDCACHE_DIR:-.buildcache}/mcp-inspector
       cache_to:
         - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/mcp-inspector,mode=max
-      no_cache_filter:
-        - source
+      # source stage now caches like everything else (mirrors a2a-inspector
+      # above). Dockerfile defaults MCP_INSPECTOR_REF to `main`, so a cached
+      # build can silently sit on a stale commit -- pick up a new one with
+      # `docker compose build --no-cache mcp-inspector`.
     image: rfq-showcase-mcp-inspector
     container_name: rfq-showcase-mcp-inspector
     environment:

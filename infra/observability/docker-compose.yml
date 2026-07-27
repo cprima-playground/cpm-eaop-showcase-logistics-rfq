@@ -25,7 +25,7 @@
 # `localhost:4317` via the published port above. Requires the support
 # stack to already be up (creates the network); this project itself can
 # start before or after the showcase stack.
-name: rfq-showcase-otel
+name: eaop-otel
 
 networks:
   rfq-showcase:

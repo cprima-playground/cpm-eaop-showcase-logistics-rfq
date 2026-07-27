@@ -33,7 +33,7 @@
 # (infra/vault/README.md's `uv run seed.py`); Keycloak realm + client
 # secrets provisioned (identity/ generators); hosts-file entries + Caddy CA
 # trust for every *.rfq-showcase.localhost name (infra/caddy/README.md).
-name: rfq-showcase-showcase
+name: eaop-showcase
 
 x-vault-env: &vault-env
   VAULT_ADDR: http://vault:8200
