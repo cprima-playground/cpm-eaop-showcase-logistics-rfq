@@ -80,3 +80,10 @@ sbom:
 # Generate the runtime manifest (services/ports/volumes/networks) from `docker compose config`.
 runtime-manifest:
     pwsh -NoLogo -File tools/runtime-manifest/generate.ps1
+
+# Join sbom + runtime-manifest into one target-data-model file (data/inventory/services.json).
+# Depends on sbom + runtime-manifest -- just has no mtime/staleness tracking
+# (unlike make), so this always re-runs both rather than risk joining
+# stale data against a source that's since changed.
+inventory: sbom runtime-manifest
+    pwsh -NoLogo -File tools/inventory/generate.ps1

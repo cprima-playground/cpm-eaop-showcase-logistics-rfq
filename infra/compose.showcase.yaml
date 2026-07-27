@@ -1,8 +1,10 @@
 # SHOWCASE stack -- the actual demo services: mock backends, MCP servers,
 # A2A agents. Joins the SUPPORT stack's network (infra/compose.support.yaml)
-# as external -- bring support up first, or `docker compose -f
-# infra/compose.support.yaml -f infra/compose.showcase.yaml ... up` merges
-# both into one project in a single command.
+# as external -- bring support up first via the justfile (`just up`), not a
+# hand-rolled merged docker compose command (Compose's `name:` merge rule is
+# "last file wins", so a raw two-file `up` silently runs under THIS file's
+# project name for every service, including support's -- found live, see
+# infra/compose.support.yaml's header comment for the full incident).
 #
 # GATEWAY-FIRST (tmp/caddy-first-routing-analysis.md): none of these publish a
 # host port. Reachable only via the support stack's gateway (external,
@@ -26,14 +28,14 @@
 #                      control-plane; port tier 840x)
 #   full           -- everything
 #
-# Run (support stack must already be up):
-#   docker compose -f infra/compose.support.yaml -f infra/compose.showcase.yaml --profile core up -d --build
+# Run (support stack must already be up): `just up` (see the justfile) --
+# not a hand-rolled merged docker compose command, see header comment above.
 #
 # One-time prerequisites (unchanged by this file): Vault seeded
 # (infra/vault/README.md's `uv run seed.py`); Keycloak realm + client
 # secrets provisioned (identity/ generators); hosts-file entries + Caddy CA
-# trust for every *.rfq-showcase.localhost name (infra/caddy/README.md).
-name: eaop-showcase
+# trust for every *.eaop-logistics.localhost name (infra/caddy/README.md).
+name: eaop-logistics
 
 x-vault-env: &vault-env
   VAULT_ADDR: http://vault:8200
@@ -46,13 +48,14 @@ x-keycloak-env: &keycloak-env
 # real-stack test in this repo already points CEDAR_URL=http://
 # localhost:8280 at (spikes/repricing/policy-evaluation's own
 # docker-compose.yml, a separate checkout, run standalone). Never wired
-# into the rfq-showcase network until this fix: every MCP-server/agent
+# into the eaop-infra network until this fix: every MCP-server/agent
 # authorize_and_enforce() call in the live deployed stack was failing
 # with httpx.ConnectError (found live, M7 stabilization pass) because
 # neither this env var nor the network connection existed. Joined the
-# already-running container to the rfq-showcase network directly
-# (`docker network connect --alias cedar-agent rfq-showcase
-# rfq-showcase-cedar-agent`) rather than touching its own compose file,
+# already-running container to the network directly (`docker network
+# connect --alias cedar-agent eaop-infra rfq-showcase-cedar-agent` --
+# re-run this after the rfq-showcase -> eaop-infra network rename, the
+# old attachment doesn't carry over) rather than touching its own compose file,
 # which lives outside this repo's tree -- still true, this is the one
 # remaining manual-connect workaround (Tempo's equivalent was resolved
 # by making infra/observability/docker-compose.yml join natively, see
@@ -65,12 +68,12 @@ x-otel-env: &otel-env
   # default (http://localhost:4317) is correct for a host-run process
   # and wrong inside a container (points at itself). otel-collector
   # is reachable here because infra/observability/docker-compose.yml
-  # joins this same rfq-showcase network natively.
+  # joins this same eaop-infra network natively.
   OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
 
 networks:
-  rfq-showcase:
-    name: rfq-showcase
+  eaop-infra:
+    name: eaop-infra
     external: true
 
 services:
@@ -89,7 +92,7 @@ services:
         - type=local,src=${DOCKER_BUILDCACHE_DIR:-.buildcache}/mock-fx
       cache_to:
         - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/mock-fx,mode=max
-    image: rfq-showcase-mock-fx
+    image: eaop-logistics-mock-fx
     environment:
       <<: [*vault-env, *otel-env]
       # Found live via M8.3's health check: without this, mock-fx falls
@@ -97,7 +100,7 @@ services:
       # its own container) and crash-loops on every currency lookup --
       # a real, pre-existing gap, not new to this milestone.
       MASTERDATA_URL: http://mock-masterdata:8003
-    networks: [rfq-showcase]
+    networks: [eaop-infra]
     restart: unless-stopped
     profiles: [core, full]
 
@@ -115,10 +118,10 @@ services:
         - type=local,src=${DOCKER_BUILDCACHE_DIR:-.buildcache}/mock-masterdata
       cache_to:
         - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/mock-masterdata,mode=max
-    image: rfq-showcase-mock-masterdata
+    image: eaop-logistics-mock-masterdata
     environment:
       <<: [*vault-env, *otel-env]
-    networks: [rfq-showcase]
+    networks: [eaop-infra]
     restart: unless-stopped
     profiles: [core, full]
 
@@ -136,11 +139,11 @@ services:
         - type=local,src=${DOCKER_BUILDCACHE_DIR:-.buildcache}/mock-tms
       cache_to:
         - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/mock-tms,mode=max
-    image: rfq-showcase-mock-tms
+    image: eaop-logistics-mock-tms
     environment:
       <<: [*vault-env, *otel-env]
       MASTERDATA_URL: http://mock-masterdata:8003
-    networks: [rfq-showcase]
+    networks: [eaop-infra]
     restart: unless-stopped
     profiles: [core, full]
 
@@ -158,11 +161,11 @@ services:
         - type=local,src=${DOCKER_BUILDCACHE_DIR:-.buildcache}/mock-rate
       cache_to:
         - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/mock-rate,mode=max
-    image: rfq-showcase-mock-rate
+    image: eaop-logistics-mock-rate
     environment:
       <<: [*vault-env, *otel-env]
       MASTERDATA_URL: http://mock-masterdata:8003
-    networks: [rfq-showcase]
+    networks: [eaop-infra]
     restart: unless-stopped
     profiles: [core, full]
 
@@ -180,14 +183,14 @@ services:
         - type=local,src=${DOCKER_BUILDCACHE_DIR:-.buildcache}/mock-qms
       cache_to:
         - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/mock-qms,mode=max
-    image: rfq-showcase-mock-qms
+    image: eaop-logistics-mock-qms
     environment:
       <<: [*vault-env, *keycloak-env, *cedar-env, *otel-env]
       MASTERDATA_URL: http://mock-masterdata:8003
       FX_URL: http://mock-fx:8001
       RATE_URL: http://mock-rate:8005
       TMS_URL: http://mock-tms:8004
-    networks: [rfq-showcase]
+    networks: [eaop-infra]
     restart: unless-stopped
     profiles: [core, full]
 
@@ -205,7 +208,7 @@ services:
         - type=local,src=${DOCKER_BUILDCACHE_DIR:-.buildcache}/ops-dashboard
       cache_to:
         - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/ops-dashboard,mode=max
-    image: rfq-showcase-ops-dashboard
+    image: eaop-logistics-ops-dashboard
     environment:
       <<: [*vault-env, *keycloak-env, *cedar-env, *otel-env]
       MASTERDATA_URL: http://mock-masterdata:8003
@@ -218,7 +221,7 @@ services:
       # server-side (browser stays same-origin) -- needs the `platform`
       # profile joined too, or this proxy call fails open to straight lines.
       GEO_API_URL: http://geo-api:8400
-    networks: [rfq-showcase]
+    networks: [eaop-infra]
     restart: unless-stopped
     profiles: [core, full]
 
@@ -237,12 +240,12 @@ services:
         - type=local,src=${DOCKER_BUILDCACHE_DIR:-.buildcache}/tms-mcp
       cache_to:
         - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/tms-mcp,mode=max
-    image: rfq-showcase-tms-mcp
+    image: eaop-logistics-tms-mcp
     environment:
       <<: [*vault-env, *keycloak-env, *cedar-env, *otel-env]
       TMS_URL: http://mock-tms:8004
-      SERVICE_PUBLIC_URL: https://tms-mcp.rfq-showcase.localhost
-    networks: [rfq-showcase]
+      SERVICE_PUBLIC_URL: https://tms-mcp.eaop-logistics.localhost
+    networks: [eaop-infra]
     restart: unless-stopped
     profiles: [mcp, full]
 
@@ -260,12 +263,12 @@ services:
         - type=local,src=${DOCKER_BUILDCACHE_DIR:-.buildcache}/rate-mcp
       cache_to:
         - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/rate-mcp,mode=max
-    image: rfq-showcase-rate-mcp
+    image: eaop-logistics-rate-mcp
     environment:
       <<: [*vault-env, *keycloak-env, *cedar-env, *otel-env]
       RATE_API_URL: http://mock-rate:8005
-      SERVICE_PUBLIC_URL: https://rate-mcp.rfq-showcase.localhost
-    networks: [rfq-showcase]
+      SERVICE_PUBLIC_URL: https://rate-mcp.eaop-logistics.localhost
+    networks: [eaop-infra]
     restart: unless-stopped
     profiles: [mcp, full]
 
@@ -283,13 +286,13 @@ services:
         - type=local,src=${DOCKER_BUILDCACHE_DIR:-.buildcache}/qms-mcp
       cache_to:
         - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/qms-mcp,mode=max
-    image: rfq-showcase-qms-mcp
+    image: eaop-logistics-qms-mcp
     environment:
       <<: [*vault-env, *keycloak-env, *cedar-env, *otel-env]
       QMS_API_URL: http://mock-qms:8007
       FX_API_URL: http://mock-fx:8001
-      SERVICE_PUBLIC_URL: https://qms-mcp.rfq-showcase.localhost
-    networks: [rfq-showcase]
+      SERVICE_PUBLIC_URL: https://qms-mcp.eaop-logistics.localhost
+    networks: [eaop-infra]
     restart: unless-stopped
     profiles: [mcp, full]
 
@@ -307,12 +310,12 @@ services:
         - type=local,src=${DOCKER_BUILDCACHE_DIR:-.buildcache}/approval-mcp
       cache_to:
         - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/approval-mcp,mode=max
-    image: rfq-showcase-approval-mcp
+    image: eaop-logistics-approval-mcp
     environment:
       <<: [*vault-env, *keycloak-env, *cedar-env, *otel-env]
       QMS_API_URL: http://mock-qms:8007
-      SERVICE_PUBLIC_URL: https://approval-mcp.rfq-showcase.localhost
-    networks: [rfq-showcase]
+      SERVICE_PUBLIC_URL: https://approval-mcp.eaop-logistics.localhost
+    networks: [eaop-infra]
     restart: unless-stopped
     profiles: [mcp, full]
 
@@ -331,12 +334,12 @@ services:
         - type=local,src=${DOCKER_BUILDCACHE_DIR:-.buildcache}/lane-evaluation-agent
       cache_to:
         - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/lane-evaluation-agent,mode=max
-    image: rfq-showcase-lane-evaluation-agent
+    image: eaop-logistics-lane-evaluation-agent
     environment:
       <<: [*vault-env, *keycloak-env, *cedar-env, *otel-env]
       TMS_MCP_URL: http://tms-mcp:8104
-      SERVICE_PUBLIC_URL: https://lane-evaluation-agent.rfq-showcase.localhost
-    networks: [rfq-showcase]
+      SERVICE_PUBLIC_URL: https://lane-evaluation-agent.eaop-logistics.localhost
+    networks: [eaop-infra]
     restart: unless-stopped
     profiles: [agents, full]
 
@@ -354,12 +357,12 @@ services:
         - type=local,src=${DOCKER_BUILDCACHE_DIR:-.buildcache}/route-decision-agent
       cache_to:
         - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/route-decision-agent,mode=max
-    image: rfq-showcase-route-decision-agent
+    image: eaop-logistics-route-decision-agent
     environment:
       <<: [*vault-env, *keycloak-env, *cedar-env, *otel-env]
       LANE_EVAL_AGENT_URL: http://lane-evaluation-agent:8204
-      SERVICE_PUBLIC_URL: https://route-decision-agent.rfq-showcase.localhost
-    networks: [rfq-showcase]
+      SERVICE_PUBLIC_URL: https://route-decision-agent.eaop-logistics.localhost
+    networks: [eaop-infra]
     restart: unless-stopped
     profiles: [agents, full]
 
@@ -377,12 +380,12 @@ services:
         - type=local,src=${DOCKER_BUILDCACHE_DIR:-.buildcache}/commercial-normalization-agent
       cache_to:
         - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/commercial-normalization-agent,mode=max
-    image: rfq-showcase-commercial-normalization-agent
+    image: eaop-logistics-commercial-normalization-agent
     environment:
       <<: [*vault-env, *keycloak-env, *cedar-env, *otel-env]
       ROUTE_DECISION_AGENT_URL: http://route-decision-agent:8205
-      SERVICE_PUBLIC_URL: https://commercial-normalization-agent.rfq-showcase.localhost
-    networks: [rfq-showcase]
+      SERVICE_PUBLIC_URL: https://commercial-normalization-agent.eaop-logistics.localhost
+    networks: [eaop-infra]
     restart: unless-stopped
     profiles: [agents, full]
 
@@ -401,10 +404,10 @@ services:
         - type=local,src=${DOCKER_BUILDCACHE_DIR:-.buildcache}/mission-control-api
       cache_to:
         - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/mission-control-api,mode=max
-    image: rfq-showcase-mission-control-api
+    image: eaop-logistics-mission-control-api
     environment:
       <<: [*vault-env, *keycloak-env, *cedar-env, *otel-env]
-      SERVICE_PUBLIC_URL: https://mission-control.rfq-showcase.localhost
+      SERVICE_PUBLIC_URL: https://mission-control.eaop-logistics.localhost
       # Registry roster (M8.2) -- the ONE place in this repo that
       # legitimately resolves every peer service's endpoint (ADR-002: no
       # other agent/MCP server gets a registry of every other service).
@@ -424,7 +427,7 @@ services:
       QMS_URL: http://mock-qms:8007
       # M8.6, resolved: Tempo lives in infra/observability/'s OWN compose
       # project, but that project now joins this network natively
-      # (`networks: [rfq-showcase]`, `external: true` -- see
+      # (`networks: [eaop-infra]`, `external: true` -- see
       # infra/observability/docker-compose.yml) instead of the earlier
       # manual `docker network connect` stopgap. Same class of gap as
       # cedar-agent's (still a manual connect -- cedar-agent's own
@@ -438,7 +441,7 @@ services:
       # gains a third derivation source alongside agents/catalog.yaml +
       # interfaces/mcp/tools.yaml.
       GEO_API_URL: http://geo-api:8400
-    networks: [rfq-showcase]
+    networks: [eaop-infra]
     restart: unless-stopped
     profiles: [control-plane, full]
 
@@ -457,10 +460,10 @@ services:
         - type=local,src=${DOCKER_BUILDCACHE_DIR:-.buildcache}/geo-api
       cache_to:
         - type=local,dest=${DOCKER_BUILDCACHE_DIR:-.buildcache}/geo-api,mode=max
-    image: rfq-showcase-geo-api
+    image: eaop-logistics-geo-api
     environment:
       <<: [*vault-env, *keycloak-env, *otel-env]
-      SERVICE_PUBLIC_URL: https://geo.rfq-showcase.localhost
+      SERVICE_PUBLIC_URL: https://geo.eaop-logistics.localhost
       MASTERDATA_URL: http://mock-masterdata:8003
       # D13: cache state is never authoritative (geometry computation is
       # deterministic) -- this named volume is a local-Compose optimization
@@ -470,7 +473,7 @@ services:
       GEO_API_CACHE_DB: /data/cache/geo-api-cache.sqlite3
     volumes:
       - geo-api-cache:/data/cache
-    networks: [rfq-showcase]
+    networks: [eaop-infra]
     restart: unless-stopped
     profiles: [platform, full]
 

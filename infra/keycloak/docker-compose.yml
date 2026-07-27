@@ -1,14 +1,14 @@
 # Dev-only OIDC provider for human SSO (the ops-dashboard). Dev-server mode,
 # fixed admin credentials for local convenience -- same posture as
 # infra/vault's fixed dev root token -- NEVER use dev mode outside dev.
-name: rfq-showcase-keycloak
+name: eaop-keycloak-standalone
 services:
   keycloak:
     build:
       context: .
       dockerfile: Dockerfile
-    image: rfq-showcase-keycloak
-    container_name: rfq-showcase-keycloak
+    image: eaop-infra-keycloak
+    container_name: eaop-keycloak-standalone
     command: start-dev
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin

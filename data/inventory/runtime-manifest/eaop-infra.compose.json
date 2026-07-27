@@ -27,7 +27,7 @@
         "cat /etc/ssl/certs/ca-certificates.crt /usr/local/share/ca-certificates/gateway-root.crt \u003e /tmp/combined-ca.pem \u0026\u0026 cd /app/backend \u0026\u0026 SSL_CERT_FILE=/tmp/combined-ca.pem /app/.venv/bin/python -m uvicorn app:app --host 0.0.0.0 --port 8080"
       ],
       "entrypoint": null,
-      "image": "rfq-showcase-a2a-inspector",
+      "image": "eaop-infra-a2a-inspector",
       "networks": {
         "eaop-infra": null
       },
@@ -49,7 +49,7 @@
       },
       "command": null,
       "entrypoint": null,
-      "image": "rfq-showcase-gateway",
+      "image": "eaop-infra-gateway",
       "networks": {
         "eaop-infra": {
           "aliases": [
@@ -115,7 +115,7 @@
         "KC_HOSTNAME": "https://keycloak.eaop-logistics.localhost",
         "KC_PROXY_HEADERS": "xforwarded"
       },
-      "image": "rfq-showcase-keycloak",
+      "image": "eaop-infra-keycloak",
       "networks": {
         "eaop-infra": null
       },
@@ -155,7 +155,7 @@
         "DANGEROUSLY_OMIT_AUTH": "true",
         "HOST": "0.0.0.0"
       },
-      "image": "rfq-showcase-mcp-inspector",
+      "image": "eaop-infra-mcp-inspector",
       "networks": {
         "eaop-infra": null
       },

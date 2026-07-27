@@ -1,0 +1,343 @@
+{
+  "services": [
+    {
+      "name": "a2a-inspector",
+      "stack": "eaop-infra",
+      "declared_configuration": {
+        "image": "eaop-infra-a2a-inspector",
+        "build": "D:\\github.com\\cprima\\cpm-eaop-showcase-logistics-rfq\\infra\\a2a-inspector"
+      },
+      "runtime_deployment": {
+        "ports": [],
+        "volumes": [
+          "D:\\github.com\\cprima\\cpm-eaop-showcase-logistics-rfq\\infra\\caddy\\root.crt:/usr/local/share/ca-certificates/gateway-root.crt"
+        ],
+        "profiles": null
+      },
+      "network_surfaces": {
+        "networks": [
+          "eaop-infra"
+        ]
+      },
+      "image": {
+        "ref": "eaop-infra-a2a-inspector",
+        "sbom": {
+          "path": "data/inventory/sbom/eaop-infra-a2a-inspector.spdx.json",
+          "package_count": 1244,
+          "spdx_version": "SPDX-2.3"
+        }
+      }
+    },
+    {
+      "name": "gateway",
+      "stack": "eaop-infra",
+      "declared_configuration": {
+        "image": "eaop-infra-gateway",
+        "build": "D:\\github.com\\cprima\\cpm-eaop-showcase-logistics-rfq\\infra\\caddy"
+      },
+      "runtime_deployment": {
+        "ports": [
+          "443:443"
+        ],
+        "volumes": [
+          "D:\\github.com\\cprima\\cpm-eaop-showcase-logistics-rfq\\infra\\compose\\Caddyfile:/etc/caddy/Caddyfile",
+          "caddy-data:/data"
+        ],
+        "profiles": null
+      },
+      "network_surfaces": {
+        "networks": [
+          "eaop-infra"
+        ]
+      },
+      "image": {
+        "ref": "eaop-infra-gateway",
+        "sbom": {
+          "path": "data/inventory/sbom/eaop-infra-gateway.spdx.json",
+          "package_count": 179,
+          "spdx_version": "SPDX-2.3"
+        }
+      }
+    },
+    {
+      "name": "keycloak",
+      "stack": "eaop-infra",
+      "declared_configuration": {
+        "image": "eaop-infra-keycloak",
+        "build": "D:\\github.com\\cprima\\cpm-eaop-showcase-logistics-rfq\\infra\\keycloak"
+      },
+      "runtime_deployment": {
+        "ports": [
+          "8081:8080"
+        ],
+        "volumes": [
+          "keycloak-data:/opt/keycloak/data"
+        ],
+        "profiles": null
+      },
+      "network_surfaces": {
+        "networks": [
+          "eaop-infra"
+        ]
+      },
+      "image": {
+        "ref": "eaop-infra-keycloak",
+        "sbom": {
+          "path": "data/inventory/sbom/eaop-infra-keycloak.spdx.json",
+          "package_count": 490,
+          "spdx_version": "SPDX-2.3"
+        }
+      }
+    },
+    {
+      "name": "mcp-inspector",
+      "stack": "eaop-infra",
+      "declared_configuration": {
+        "image": "eaop-infra-mcp-inspector",
+        "build": "D:\\github.com\\cprima\\cpm-eaop-showcase-logistics-rfq\\infra\\mcp-inspector"
+      },
+      "runtime_deployment": {
+        "ports": [],
+        "volumes": [
+          null
+        ],
+        "profiles": null
+      },
+      "network_surfaces": {
+        "networks": [
+          "eaop-infra"
+        ]
+      },
+      "image": {
+        "ref": "eaop-infra-mcp-inspector",
+        "sbom": {
+          "path": "data/inventory/sbom/eaop-infra-mcp-inspector.spdx.json",
+          "package_count": 517,
+          "spdx_version": "SPDX-2.3"
+        }
+      }
+    },
+    {
+      "name": "vault",
+      "stack": "eaop-infra",
+      "declared_configuration": {
+        "image": "hashicorp/vault:latest",
+        "build": null
+      },
+      "runtime_deployment": {
+        "ports": [
+          "8200:8200"
+        ],
+        "volumes": [
+          null
+        ],
+        "profiles": null
+      },
+      "network_surfaces": {
+        "networks": [
+          "eaop-infra"
+        ]
+      },
+      "image": {
+        "ref": "hashicorp/vault:latest",
+        "sbom": {
+          "path": "data/inventory/sbom/hashicorp_vault_latest.spdx.json",
+          "package_count": 513,
+          "spdx_version": "SPDX-2.3"
+        }
+      }
+    },
+    {
+      "name": "web",
+      "stack": "eaop-infra",
+      "declared_configuration": {
+        "image": "nginx:alpine",
+        "build": null
+      },
+      "runtime_deployment": {
+        "ports": [],
+        "volumes": [
+          "D:\\github.com\\cprima\\cpm-eaop-showcase-logistics-rfq\\web:/usr/share/nginx/html"
+        ],
+        "profiles": null
+      },
+      "network_surfaces": {
+        "networks": [
+          "eaop-infra"
+        ]
+      },
+      "image": {
+        "ref": "nginx:alpine",
+        "sbom": {
+          "path": "data/inventory/sbom/nginx_alpine.spdx.json",
+          "package_count": 72,
+          "spdx_version": "SPDX-2.3"
+        }
+      }
+    },
+    {
+      "name": "grafana",
+      "stack": "eaop-observability",
+      "declared_configuration": {
+        "image": "grafana/grafana-oss:11.3.1",
+        "build": null
+      },
+      "runtime_deployment": {
+        "ports": [
+          "3000:3000"
+        ],
+        "volumes": [
+          "D:\\github.com\\cprima\\cpm-eaop-showcase-logistics-rfq\\infra\\observability\\grafana-provisioning:/etc/grafana/provisioning"
+        ],
+        "profiles": null
+      },
+      "network_surfaces": {
+        "networks": [
+          "eaop-infra"
+        ]
+      },
+      "image": {
+        "ref": "grafana/grafana-oss:11.3.1",
+        "sbom": null
+      }
+    },
+    {
+      "name": "otel-collector",
+      "stack": "eaop-observability",
+      "declared_configuration": {
+        "image": "otel/opentelemetry-collector-contrib:0.112.0",
+        "build": null
+      },
+      "runtime_deployment": {
+        "ports": [
+          "4317:4317",
+          "4318:4318"
+        ],
+        "volumes": [
+          "D:\\github.com\\cprima\\cpm-eaop-showcase-logistics-rfq\\infra\\observability\\otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml"
+        ],
+        "profiles": null
+      },
+      "network_surfaces": {
+        "networks": [
+          "eaop-infra"
+        ]
+      },
+      "image": {
+        "ref": "otel/opentelemetry-collector-contrib:0.112.0",
+        "sbom": null
+      }
+    },
+    {
+      "name": "prometheus",
+      "stack": "eaop-observability",
+      "declared_configuration": {
+        "image": "prom/prometheus:v2.55.1",
+        "build": null
+      },
+      "runtime_deployment": {
+        "ports": [
+          "9090:9090"
+        ],
+        "volumes": [
+          "D:\\github.com\\cprima\\cpm-eaop-showcase-logistics-rfq\\infra\\observability\\prometheus.yml:/etc/prometheus/prometheus.yml"
+        ],
+        "profiles": null
+      },
+      "network_surfaces": {
+        "networks": [
+          "eaop-infra"
+        ]
+      },
+      "image": {
+        "ref": "prom/prometheus:v2.55.1",
+        "sbom": null
+      }
+    },
+    {
+      "name": "tempo",
+      "stack": "eaop-observability",
+      "declared_configuration": {
+        "image": "grafana/tempo:2.6.1",
+        "build": null
+      },
+      "runtime_deployment": {
+        "ports": [
+          "3200:3200"
+        ],
+        "volumes": [
+          "D:\\github.com\\cprima\\cpm-eaop-showcase-logistics-rfq\\infra\\observability\\tempo.yaml:/etc/tempo.yaml"
+        ],
+        "profiles": null
+      },
+      "network_surfaces": {
+        "networks": [
+          "eaop-infra"
+        ]
+      },
+      "image": {
+        "ref": "grafana/tempo:2.6.1",
+        "sbom": null
+      }
+    }
+  ],
+  "environments": {
+    "dev": {
+      "purpose": "build + local demo",
+      "cost": "none",
+      "host": "docker-compose",
+      "gcp_project": null,
+      "sso": {
+        "idp": "keycloak",
+        "oidc_issuer": "http://keycloak:8080/realms/rfq"
+      },
+      "agent_identity_mode": "keycloak-client-creds",
+      "agent_runtime": "adk-container",
+      "llm": "stub",
+      "persistence": "sqlite",
+      "edge": "caddy",
+      "secrets": "dotenv",
+      "theme": "solarized-light",
+      "cedar_agent_url": "http://cedar-agent:8180",
+      "min_instances": null
+    },
+    "test": {
+      "purpose": "validate on real cloud + real IdP",
+      "cost": "personal-gcp",
+      "host": "cloud-run",
+      "gcp_project": "rfq-showcase-test",
+      "sso": {
+        "idp": "entra",
+        "oidc_issuer": "https://login.microsoftonline.com/${ENTRA_TENANT_ID}/v2.0"
+      },
+      "agent_identity_mode": "wif-entra",
+      "agent_runtime": "vertex-agent-engine",
+      "llm": "gemini",
+      "persistence": "firestore",
+      "edge": "apigee",
+      "secrets": "secret-manager",
+      "theme": "teaching",
+      "cedar_agent_url": "${CEDAR_AGENT_PRIVATE_URL}",
+      "min_instances": 0
+    },
+    "prod": {
+      "purpose": "stakeholder demo",
+      "cost": "corporate-gcp",
+      "host": "cloud-run",
+      "gcp_project": "rfq-showcase-prod",
+      "sso": {
+        "idp": "entra",
+        "oidc_issuer": "https://login.microsoftonline.com/${ENTRA_TENANT_ID}/v2.0"
+      },
+      "agent_identity_mode": "wif-entra",
+      "agent_runtime": "vertex-agent-engine",
+      "llm": "gemini",
+      "persistence": "firestore",
+      "edge": "apigee",
+      "secrets": "secret-manager",
+      "theme": "corporate",
+      "cedar_agent_url": "${CEDAR_AGENT_PRIVATE_URL}",
+      "min_instances": 1
+    }
+  }
+}

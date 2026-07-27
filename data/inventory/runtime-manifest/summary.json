@@ -3,7 +3,7 @@
     {
       "stack": "eaop-infra",
       "name": "a2a-inspector",
-      "image": "rfq-showcase-a2a-inspector",
+      "image": "eaop-infra-a2a-inspector",
       "build": "D:\\github.com\\cprima\\cpm-eaop-showcase-logistics-rfq\\infra\\a2a-inspector",
       "ports": [],
       "volumes": [
@@ -17,7 +17,7 @@
     {
       "stack": "eaop-infra",
       "name": "gateway",
-      "image": "rfq-showcase-gateway",
+      "image": "eaop-infra-gateway",
       "build": "D:\\github.com\\cprima\\cpm-eaop-showcase-logistics-rfq\\infra\\caddy",
       "ports": [
         "443:443"
@@ -34,7 +34,7 @@
     {
       "stack": "eaop-infra",
       "name": "keycloak",
-      "image": "rfq-showcase-keycloak",
+      "image": "eaop-infra-keycloak",
       "build": "D:\\github.com\\cprima\\cpm-eaop-showcase-logistics-rfq\\infra\\keycloak",
       "ports": [
         "8081:8080"
@@ -50,7 +50,7 @@
     {
       "stack": "eaop-infra",
       "name": "mcp-inspector",
-      "image": "rfq-showcase-mcp-inspector",
+      "image": "eaop-infra-mcp-inspector",
       "build": "D:\\github.com\\cprima\\cpm-eaop-showcase-logistics-rfq\\infra\\mcp-inspector",
       "ports": [],
       "volumes": [

@@ -3,7 +3,7 @@
 # TARGET for test/prod, same env-conditional-facade shape as
 # rfq_common.secrets.SecretsClient's Vault-dev/GCP-Secret-Manager-TARGET
 # split), Keycloak (identity), Vault (secrets). Owns the shared
-# `rfq-showcase` network; infra/compose.showcase.yaml joins it as
+# `eaop-infra` network; infra/compose.showcase.yaml joins it as
 # `external: true`. Separable from the showcase on purpose: you can bring
 # support up/down independently (it changes rarely), and restart the
 # showcase app layer without touching identity/secrets state.
@@ -15,17 +15,24 @@
 # showcase service reaches these by compose DNS (http://keycloak:8080,
 # http://vault:8200), never through the gateway or a host-published port.
 #
-# Run: docker compose -f infra/compose.support.yaml up -d --build
-# Then: docker compose -f infra/compose.support.yaml -f infra/compose.showcase.yaml --profile core up -d --build
+# Use the justfile (`just up` / `just down` / `just ps`), not a hand-rolled
+# docker compose command -- a raw two-step "up support, then up support+showcase
+# merged" command has no way to pin project identity consistently across both
+# steps (Compose's top-level `name:` merge rule is "last file wins", so the
+# merged step silently runs under compose.showcase.yaml's project name unless
+# `-p` is given explicitly). Found live: this exact gap recreated
+# gateway/keycloak/vault a second time under the wrong project, both trying
+# to bind host port 443. The justfile's `up` recipe does two separate
+# invocations, each with its own explicit `-p`, avoiding this entirely.
 #
 # infra/observability/ (OTel/Grafana/Prometheus/Tempo stack) is separate
 # again, independently bootable -- also "support", but not merged into this
 # file (different lifecycle, different owner this session).
-name: eaop-support
+name: eaop-infra
 
 networks:
-  rfq-showcase:
-    name: rfq-showcase
+  eaop-infra:
+    name: eaop-infra
 
 volumes:
   # Explicit name -- otherwise Compose prefixes with the project name, and a
@@ -34,26 +41,36 @@ volumes:
   # generated a brand-new root CA on an orphaned caddy-data volume after the
   # rfq-showcase-support -> eaop-support rename, breaking every browser's
   # existing trust of the old CA.
+  # external: true -- these already exist (created once during the migration
+  # off the orphaned volumes) and must NOT be recreated/relabeled by whatever
+  # project happens to run `up` next; that's the whole point of pinning the
+  # name. Without external: true, Compose still tries to "own" them and
+  # warns every run ("already exists but was not created by Docker Compose")
+  # since their creation-time labels don't match the current project --
+  # found live. First-time bootstrap on a machine that's never had these:
+  # `docker volume create eaop-keycloak-data; docker volume create eaop-caddy-data`
+  # once, before the first `up`.
   keycloak-data:
     name: eaop-keycloak-data
+    external: true
   caddy-data:
     name: eaop-caddy-data
+    external: true
 
 services:
   gateway:
     build:
       context: ./caddy
       dockerfile: Dockerfile
-    image: rfq-showcase-gateway
-    container_name: rfq-showcase-gateway
+    image: eaop-infra-gateway
     ports:
       - "443:443"
     volumes:
       - ./compose/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
     networks:
-      rfq-showcase:
-        # Every *.rfq-showcase.localhost vhost this proxies (infra/compose/
+      eaop-infra:
+        # Every *.eaop-logistics.localhost vhost this proxies (infra/compose/
         # Caddyfile), registered as DNS aliases for this container -- lets
         # ANY peer on this network (a2a-inspector included) resolve and
         # reach these hostnames via compose-internal DNS, the same names +
@@ -65,33 +82,32 @@ services:
         # resolve; any container-side client (this compose network's own
         # dev tooling) needs them registered explicitly instead.
         aliases:
-          - ops-dashboard.rfq-showcase.localhost
-          - qms.rfq-showcase.localhost
-          - tms.rfq-showcase.localhost
-          - rate.rfq-showcase.localhost
-          - fx.rfq-showcase.localhost
-          - masterdata.rfq-showcase.localhost
-          - keycloak.rfq-showcase.localhost
-          - lane-evaluation-agent.rfq-showcase.localhost
-          - route-decision-agent.rfq-showcase.localhost
-          - commercial-normalization-agent.rfq-showcase.localhost
-          - tms-mcp.rfq-showcase.localhost
-          - rate-mcp.rfq-showcase.localhost
-          - qms-mcp.rfq-showcase.localhost
-          - approval-mcp.rfq-showcase.localhost
-          - mission-control.rfq-showcase.localhost
-          - a2a-inspector.rfq-showcase.localhost
-          - mcp-inspector.rfq-showcase.localhost
-          - mcp-inspector-proxy.rfq-showcase.localhost
-          - web.rfq-showcase.localhost
+          - ops-dashboard.eaop-logistics.localhost
+          - qms.eaop-logistics.localhost
+          - tms.eaop-logistics.localhost
+          - rate.eaop-logistics.localhost
+          - fx.eaop-logistics.localhost
+          - masterdata.eaop-logistics.localhost
+          - keycloak.eaop-logistics.localhost
+          - lane-evaluation-agent.eaop-logistics.localhost
+          - route-decision-agent.eaop-logistics.localhost
+          - commercial-normalization-agent.eaop-logistics.localhost
+          - tms-mcp.eaop-logistics.localhost
+          - rate-mcp.eaop-logistics.localhost
+          - qms-mcp.eaop-logistics.localhost
+          - approval-mcp.eaop-logistics.localhost
+          - mission-control.eaop-logistics.localhost
+          - a2a-inspector.eaop-logistics.localhost
+          - mcp-inspector.eaop-logistics.localhost
+          - mcp-inspector-proxy.eaop-logistics.localhost
+          - web.eaop-logistics.localhost
     restart: unless-stopped
 
   keycloak:
     build:
       context: ./keycloak
       dockerfile: Dockerfile
-    image: rfq-showcase-keycloak
-    container_name: rfq-showcase-keycloak
+    image: eaop-infra-keycloak
     command: start-dev
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
@@ -104,31 +120,33 @@ services:
       # genuinely valid token. Confirmed by direct reproduction (M7
       # re-auth work): external introspection said active:true, tms-mcp's
       # own internal introspection of the identical token said false.
-      KC_HOSTNAME: https://keycloak.rfq-showcase.localhost
+      KC_HOSTNAME: https://keycloak.eaop-logistics.localhost
     ports:
-      - "8081:8080"   # carve-out: admin console direct access
+      # Host side overridable (.env.example) for a dev whose 8081 is already
+      # taken; container side stays fixed -- never collides (own network
+      # namespace), no reason to make it configurable.
+      - "${KEYCLOAK_HOST_PORT:-8081}:8080"   # carve-out: admin console direct access
     volumes:
       - keycloak-data:/opt/keycloak/data
-    networks: [rfq-showcase]
+    networks: [eaop-infra]
     restart: unless-stopped
 
   vault:
     image: hashicorp/vault:latest
-    container_name: rfq-showcase-vault
     ports:
-      - "8200:8200"   # carve-out: seed script / debug access
+      - "${VAULT_HOST_PORT:-8200}:8200"   # carve-out: seed script / debug access
     environment:
       VAULT_DEV_ROOT_TOKEN_ID: rfq-dev-root
       VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
     cap_add: [IPC_LOCK]
-    networks: [rfq-showcase]
+    networks: [eaop-infra]
     restart: unless-stopped
 
   # ---------------------------------------------------------- dev tooling
   # First-class members of this stack (not a standalone opt-in compose
   # project anymore -- infra/a2a-inspector/docker-compose.yml is superseded
-  # by this block): on the SAME rfq-showcase network as everything they
-  # inspect, so they resolve gateway's *.rfq-showcase.localhost aliases
+  # by this block): on the SAME eaop-infra network as everything they
+  # inspect, so they resolve gateway's *.eaop-logistics.localhost aliases
   # (above) via compose DNS and can reach every agent/MCP server directly,
   # the same way a real external client does. Gateway-routed, not a host-port
   # carve-out (unlike Keycloak/Vault's admin consoles) -- a peer dev surface
@@ -153,8 +171,7 @@ services:
       # see build-cache explanation in conversation). Pick up a new fork
       # commit with `docker compose build --no-cache a2a-inspector`, or bump
       # A2A_INSPECTOR_REF for a real ref change.
-    image: rfq-showcase-a2a-inspector
-    container_name: rfq-showcase-a2a-inspector
+    image: eaop-infra-a2a-inspector
     volumes:
       - ./caddy/root.crt:/usr/local/share/ca-certificates/gateway-root.crt:ro
     # Appends the gateway's local CA onto the image's own bundle into a
@@ -176,7 +193,7 @@ services:
       sh -c "cat /etc/ssl/certs/ca-certificates.crt /usr/local/share/ca-certificates/gateway-root.crt > /tmp/combined-ca.pem &&
       cd /app/backend &&
       SSL_CERT_FILE=/tmp/combined-ca.pem /app/.venv/bin/python -m uvicorn app:app --host 0.0.0.0 --port 8080"
-    networks: [rfq-showcase]
+    networks: [eaop-infra]
     restart: unless-stopped
 
   mcp-inspector:
@@ -194,18 +211,17 @@ services:
       # above). Dockerfile defaults MCP_INSPECTOR_REF to `main`, so a cached
       # build can silently sit on a stale commit -- pick up a new one with
       # `docker compose build --no-cache mcp-inspector`.
-    image: rfq-showcase-mcp-inspector
-    container_name: rfq-showcase-mcp-inspector
+    image: eaop-infra-mcp-inspector
     environment:
       HOST: "0.0.0.0"   # image default is `localhost` -- unreachable from Caddy's own network hop
-      ALLOWED_ORIGINS: https://mcp-inspector.rfq-showcase.localhost
+      ALLOWED_ORIGINS: https://mcp-inspector.eaop-logistics.localhost
       # DNS-rebinding origin check + per-session proxy token are real
       # protections (server/src/index.ts) but this instance is local-only,
       # gateway+CA-fronted, never internet-reachable -- same dev-convenience
       # tradeoff as Vault's fixed dev root token (infra/vault/README.md).
       # TARGET (test/prod) would need this on properly.
       DANGEROUSLY_OMIT_AUTH: "true"
-    networks: [rfq-showcase]
+    networks: [eaop-infra]
     restart: unless-stopped
 
   # Local stand-in for GitHub Pages (web/slides/ -- this repo's showcase
@@ -214,8 +230,7 @@ services:
   # host-published port.
   web:
     image: nginx:alpine
-    container_name: rfq-showcase-web
     volumes:
       - ../web:/usr/share/nginx/html:ro
-    networks: [rfq-showcase]
+    networks: [eaop-infra]
     restart: unless-stopped
