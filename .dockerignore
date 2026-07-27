@@ -11,6 +11,21 @@
 **/.pytest_cache
 **/uv.lock.tmp
 tmp
+# BuildKit cache_to export target -- found live: when its DOCKER_BUILDCACHE_DIR
+# .env lookup silently missed, this landed a 6.5GB copy at repo root and got
+# sent as part of the build context itself (self-inflicted context bloat).
+# **/ prefix required -- a bare `.buildcache` only matches at context root,
+# NOT infra/.buildcache (found live: that nested copy, ~400MB, kept leaking
+# into every service's context after the root-level one was already fixed).
+**/.buildcache
+# Terraform provider binary caches and state files -- never had a rule here
+# at all (only .gitignore had one), found leaking ~95MB combined from
+# infra/entra/.terraform + infra/keycloak/terraform/.terraform. State files
+# excluded too: not just bloat, they're local dev state that shouldn't ride
+# into any image regardless of size.
+**/.terraform
+**/*.tfstate
+**/*.tfstate.backup
 vendor
 node_modules
 **/node_modules

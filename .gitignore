@@ -6,7 +6,13 @@ __pycache__/
 # Local env overrides (e.g. DOCKER_BUILDCACHE_DIR) -- machine-specific, not shared config
 .env
 
-# BuildKit cache_to export target, default location when DOCKER_BUILDCACHE_DIR unset
+# BuildKit cache_to export target, default location when DOCKER_BUILDCACHE_DIR
+# unset OR the .env lookup silently misses (compose's .env auto-lookup keys
+# off the FIRST -f file's directory, not invocation cwd or DOCKER_BUILDCACHE_DIR's
+# own home -- found live: without --env-file, this landed a 6.5GB copy at
+# repo root, inside the Docker build context for every service using it).
+# Both locations covered since the failure mode isn't hypothetical.
+.buildcache/
 infra/.buildcache/
 
 # Terraform (infra/keycloak/terraform) -- state is local dev state, not IaC
