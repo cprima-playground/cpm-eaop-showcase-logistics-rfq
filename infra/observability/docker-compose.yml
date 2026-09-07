@@ -18,18 +18,18 @@
 #   8889 (collector's Prometheus exporter) -- INTERNAL ONLY, not
 #     published; only `prometheus` (same compose network) scrapes it.
 #
-# Joins the app stack's `rfq-showcase` network (infra/compose.support.yaml
+# Joins the app stack's `eaop-infra` network (infra/compose.support.yaml
 # owns it, this file attaches as external, same pattern
 # infra/compose.showcase.yaml already uses) -- containerized apps reach
 # the collector at `otel-collector:4317`; host-run processes still use
 # `localhost:4317` via the published port above. Requires the support
 # stack to already be up (creates the network); this project itself can
 # start before or after the showcase stack.
-name: eaop-otel
+name: eaop-infra
 
 networks:
-  rfq-showcase:
-    name: rfq-showcase
+  eaop-infra:
+    name: eaop-infra
     external: true
 
 services:
@@ -39,14 +39,14 @@ services:
     volumes:
       - ./tempo.yaml:/etc/tempo.yaml:ro
     ports:
-      - "3200:3200"   # direct debugging only -- Grafana reaches it via the compose network
+      - "${TEMPO_HOST_PORT:-3200}:3200"   # direct debugging only -- Grafana reaches it via the compose network
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3200/ready"]
       interval: 10s
       timeout: 3s
       retries: 5
       start_period: 10s
-    networks: [rfq-showcase]
+    networks: [eaop-infra]
     restart: unless-stopped
 
   otel-collector:
@@ -54,8 +54,12 @@ services:
     volumes:
       - ./otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro
     ports:
-      - "4317:4317"   # OTLP gRPC -- host-run apps need this until M6-pre
-      - "4318:4318"   # OTLP HTTP -- same
+      # Overriding these means also updating rfq_common.observability's
+      # OTEL_EXPORTER_OTLP_ENDPOINT default for any host-run (non-Docker)
+      # process -- that default assumes localhost:4317, independent of
+      # this env var. Fine to override, just not automatically in sync.
+      - "${OTEL_GRPC_HOST_PORT:-4317}:4317"   # OTLP gRPC -- host-run apps need this until M6-pre
+      - "${OTEL_HTTP_HOST_PORT:-4318}:4318"   # OTLP HTTP -- same
       # 8889 (Prometheus exporter) intentionally NOT published -- internal-only,
       # reached by the `prometheus` service over the compose network.
     # No Docker-level healthcheck: the image ships no shell (verified --
@@ -68,7 +72,7 @@ services:
     depends_on:
       tempo:
         condition: service_healthy
-    networks: [rfq-showcase]
+    networks: [eaop-infra]
     restart: unless-stopped
 
   prometheus:
@@ -76,7 +80,7 @@ services:
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
     ports:
-      - "9090:9090"   # direct query/debugging only
+      - "${PROMETHEUS_HOST_PORT:-9090}:9090"   # direct query/debugging only
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
       interval: 10s
@@ -86,7 +90,7 @@ services:
     depends_on:
       otel-collector:
         condition: service_started   # can't be service_healthy -- see above
-    networks: [rfq-showcase]
+    networks: [eaop-infra]
     restart: unless-stopped
 
   grafana:
@@ -94,7 +98,7 @@ services:
     volumes:
       - ./grafana-provisioning:/etc/grafana/provisioning:ro
     ports:
-      - "3000:3000"   # primary human-facing observability UI
+      - "${GRAFANA_HOST_PORT:-3000}:3000"   # primary human-facing observability UI
     environment:
       # Anonymous Admin is fine STRICTLY for local dev -- explicitly
       # forbidden in test/prod-demo (M5.9's own deployment.environment
@@ -120,5 +124,5 @@ services:
         condition: service_healthy
       tempo:
         condition: service_healthy
-    networks: [rfq-showcase]
+    networks: [eaop-infra]
     restart: unless-stopped

@@ -22,3 +22,15 @@ resource "keycloak_openid_client" "machine_identities" {
   service_accounts_enabled    = each.value.service_account_enabled
   direct_access_grants_enabled = false
 }
+
+# Keycloak-generated, not seedable by seed.py -- identity/credentials-inventory.yaml
+# marks all 7 of these `seed: false` with vault_path == "rfq/${client_id}-client-secret".
+# Found live: nothing ever pushed these to Vault (only the 2 *web* client
+# secrets had a push script), so every workload's run_startup_self_check()
+# hung/failed identically on every `just up` -- containers showed "Up" but
+# never bound their port, no logs, no crash. push-web-secrets-to-vault.ps1
+# reads this output and pushes each one under its credentials-inventory path.
+output "machine_identity_client_secrets" {
+  value     = { for k, c in keycloak_openid_client.machine_identities : k => c.client_secret }
+  sensitive = true
+}

@@ -211,6 +211,13 @@ services:
     image: eaop-logistics-ops-dashboard
     environment:
       <<: [*vault-env, *keycloak-env, *cedar-env, *otel-env]
+      # Found live: without this, ops_dashboard/config.py's default
+      # (http://localhost:8006, the direct host-run-process URL) leaks into
+      # the OIDC redirect_uri regardless of how the browser actually
+      # reached this service -- login succeeds at Keycloak, then the
+      # callback redirect goes to a port nothing publishes ("localhost
+      # refused to connect"), even when accessed via the gateway vhost.
+      OPS_DASHBOARD_PUBLIC_URL: https://ops-dashboard.eaop-logistics.localhost
       MASTERDATA_URL: http://mock-masterdata:8003
       FX_URL: http://mock-fx:8001
       RATE_URL: http://mock-rate:8005

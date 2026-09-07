@@ -39,15 +39,41 @@ support_files := "-f infra/compose.support.yaml"
 showcase_files := "-f infra/compose.showcase.yaml"
 otel_files := "-f infra/observability/docker-compose.yml"
 
-# Bring up support (gateway/keycloak/vault/inspectors/web) then showcase (agents/mocks).
+# Bring up support (gateway/keycloak/vault/inspectors/web), seed Vault +
+# Keycloak, then EVERY showcase service (mocks, MCP servers, agents,
+# mission-control-api, geo-api). `--profile core` used to be here -- that's
+# only 6 of 15 showcase services (the mocks + ops-dashboard); the actual
+# RFQ-evaluation agents/MCP servers never started. `full` is every profile
+# at once; found live, that gap is what made "just up" produce a stack
+# that LOOKED up (containers healthy) but couldn't do anything (no agents).
+alias start := up
 up:
     docker compose {{env_file}} -p eaop-infra {{support_files}} up -d --build
-    docker compose {{env_file}} -p eaop-logistics {{showcase_files}} --profile core up -d --build
+    pwsh -NoLogo -File infra/vault/wait-and-seed.ps1
+    just seed-identity
+    docker compose {{env_file}} -p eaop-logistics {{showcase_files}} --profile full up -d --build
+
+# Re-apply the Keycloak realm/clients terraform. Safe to re-run any time --
+# `terraform apply` is idempotent, and Keycloak's dev storage doesn't
+# survive a keycloak-data volume wipe, so this isn't a one-time setup step.
+seed-identity:
+    pwsh -NoLogo -File infra/keycloak/terraform/wait-and-apply.ps1
 
 # Stop both stacks (containers kept, not removed).
+alias stop := down
 down:
     docker compose {{env_file}} -p eaop-logistics {{showcase_files}} down
     docker compose {{env_file}} -p eaop-infra {{support_files}} down
+
+# One-time per-machine setup: hosts file entries (*.eaop-logistics.localhost)
+# + trust the gateway's self-signed root CA. Needs Administrator (hosts file
+# write + cert store write) -- NOT part of start/stop, this is host-machine
+# state that outlives any single stack lifecycle (survives `down`, `docker
+# system prune`, even a full stack rebuild -- only redo if the root CA
+# itself gets regenerated, e.g. the caddy-data volume is deleted).
+setup-host:
+    pwsh -NoLogo -File tools/hosts/print-entries.ps1 -Apply
+    pwsh -NoLogo -Command "certutil -addstore -f Root '{{justfile_directory()}}/infra/caddy/root.crt'"
 
 # Status of both stacks.
 ps:
