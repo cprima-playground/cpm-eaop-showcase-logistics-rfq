@@ -31,7 +31,10 @@ from rfq_common.settings import ServiceSettings
 
 from . import routing, settings
 from .cache import LegGeometryCache
+from .log import get_logger
 from .masterdata import LocodeNotFoundError, resolve_locode
+
+log = get_logger(__name__)
 
 RFQ_ROOT = settings.RFQ_ROOT
 
@@ -101,11 +104,13 @@ def build_app(
         mode: LegMode = Query(...),
         _principal=Depends(_require_authenticated),
     ) -> dict:
+        log.info("GET /v1/legs/geometry: %s -> %s mode=%s", from_locode, to_locode, mode)
         request_locode_cache: dict[str, tuple[float, float]] = {}
         try:
             from_coord = resolve_locode(masterdata_client, from_locode, request_locode_cache)
             to_coord = resolve_locode(masterdata_client, to_locode, request_locode_cache)
         except LocodeNotFoundError as exc:
+            log.warning("GET /v1/legs/geometry: %s -> %s mode=%s: 404 %s", from_locode, to_locode, mode, exc)
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 
         def _compute() -> dict:
@@ -120,8 +125,16 @@ def build_app(
                 from_coord=from_coord, to_coord=to_coord, compute=_compute,
             )
         except (routing.GraphLookupError, routing.NoMaritimePathError) as exc:
+            log.warning("GET /v1/legs/geometry: %s -> %s mode=%s: 422 %s", from_locode, to_locode, mode, exc)
             raise HTTPException(status_code=422, detail=str(exc)) from exc
+        except Exception:
+            log.error("GET /v1/legs/geometry: %s -> %s mode=%s: unhandled failure", from_locode, to_locode, mode, exc_info=True)
+            raise
 
+        log.info(
+            "GET /v1/legs/geometry: %s -> %s mode=%s: 200 distance_km=%.1f",
+            from_locode, to_locode, mode, result["distance_km"],
+        )
         return {
             "from": from_locode, "to": to_locode, "mode": mode,
             "geometry": result["geometry"], "distance_km": result["distance_km"],

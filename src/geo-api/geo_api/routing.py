@@ -24,6 +24,9 @@ import yaml
 from pyproj import Geod
 
 from . import ocean_astar
+from .log import get_logger
+
+log = get_logger(__name__)
 
 PACKAGE_DIR = Path(__file__).resolve().parent
 DEFAULT_GRAPH_PATH = PACKAGE_DIR / "maritime_graph.yaml"
@@ -83,6 +86,7 @@ def load_graph(path: Path = DEFAULT_GRAPH_PATH) -> MaritimeGraph:
     node here, before any blocked_geometry()/A* call -- landmask's own
     hard load-order rule, satisfied by construction (this is the only
     place a MaritimeGraph is ever built)."""
+    log.info("loading maritime graph from %s", path)
     raw = yaml.safe_load(path.read_text(encoding="utf-8"))
     nodes = {node_id: (attrs["lon"], attrs["lat"]) for node_id, attrs in raw["nodes"].items()}
     for lon, lat in nodes.values():
@@ -100,11 +104,13 @@ def load_graph(path: Path = DEFAULT_GRAPH_PATH) -> MaritimeGraph:
         adjacency[a].append((b, distance_m))
         adjacency[b].append((a, distance_m))
         edge_kind[frozenset((a, b))] = kind
+    log.info("maritime graph loaded: %d nodes, %d edges", len(nodes), len(edge_kind))
     return MaritimeGraph(nodes, adjacency, edge_kind)
 
 
 def dijkstra(graph: MaritimeGraph, start: str, end: str) -> list[str]:
     if start not in graph.adjacency or end not in graph.adjacency:
+        log.error("dijkstra: no graph node for %r or %r", start, end)
         raise GraphLookupError(f"maritime graph has no node for {start!r} or {end!r}")
     dist = {start: 0.0}
     prev: dict[str, str] = {}
@@ -124,11 +130,13 @@ def dijkstra(graph: MaritimeGraph, start: str, end: str) -> list[str]:
                 prev[neighbor] = node
                 heapq.heappush(queue, (nd, neighbor))
     if end not in dist:
+        log.error("dijkstra: no maritime path from %s to %s (%d nodes visited)", start, end, len(visited))
         raise NoMaritimePathError(f"no maritime path from {start} to {end}")
     path = [end]
     while path[-1] != start:
         path.append(prev[path[-1]])
     path.reverse()
+    log.trace("dijkstra: %s -> %s via %s", start, end, path)
     return path
 
 
@@ -158,16 +166,20 @@ def build_leg_coords(
 
     if mode == "ocean":
         if graph is None:
+            log.error("build_leg_coords: mode=ocean called with graph=None (%s -> %s)", from_locode, to_locode)
             raise RuntimeError("ocean routing requires a loaded MaritimeGraph")
+        log.info("build_leg_coords: ocean leg %s -> %s", from_locode, to_locode)
         path = dijkstra(graph, from_locode, to_locode)
         coords: list[tuple[float, float]] = []
         for a, b in pairwise(path):
             kind = graph.edge_kind[frozenset((a, b))]
             if kind in ("canal", "segment"):
+                log.trace("build_leg_coords: %s -> %s is a trusted %s hop", a, b, kind)
                 segment = geodesic_segment(graph.nodes[a], graph.nodes[b])
             else:
                 segment = ocean_astar.ocean_path(graph.nodes[a], graph.nodes[b])
             coords.extend(segment if not coords else segment[1:])  # drop duplicate join point
+        log.info("build_leg_coords: ocean leg %s -> %s done, %d pts total", from_locode, to_locode, len(coords))
         return coords
 
     # rail / road / other: unchanged straight line, per geo.md scope (air + sea only)
@@ -223,11 +235,21 @@ def compute_leg_geometry(
     """The single entry point cache.py's single-flight fill wraps (D10) --
     every uncached (from, to, mode, routing_version) lookup calls this
     exactly once. Returns {"geometry": <GeoJSON geometry>, "distance_km": float}."""
-    coords = build_leg_coords(
-        mode=mode, from_locode=from_locode, to_locode=to_locode,
-        from_coord=from_coord, to_coord=to_coord, graph=graph,
-    )
-    return {
+    log.info("compute_leg_geometry: %s -> %s mode=%s: starting", from_locode, to_locode, mode)
+    try:
+        coords = build_leg_coords(
+            mode=mode, from_locode=from_locode, to_locode=to_locode,
+            from_coord=from_coord, to_coord=to_coord, graph=graph,
+        )
+    except Exception:
+        log.error("compute_leg_geometry: %s -> %s mode=%s: failed", from_locode, to_locode, mode, exc_info=True)
+        raise
+    result = {
         "geometry": leg_to_geometry(coords),
         "distance_km": round(leg_distance_km(coords), 1),
     }
+    log.info(
+        "compute_leg_geometry: %s -> %s mode=%s: done, distance_km=%.1f",
+        from_locode, to_locode, mode, result["distance_km"],
+    )
+    return result

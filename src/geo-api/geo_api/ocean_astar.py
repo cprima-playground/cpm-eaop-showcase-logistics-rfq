@@ -15,7 +15,6 @@ land-intersection check guards against the simplification cutting a corner.
 from __future__ import annotations
 
 import heapq
-import logging
 import math
 from itertools import pairwise
 
@@ -23,10 +22,11 @@ import numpy as np
 from pyproj import Geod
 
 from . import landmask
+from .log import get_logger
 
 _GEOD = Geod(ellps="WGS84")
 
-log = logging.getLogger(__name__)
+log = get_logger(__name__)
 
 TARGET_CELLS = 160  # grid cells along the longer bbox axis, at the UNPADDED span
 MIN_RES_DEG = 0.02
@@ -74,7 +74,7 @@ def _build_grid(lon_min, lon_max, lat_min, lat_max, base_res: float):
     lats = lat_min + np.arange(ny) * res
     lon_grid, lat_grid = np.meshgrid(lons, lats)  # shape (ny, nx)
     blocked = landmask.is_blocked(lon_grid, lat_grid)
-    log.debug(
+    log.trace(
         "grid %dx%d res=%.4f° (~%.0fkm) blocked_frac=%.3f bbox=[%.2f,%.2f]x[%.2f,%.2f]",
         nx,
         ny,
@@ -141,6 +141,10 @@ def _nearest_navigable(
                     and connector_safe(ii, jj)
                 ):
                     return ii, jj
+    log.warning(
+        "no navigable grid cell with a land-clear connector found within %d cells near target %s",
+        max_ring, target,
+    )
     raise RuntimeError(
         "no navigable grid cell with a land-clear connector found within "
         f"{max_ring} cells -- retry with wider padding or finer resolution"
@@ -185,6 +189,7 @@ def _astar_grid(blocked: np.ndarray, lons, lats, start, goal) -> list[tuple[int,
                 heapq.heappush(open_heap, (ng + h(neighbor), ng, neighbor))
 
     if goal not in came_from and goal != start:
+        log.warning("no navigable grid path found between %s and %s (%d cells visited)", start, goal, len(visited))
         raise RuntimeError("no navigable grid path found between endpoints")
 
     path = [goal]
@@ -268,11 +273,11 @@ def ocean_path(
     lon1, lat1 = p1
     lon2, lat2 = p2
     shifted_lon1, shifted_lon2 = _shift_for_antimeridian(lon1, lon2)
-    log.debug("edge %s -> %s (distance=%.0fkm)", p1, p2, _haversine(p1, p2) / 1000)
+    log.info("edge %s -> %s (distance=%.0fkm): computing", p1, p2, _haversine(p1, p2) / 1000)
 
     direct = _direct_unobstructed((shifted_lon1, lat1), (shifted_lon2, lat2))
     if direct is not None:
-        log.debug("  direct unobstructed chord, %d pts, skipping A*", len(direct))
+        log.info("edge %s -> %s: direct unobstructed chord, %d pts, skipping A*", p1, p2, len(direct))
         wrapped = [(_wrap(lon), lat) for lon, lat in direct]
         wrapped[0], wrapped[-1] = p1, p2
         return wrapped
@@ -287,8 +292,9 @@ def ocean_path(
             / TARGET_CELLS,
         ),
     )
-    log.debug(
-        "  direct chord blocked, falling back to grid A* (base_res=%.4f°)", base_res
+    log.info(
+        "edge %s -> %s: direct chord blocked, falling back to grid A* (base_res=%.4f°)",
+        p1, p2, base_res,
     )
 
     last_error = None
@@ -305,7 +311,7 @@ def ocean_path(
         lat_min = max(-89.0, base_lat_min - pad_lat)
         lat_max = min(89.0, base_lat_max + pad_lat)
 
-        log.debug("  attempt pad=%dx", multiplier)
+        log.trace("edge %s -> %s: attempt pad=%dx", p1, p2, multiplier)
         lons, lats, res, blocked = _build_grid(
             lon_min, lon_max, lat_min, lat_max, base_res
         )
@@ -329,27 +335,29 @@ def ocean_path(
             )
             cell_path = _astar_grid(blocked, lons, lats, start, goal)
         except RuntimeError as exc:
-            log.debug("  attempt pad=%dx failed: %s", multiplier, exc)
+            log.warning("edge %s -> %s: attempt pad=%dx failed: %s", p1, p2, multiplier, exc)
             last_error = exc
             continue
 
-        log.debug(
-            "  attempt pad=%dx succeeded, raw path %d cells", multiplier, len(cell_path)
+        log.info(
+            "edge %s -> %s: attempt pad=%dx succeeded, raw path %d cells",
+            p1, p2, multiplier, len(cell_path),
         )
         shifted_points = [(lons[j], lats[i]) for i, j in cell_path]
         shifted_points[0] = (shifted_lon1, lat1)
         shifted_points[-1] = (shifted_lon2, lat2)
 
         simplified = _line_of_sight_simplify(shifted_points)
-        log.debug("  line-of-sight simplified to %d pts", len(simplified))
+        log.trace("edge %s -> %s: line-of-sight simplified to %d pts", p1, p2, len(simplified))
 
         # safety net: LOS simplification chords are still validated; if a
         # chord somehow clips land, fall back to the raw (already-valid)
         # grid path.
         for a, b in pairwise(simplified):
             if landmask.line_crosses_land(_geodesic_points(a, b)):
-                log.debug(
-                    "  LOS simplification clipped land, falling back to raw grid path"
+                log.warning(
+                    "edge %s -> %s: LOS simplification clipped land, falling back to raw grid path",
+                    p1, p2,
                 )
                 simplified = shifted_points
                 break
@@ -357,8 +365,13 @@ def ocean_path(
         wrapped = [(_wrap(lon), lat) for lon, lat in simplified]
         wrapped[0] = p1  # _wrap()'s float modulo drifts even in-range values
         wrapped[-1] = p2
+        log.info("edge %s -> %s: done, %d pts", p1, p2, len(wrapped))
         return wrapped
 
+    log.error(
+        "edge %s -> %s: no navigable path even at %dx padding, giving up",
+        p1, p2, PAD_MULTIPLIERS[-1],
+    )
     raise RuntimeError(
         f"no navigable path from {p1} to {p2} even at {PAD_MULTIPLIERS[-1]}x padding"
     ) from last_error

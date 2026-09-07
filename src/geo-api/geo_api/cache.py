@@ -21,6 +21,10 @@ import time
 from pathlib import Path
 from typing import Callable
 
+from .log import get_logger
+
+log = get_logger(__name__)
+
 DEFAULT_DB_PATH = Path("/data/cache/geo-api-cache.sqlite3")
 
 _SCHEMA = """
@@ -130,8 +134,17 @@ class LegGeometryCache:
 
         row = self._read(key)
         if row is not None and _coords_match(row, from_coord, to_coord):
+            log.info("cache hit: %s -> %s mode=%s", from_locode, to_locode, mode)
             return _row_to_result(row)
+        if row is not None:
+            log.warning(
+                "cache stale: %s -> %s mode=%s -- stored coords no longer match a fresh resolution, recomputing",
+                from_locode, to_locode, mode,
+            )
+        else:
+            log.info("cache miss: %s -> %s mode=%s", from_locode, to_locode, mode)
 
+        log.trace("cache: acquiring per-key lock for %s", key)
         with self._key_lock(key):
             # Re-check under the per-key lock: a concurrent caller for the
             # SAME key, in THIS process, may already have computed and
@@ -139,10 +152,12 @@ class LegGeometryCache:
             # single-flight, process-local only, see module docstring).
             row = self._read(key)
             if row is not None and _coords_match(row, from_coord, to_coord):
+                log.info("cache hit (post-lock, computed by a concurrent caller): %s -> %s mode=%s", from_locode, to_locode, mode)
                 return _row_to_result(row)
 
             result = compute()
             self._write(key, from_coord=from_coord, to_coord=to_coord, result=result)
+            log.info("cache filled: %s -> %s mode=%s", from_locode, to_locode, mode)
 
             # Re-read after write rather than returning `result` directly:
             # a DIFFERENT process/replica (outside this single-flight

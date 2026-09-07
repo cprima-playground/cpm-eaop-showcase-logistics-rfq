@@ -5,6 +5,10 @@ from __future__ import annotations
 
 from rfq_common.masterdata_client import MasterdataClient
 
+from .log import get_logger
+
+log = get_logger(__name__)
+
 
 class LocodeNotFoundError(KeyError):
     pass
@@ -21,9 +25,16 @@ def resolve_locode(
     process-level locode cache would silently defeat D9's staleness check,
     which deliberately depends on a fresh mock-masterdata lookup every time."""
     if locode in request_cache:
+        log.trace("resolve_locode: %s (request-scoped cache hit)", locode)
         return request_cache[locode]
-    row = client.get("locations", locode)
+    log.trace("resolve_locode: %s (fetching from mock-masterdata)", locode)
+    try:
+        row = client.get("locations", locode)
+    except Exception:
+        log.error("resolve_locode: %s: mock-masterdata call failed", locode, exc_info=True)
+        raise
     if row is None:
+        log.warning("resolve_locode: %s: no masterdata location found", locode)
         raise LocodeNotFoundError(f"no masterdata location for locode {locode!r}")
     coord = (row["lon"], row["lat"])
     request_cache[locode] = coord

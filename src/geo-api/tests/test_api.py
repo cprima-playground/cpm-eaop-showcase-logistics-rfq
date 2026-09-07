@@ -36,7 +36,7 @@ def _test_app(tmp_path, **overrides):
         cache=LegGeometryCache(tmp_path / "cache.sqlite3"),
         masterdata_client=_FakeMasterdataClient(FAKE_ROWS),
         introspection_client_secret="test-secret",
-        public_url="https://geo.rfq-showcase.localhost",
+        public_url="https://geo.eaop-logistics.localhost",
         instance_id="test-instance",
         routing_version_value="test-routing-version",
     )

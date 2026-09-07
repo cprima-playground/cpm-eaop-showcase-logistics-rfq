@@ -140,7 +140,7 @@ Part of `infra/compose.showcase.yaml`'s `platform` (or `full`) profile:
 docker compose -f infra/compose.support.yaml -f infra/compose.showcase.yaml --profile platform up -d --build
 ```
 
-Reachable at `https://geo.rfq-showcase.localhost` once Caddy picks up the
+Reachable at `https://geo.eaop-logistics.localhost` once Caddy picks up the
 vhost (`infra/compose/Caddyfile`). Port `8400` — a new port tier
 (mocks `800x` / MCP `810x` / agents `820x` / control-plane `830x` /
 **platform `840x`**) for real, always-on, non-business, non-agent,

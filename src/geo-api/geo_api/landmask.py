@@ -40,6 +40,10 @@ from shapely import vectorized
 from shapely.geometry import LineString, MultiLineString, Point, Polygon, shape
 from shapely.ops import unary_union
 
+from .log import get_logger
+
+log = get_logger(__name__)
+
 REPO_ROOT = Path(__file__).resolve().parents[3]
 LAND_SHP = (
     REPO_ROOT / "data/vendor/naturalearth/10m-physical/ne_10m_land/ne_10m_land.shp"
@@ -64,8 +68,15 @@ _clear_zone_points: list[tuple[float, float]] = []
 
 
 def _load_shapefile(path: Path):
-    sf = shapefile.Reader(str(path))
-    return unary_union([shape(s.__geo_interface__) for s in sf.shapes()])
+    log.info("loading shapefile %s", path)
+    try:
+        sf = shapefile.Reader(str(path))
+        geom = unary_union([shape(s.__geo_interface__) for s in sf.shapes()])
+    except Exception:
+        log.error("failed to load shapefile %s", path, exc_info=True)
+        raise
+    log.info("loaded shapefile %s (%d shapes)", path, len(sf.shapes()))
+    return geom
 
 
 def land_geometry():
@@ -88,7 +99,9 @@ def coarse_land_geometry():
 def land_geometry_buffered():
     global _land_geom_buffered
     if _land_geom_buffered is None:
+        log.info("buffering coarse land layer by %.4f°", CLEARANCE_DEG)
         _land_geom_buffered = coarse_land_geometry().buffer(CLEARANCE_DEG)
+        log.info("buffered land layer ready")
     return _land_geom_buffered
 
 
@@ -98,6 +111,7 @@ def _zone_geometry(zone: dict):
         return Point(c["lon"], c["lat"]).buffer(c["radius_km"] / KM_PER_DEG)
     if "polygon" in zone:
         return Polygon(zone["polygon"])
+    log.error("keepout zone %r has neither 'circle' nor 'polygon': %r", zone.get("name"), zone)
     raise ValueError(
         f"keepout zone {zone.get('name')!r} has neither 'circle' nor 'polygon'"
     )
@@ -117,6 +131,10 @@ def keepout_geometry():
         zones = (
             yaml.safe_load(KEEPOUT_YAML.read_text(encoding="utf-8")).get("zones") or []
         )
+        if not zones:
+            log.warning("keepout_zones.yaml has no zones -- blocked mask is land-only")
+        else:
+            log.info("loaded %d keepout zone(s) from %s", len(zones), KEEPOUT_YAML)
         geoms = [_zone_geometry(z) for z in zones]
         _keepout_geom = unary_union(geoms) if geoms else None
     return _keepout_geom
@@ -128,6 +146,7 @@ def register_clear_zone(lon: float, lat: float) -> None:
     the result is cached and won't pick up later registrations.
     """
     if _blocked_geom is not None:
+        log.error("register_clear_zone(%s, %s) called after blocked_geometry() was already cached", lon, lat)
         raise RuntimeError(
             "blocked_geometry() already cached -- register clear zones first"
         )
@@ -146,6 +165,7 @@ def clear_zone_geometry():
 def blocked_geometry():
     global _blocked_geom
     if _blocked_geom is None:
+        log.info("building blocked-geometry mask (%d clear zone(s) registered)", len(_clear_zone_points))
         geoms = [land_geometry_buffered()]
         keepout = keepout_geometry()
         if keepout is not None:
@@ -155,6 +175,7 @@ def blocked_geometry():
         if clear is not None:
             blocked = blocked.difference(clear)
         _blocked_geom = blocked
+        log.info("blocked-geometry mask ready")
     return _blocked_geom
 
 
@@ -170,10 +191,12 @@ def is_land(lons, lats) -> np.ndarray:
     lons may be outside [-180, 180] (e.g. antimeridian-shifted, unwrapped
     longitudes used by ocean_astar) -- wrapped to standard range internally.
     """
+    log.trace("is_land: testing %d point(s)", np.asarray(lons).size)
     return _test(land_geometry(), lons, lats)
 
 
 def is_blocked(lons, lats) -> np.ndarray:
+    log.trace("is_blocked: testing %d point(s)", np.asarray(lons).size)
     return _test(blocked_geometry(), lons, lats)
 
 
@@ -214,11 +237,15 @@ def _line_test(geom, points: list[tuple[float, float]]) -> bool:
 def line_crosses_land(points: list[tuple[float, float]]) -> bool:
     """True if the polyline through `points` touches land anywhere along its
     straight lon/lat segments (not just at the sampled/interpolated points)."""
-    return _line_test(land_geometry(), points)
+    result = _line_test(land_geometry(), points)
+    log.trace("line_crosses_land: %d pt(s) -> %s", len(points), result)
+    return result
 
 
 def line_crosses_blocked(points: list[tuple[float, float]]) -> bool:
-    return _line_test(blocked_geometry(), points)
+    result = _line_test(blocked_geometry(), points)
+    log.trace("line_crosses_blocked: %d pt(s) -> %s", len(points), result)
+    return result
 
 
 def segment_crosses_land(p1: tuple[float, float], p2: tuple[float, float]) -> bool:
