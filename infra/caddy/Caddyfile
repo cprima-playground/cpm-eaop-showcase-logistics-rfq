@@ -6,7 +6,7 @@
 # the caddy-data volume (docker-compose.yml) -- must persist across restarts,
 # or every restart mints a new CA the OS/browser no longer trusts.
 #
-# rfq-showcase.localhost namespacing (not a bare *.localhost) avoids colliding
+# eaop-logistics.localhost namespacing (not a bare *.localhost) avoids colliding
 # with any other project's generically-named "ops-dashboard"/"keycloak" local
 # service. Windows' hosts file has no wildcard support, so each subdomain
 # still needs its own literal hosts-file line -- see infra/caddy/README.md.
@@ -28,7 +28,7 @@
 # running on the host (uv run ops-dashboard serve, :8006) --
 # host.docker.internal is Docker Desktop's route from a container back to
 # the host.
-https://ops-dashboard.rfq-showcase.localhost {
+https://ops-dashboard.eaop-logistics.localhost {
     import friendly_errors
     reverse_proxy host.docker.internal:8006
 }
@@ -36,7 +36,7 @@ https://ops-dashboard.rfq-showcase.localhost {
 # QMS: API + its own frontend in one process (uv run mock-qms serve, :8007)
 # -- unlike ops-dashboard, not a separate reader; the UI lives at /app on
 # the same port as the JSON API.
-https://qms.rfq-showcase.localhost {
+https://qms.eaop-logistics.localhost {
     import friendly_errors
     reverse_proxy host.docker.internal:8007
 }
@@ -45,9 +45,9 @@ https://qms.rfq-showcase.localhost {
 # not a bare port. Keycloak's start-dev derives the `iss` claim from whichever
 # Host header reached it (no KC_HOSTNAME set), so every caller -- browser, the
 # dashboard's backend token exchange, this Caddy proxy itself -- must
-# consistently use keycloak.rfq-showcase.localhost, never localhost:8081
+# consistently use keycloak.eaop-logistics.localhost, never localhost:8081
 # directly, or issued tokens' `iss` won't match what verify_with_jwks() expects.
-https://keycloak.rfq-showcase.localhost {
+https://keycloak.eaop-logistics.localhost {
     import friendly_errors
     reverse_proxy host.docker.internal:8081
 }

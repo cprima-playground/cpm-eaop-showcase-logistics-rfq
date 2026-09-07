@@ -5,7 +5,7 @@ ADR-009. Dev-only mechanism; test/prod use GCP Secret Manager (`deploy/environme
 ## Run it
 
 ```sh
-docker compose up -d                          # rfq-showcase-vault on :8200
+docker compose up -d                          # eaop-vault-standalone on :8200
 export VAULT_ADDR=http://localhost:8200
 export VAULT_TOKEN=rfq-dev-root               # dev-mode fixed root token, never real
 uv run seed.py                                # writes dev values for every

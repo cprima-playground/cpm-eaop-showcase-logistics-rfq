@@ -7,7 +7,7 @@ ops-dashboard's first-ever human login in RfQ (`src/ops-dashboard/`,
 ## Run it
 
 ```sh
-docker compose up -d --build                  # rfq-showcase-keycloak on :8081
+docker compose up -d --build                  # eaop-keycloak-standalone on :8081
                                                 # (:8080 is used by cpm-eaop's own Keycloak)
 cd terraform
 terraform init
@@ -24,7 +24,7 @@ Fixed dev admin (`admin`/`rfq-dev-admin`) and shared test-user password
 
 - Realm `rfq`.
 - `ops-dashboard-web` — Authorization Code + PKCE client (confidential),
-  redirect `https://ops-dashboard.rfq-showcase.localhost/callback` (via
+  redirect `https://ops-dashboard.eaop-logistics.localhost/callback` (via
   `infra/caddy`, the real path -- see its README for the required hosts-file
   entries + CA trust step) and `http://localhost:8006/callback` (direct,
   bypasses Caddy/Keycloak's Secure-cookie requirement since bare `localhost`

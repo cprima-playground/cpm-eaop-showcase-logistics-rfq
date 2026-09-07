@@ -26,8 +26,8 @@ resource "keycloak_openid_client" "qms_web" {
   service_accounts_enabled         = false
   direct_access_grants_enabled     = var.enable_test_password_grant # test-only, see deviation note above
   valid_redirect_uris              = var.qms_redirect_uris
-  valid_post_logout_redirect_uris  = ["http://localhost:8007", "https://qms.rfq-showcase.localhost"]
-  web_origins                      = ["http://localhost:8007", "https://qms.rfq-showcase.localhost"]
+  valid_post_logout_redirect_uris  = ["http://localhost:8007", "https://qms.eaop-logistics.localhost"]
+  web_origins                      = ["http://localhost:8007", "https://qms.eaop-logistics.localhost"]
 }
 
 output "qms_web_client_secret" {

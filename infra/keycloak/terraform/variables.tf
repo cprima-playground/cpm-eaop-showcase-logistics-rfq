@@ -29,7 +29,7 @@ variable "ops_dashboard_redirect_uris" {
   description = "Valid redirect URIs for the ops-dashboard-web Auth-Code+PKCE client -- direct (:8006) and via the local Caddy edge (infra/caddy, preferred)"
   default = [
     "http://localhost:8006/callback",
-    "https://ops-dashboard.rfq-showcase.localhost/callback",
+    "https://ops-dashboard.eaop-logistics.localhost/callback",
   ]
 }
 
@@ -44,6 +44,6 @@ variable "qms_redirect_uris" {
   description = "Valid redirect URIs for the qms-web Auth-Code+PKCE client -- direct (:8007, same process as the QMS API) and via the local Caddy edge (preferred)"
   default = [
     "http://localhost:8007/callback",
-    "https://qms.rfq-showcase.localhost/callback",
+    "https://qms.eaop-logistics.localhost/callback",
   ]
 }

@@ -1,6 +1,6 @@
 # Caddy (dev) — local edge, real local HTTPS
 
-Fronts the ops-dashboard and Keycloak under stable `*.rfq-showcase.localhost`
+Fronts the ops-dashboard and Keycloak under stable `*.eaop-logistics.localhost`
 names instead of bare ports. Namespaced (not a bare `*.localhost`) to avoid
 colliding with any other project's generically-named local services.
 
@@ -24,7 +24,7 @@ frontend (`systems/mock-architecture.md`'s capability matrix — QMS/CRM/Workflo
 all get one eventually; TMS/Rate/FX/Masterdata never do, machine-only APIKEY):
 
 ```powershell
-Add-Content -Path "$env:WINDIR\System32\drivers\etc\hosts" -Value "`n127.0.0.1 keycloak.rfq-showcase.localhost`n127.0.0.1 ops-dashboard.rfq-showcase.localhost`n127.0.0.1 qms.rfq-showcase.localhost`n127.0.0.1 crm.rfq-showcase.localhost`n127.0.0.1 workflow.rfq-showcase.localhost"
+Add-Content -Path "$env:WINDIR\System32\drivers\etc\hosts" -Value "`n127.0.0.1 keycloak.eaop-logistics.localhost`n127.0.0.1 ops-dashboard.eaop-logistics.localhost`n127.0.0.1 qms.eaop-logistics.localhost`n127.0.0.1 crm.eaop-logistics.localhost`n127.0.0.1 workflow.eaop-logistics.localhost"
 ```
 
 Why this is needed at all (not just cosmetic): `curl`/browsers already
@@ -59,8 +59,8 @@ backend doesn't depend on the OS trust store at all, only the browser does.
 
 | Hostname | Proxies to |
 | --- | --- |
-| `ops-dashboard.rfq-showcase.localhost` | `host.docker.internal:8006` (the dashboard app) |
-| `keycloak.rfq-showcase.localhost` | `host.docker.internal:8081` (dev Keycloak) |
+| `ops-dashboard.eaop-logistics.localhost` | `host.docker.internal:8006` (the dashboard app) |
+| `keycloak.eaop-logistics.localhost` | `host.docker.internal:8081` (dev Keycloak) |
 
 `host.docker.internal` is Docker Desktop's route from a container back to
 processes running on the host (both the dashboard and Keycloak run as

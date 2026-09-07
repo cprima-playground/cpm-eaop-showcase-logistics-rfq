@@ -21,92 +21,92 @@
     }
 }
 
-https://ops-dashboard.rfq-showcase.localhost {
+https://ops-dashboard.eaop-logistics.localhost {
     import friendly_errors
     reverse_proxy ops-dashboard:8006
 }
 
-https://qms.rfq-showcase.localhost {
+https://qms.eaop-logistics.localhost {
     import friendly_errors
     reverse_proxy mock-qms:8007
 }
 
-https://tms.rfq-showcase.localhost {
+https://tms.eaop-logistics.localhost {
     import friendly_errors
     reverse_proxy mock-tms:8004
 }
 
-https://rate.rfq-showcase.localhost {
+https://rate.eaop-logistics.localhost {
     import friendly_errors
     reverse_proxy mock-rate:8005
 }
 
-https://fx.rfq-showcase.localhost {
+https://fx.eaop-logistics.localhost {
     import friendly_errors
     reverse_proxy mock-fx:8001
 }
 
-https://masterdata.rfq-showcase.localhost {
+https://masterdata.eaop-logistics.localhost {
     import friendly_errors
     reverse_proxy mock-masterdata:8003
 }
 
-https://keycloak.rfq-showcase.localhost {
+https://keycloak.eaop-logistics.localhost {
     import friendly_errors
     reverse_proxy keycloak:8080
 }
 
-https://lane-evaluation-agent.rfq-showcase.localhost {
+https://lane-evaluation-agent.eaop-logistics.localhost {
     import friendly_errors
     reverse_proxy lane-evaluation-agent:8204
 }
 
-https://route-decision-agent.rfq-showcase.localhost {
+https://route-decision-agent.eaop-logistics.localhost {
     import friendly_errors
     reverse_proxy route-decision-agent:8205
 }
 
-https://commercial-normalization-agent.rfq-showcase.localhost {
+https://commercial-normalization-agent.eaop-logistics.localhost {
     import friendly_errors
     reverse_proxy commercial-normalization-agent:8206
 }
 
-https://tms-mcp.rfq-showcase.localhost {
+https://tms-mcp.eaop-logistics.localhost {
     import friendly_errors
     reverse_proxy tms-mcp:8104
 }
 
-https://rate-mcp.rfq-showcase.localhost {
+https://rate-mcp.eaop-logistics.localhost {
     import friendly_errors
     reverse_proxy rate-mcp:8105
 }
 
-https://qms-mcp.rfq-showcase.localhost {
+https://qms-mcp.eaop-logistics.localhost {
     import friendly_errors
     reverse_proxy qms-mcp:8106
 }
 
-https://approval-mcp.rfq-showcase.localhost {
+https://approval-mcp.eaop-logistics.localhost {
     import friendly_errors
     reverse_proxy approval-mcp:8107
 }
 
-https://mission-control.rfq-showcase.localhost {
+https://mission-control.eaop-logistics.localhost {
     import friendly_errors
     reverse_proxy mission-control-api:8300
 }
 
-https://geo.rfq-showcase.localhost {
+https://geo.eaop-logistics.localhost {
     import friendly_errors
     reverse_proxy geo-api:8400
 }
 
-https://a2a-inspector.rfq-showcase.localhost {
+https://a2a-inspector.eaop-logistics.localhost {
     import friendly_errors
     reverse_proxy a2a-inspector:8080
 }
 
-https://mcp-inspector.rfq-showcase.localhost {
+https://mcp-inspector.eaop-logistics.localhost {
     import friendly_errors
     reverse_proxy mcp-inspector:6274
 }
@@ -118,12 +118,12 @@ https://mcp-inspector.rfq-showcase.localhost {
 # URL in the Inspector UI's config sidebar (MCP_PROXY_FULL_ADDRESS) once
 # per browser -- exactly the "non-default proxy address" case that field
 # exists for.
-https://mcp-inspector-proxy.rfq-showcase.localhost {
+https://mcp-inspector-proxy.eaop-logistics.localhost {
     import friendly_errors
     reverse_proxy mcp-inspector:6277
 }
 
-https://web.rfq-showcase.localhost {
+https://web.eaop-logistics.localhost {
     import friendly_errors
     reverse_proxy web:80
 }

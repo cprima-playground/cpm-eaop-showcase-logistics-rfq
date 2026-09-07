@@ -1,10 +1,10 @@
 # Dev-only secrets store (ADR-009). Dev-server mode: in-memory, auto-unsealed,
 # a fixed root token for local convenience -- NEVER use dev mode outside dev.
-name: rfq-showcase-vault
+name: eaop-vault-standalone
 services:
   vault:
     image: hashicorp/vault:latest
-    container_name: rfq-showcase-vault
+    container_name: eaop-vault-standalone
     ports:
       - "8200:8200"
     environment:
