@@ -1,0 +1,21 @@
+[project]
+name = "hello-mcp"
+version = "0.1.0"
+description = "Minimal hello-world MCP server spike (real MCP protocol via FastMCP), deployed to Cloud Run."
+requires-python = ">=3.10"
+dependencies = [
+    "mcp[cli]>=1.2",
+]
+
+[tool.uv]
+package = true
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["hello_mcp"]
+
+[project.scripts]
+hello-mcp = "hello_mcp.server:main"

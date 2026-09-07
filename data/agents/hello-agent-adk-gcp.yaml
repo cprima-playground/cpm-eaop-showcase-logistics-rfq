@@ -1,0 +1,32 @@
+id: hello-agent-adk-gcp
+name: hello_agent_adk
+platform: gcp-vertex-ai-agent-engine
+description: >
+  Minimal hello-world ADK agent spike, deployed from
+  cpm-eaop-showcase-logistics-rfq. Prefixes replies with
+  "[ADK/Vertex AI - showcase]". Distinct resource from cpm-eaop's own
+  hello_agent (projects/200607526455/.../reasoningEngines/3161528587681529856).
+
+endpoint:
+  resource_name: projects/200607526455/locations/us-central1/reasoningEngines/504070555998093312
+  project_id: cpm-geap-2026
+  region: us-central1
+  invocation: stream_query
+
+auth:
+  mechanism: none
+  note: >
+    No control-panel/Keycloak/Entra identity wiring - deliberately stripped
+    from the cpm-eaop original to isolate deploy+invoke mechanics only.
+
+source:
+  path: spikes/hello-agent-adk
+  deploy_script: spikes/hello-agent-adk/deploy.py
+  reference_implementation: D:\github.com\cprima\cpm-eaop\src\spike\geap\geap\agents\hello_agent
+
+verified:
+  date: "2026-07-31"
+  method: trigger.py stream_query smoke test
+  response: "[ADK/Vertex AI - showcase] Four."
+
+status: active

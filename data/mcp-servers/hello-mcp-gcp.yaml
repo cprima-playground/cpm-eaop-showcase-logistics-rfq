@@ -1,0 +1,40 @@
+id: hello-mcp-gcp
+name: hello-mcp
+platform: gcp-cloud-run
+description: >
+  Minimal hello-world MCP server spike, using the real MCP protocol
+  (streamable-http transport via the `mcp` SDK's MCPServer class), not this
+  repo's tms-mcp-style FastAPI-REST pattern. One tool (say_hello), no
+  identity/policy wiring.
+
+endpoint:
+  url: https://hello-mcp-200607526455.us-central1.run.app
+  mcp_path: /mcp
+  project_id: cpm-geap-2026
+  region: us-central1
+  cloud_run_service: hello-mcp
+  cloud_run_revision: hello-mcp-00001-s92
+
+auth:
+  mechanism: none
+  note: >
+    --allow-unauthenticated for spike verification only - not a pattern for
+    a real MCP server (this repo's tms-mcp uses OIDC token introspection +
+    Cedar PDP/PEP; this spike deliberately has none of that).
+
+source:
+  path: spikes/hello-mcp
+  deploy_command: >
+    gcloud run deploy hello-mcp --source spikes/hello-mcp
+    --project cpm-geap-2026 --region us-central1 --allow-unauthenticated
+
+verified:
+  date: "2026-07-31"
+  method: >
+    Real MCP client (mcp.client.streamable_http.streamable_http_client +
+    ClientSession) against the live Cloud Run URL - list_tools() and
+    call_tool('say_hello') both round-tripped correctly, not just a bare
+    function call or an HTTP 200 check.
+  response: "[hello-mcp] Hello, cloud-run!"
+
+status: active

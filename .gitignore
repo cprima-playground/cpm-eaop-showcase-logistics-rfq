@@ -29,3 +29,8 @@ infra/entra/terraform.tfvars
 infra/caddy/root.crt
 infra/keycloak/terraform/tfplan
 tmp/
+
+# Per-machine GCP target for the hello-agent-adk spike -- whichever project/
+# bucket you're pointed at (personal sandbox vs. an employer sandbox), never
+# a fixed value to commit.
+spikes/hello-agent-adk/gcp.env
