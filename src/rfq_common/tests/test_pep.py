@@ -168,7 +168,7 @@ def test_resolve_principal_human_id_from_preferred_username_not_sub():
     keycloak_shaped = {
         "sub": "5ce8c7cd-0bb4-4b02-81e5-b4ea35f12a8e", "oid": "8e41c2b0-0000-4000-9000-000000000010",
         "tid": "rfq-dev-tenant", "preferred_username": "diane.delgado",
-        "iss": "https://keycloak.rfq-showcase.localhost/realms/rfq",
+        "iss": "https://keycloak.eaop-logistics.localhost/realms/rfq",
     }
     entra_shaped = {
         "sub": "KcBaQcbZES2Jb0-vG6pgecqO3Vj5onZNj7x46PhzNt0", "oid": "eb772284-35fc-4d96-a0c9-98f3458673c8",

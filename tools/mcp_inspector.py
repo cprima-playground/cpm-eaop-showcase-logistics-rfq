@@ -139,7 +139,7 @@ def main() -> int:
 
     keycloak_base = env(
         "MCP_KEYCLOAK_BASE_URL",
-        "https://keycloak.rfq-showcase.localhost",
+        "https://keycloak.eaop-logistics.localhost",
     )
     token_endpoint = f"{keycloak_base}/realms/rfq/protocol/openid-connect/token"
     client_id = env("MCP_INTROSPECTION_CLIENT_ID", "qms-web")

@@ -26,7 +26,7 @@ checks it requires have a named authority to point back to.
 
 Caddy is the **sole externally-published ingress** (port 443). Every
 showcase service — mock backends, MCP servers, A2A agents — publishes no
-host port at all; reachable only via Caddy's `*.rfq-showcase.localhost`
+host port at all; reachable only via Caddy's `*.eaop-logistics.localhost`
 vhosts (external) or the shared `rfq-showcase` compose network's own DNS
 (internal, peer-to-peer: an agent calling an MCP server, or an MCP server
 calling its backend business system, addresses the other container by
@@ -65,11 +65,11 @@ this gap; not required for the showcase's current scope.
 
 ### 2. Hostname/vhost convention
 
-One `https://<service>.rfq-showcase.localhost` vhost per externally
+One `https://<service>.eaop-logistics.localhost` vhost per externally
 reachable service, `reverse_proxy`'d by Caddy to the real compose service
 name and port (`infra/compose/Caddyfile`). Internal-only peer traffic
 never uses these hostnames — compose DNS service names only
-(`http://tms-mcp:8104`, not `https://tms-mcp.rfq-showcase.localhost`),
+(`http://tms-mcp:8104`, not `https://tms-mcp.eaop-logistics.localhost`),
 per §1's hairpin rule. `SERVICE_PUBLIC_URL` (M5.5's runtime configuration
 contract) is set to the external vhost form for every service that has
 one — the value a service advertises about itself (Agent Cards,

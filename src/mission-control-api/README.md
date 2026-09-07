@@ -42,7 +42,7 @@ profile:
 docker compose -f infra/compose.support.yaml -f infra/compose.showcase.yaml --profile control-plane up -d --build
 ```
 
-Reachable at `https://mission-control.rfq-showcase.localhost` once
+Reachable at `https://mission-control.eaop-logistics.localhost` once
 Caddy picks up the vhost (`infra/compose/Caddyfile`).
 
 ## Tests

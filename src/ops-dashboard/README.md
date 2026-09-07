@@ -39,8 +39,8 @@ is the real path; requires HTTPS + hosts-file entries, see `infra/caddy/README.m
 
 ```sh
 cd ../../infra/caddy && docker compose up -d --build
-OPS_DASHBOARD_PUBLIC_URL=https://ops-dashboard.rfq-showcase.localhost uv run ops-dashboard serve
-# open https://ops-dashboard.rfq-showcase.localhost
+OPS_DASHBOARD_PUBLIC_URL=https://ops-dashboard.eaop-logistics.localhost uv run ops-dashboard serve
+# open https://ops-dashboard.eaop-logistics.localhost
 ```
 
 Login as `alice` / `rfq-dev-user` (has `ops-viewer` — sees the dashboard) or

@@ -620,7 +620,7 @@ def build_app(
             if s["name"] == "qms":
                 # QMS combines API + its own frontend in one process
                 # (unlike ops-dashboard) -- /app is real now, link it.
-                s["frontend_url"] = "https://qms.rfq-showcase.localhost/app"
+                s["frontend_url"] = "https://qms.eaop-logistics.localhost/app"
         overall = "pass" if all(s["status"] == "pass" for s in services) else (
             "fail" if any(s["status"] == "fail" for s in services) else "warn"
         )

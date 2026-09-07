@@ -75,7 +75,7 @@ def health_report(registry: ObservedServiceRegistry, root: Path | None = None) -
     #    (http://keycloak:8080/.well-known/openid-configuration 404s;
     #    .../realms/rfq/.well-known/openid-configuration is the real path).
     # 2. Since M7's live-stack fix (KC_HOSTNAME), Keycloak reports a
-    #    FIXED external issuer (https://keycloak.rfq-showcase.localhost/
+    #    FIXED external issuer (https://keycloak.eaop-logistics.localhost/
     #    realms/rfq) regardless of which path reached it -- comparing
     #    against the INTERNAL DNS address used for actual token
     #    operations would warn on every real deployment, always, by
@@ -84,7 +84,7 @@ def health_report(registry: ObservedServiceRegistry, root: Path | None = None) -
     #    config.py already uses for exactly this reason.
     keycloak_realm = os.environ.get("KEYCLOAK_REALM", "rfq")
     keycloak_public_issuer_url = os.environ.get(
-        "KEYCLOAK_ISSUER_URL", f"https://keycloak.rfq-showcase.localhost/realms/{keycloak_realm}",
+        "KEYCLOAK_ISSUER_URL", f"https://keycloak.eaop-logistics.localhost/realms/{keycloak_realm}",
     )
     # verify=False: dev-only shortcut -- Caddy's local CA isn't in this
     # container's trust store (ops-dashboard solves this properly via

@@ -24,7 +24,7 @@ import mock_qms.config as config
 
 from conftest import service_up
 
-KEYCLOAK_URL = "https://keycloak.rfq-showcase.localhost"  # via infra/caddy -- must match mock_qms.config's issuer
+KEYCLOAK_URL = "https://keycloak.eaop-logistics.localhost"  # via infra/caddy -- must match mock_qms.config's issuer
 REALM_URL = f"{KEYCLOAK_URL}/realms/rfq"
 CLIENT_ID = "qms-web"
 RFQ_ROOT = Path(__file__).resolve().parents[4]

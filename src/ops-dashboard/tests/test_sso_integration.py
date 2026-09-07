@@ -20,7 +20,7 @@ from rfq_common.verify import fetch_jwks, verify_with_jwks
 
 import ops_dashboard.config as config
 
-KEYCLOAK_URL = "https://keycloak.rfq-showcase.localhost"  # via infra/caddy -- must match ops_dashboard.config's issuer
+KEYCLOAK_URL = "https://keycloak.eaop-logistics.localhost"  # via infra/caddy -- must match ops_dashboard.config's issuer
 REALM_URL = f"{KEYCLOAK_URL}/realms/rfq"
 CLIENT_ID = "ops-dashboard-web"
 RFQ_ROOT = Path(__file__).resolve().parents[3]

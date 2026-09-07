@@ -23,13 +23,13 @@ class CredentialUnavailableError(RuntimeError):
 
 
 def keycloak_issuer_url() -> str:
-    # keycloak.rfq-showcase.localhost over HTTPS (via infra/caddy), not the
+    # keycloak.eaop-logistics.localhost over HTTPS (via infra/caddy), not the
     # bare :8081 port -- Keycloak derives its `iss` claim from whatever Host
     # header reached it (dev mode, no KC_HOSTNAME), so every caller must
     # agree on one hostname; HTTPS is required because Keycloak's session
     # cookies are Secure-flagged (dropped over plain HTTP for any
     # non-"localhost" host). Needs a hosts-file entry -- see infra/caddy/README.md.
-    return os.environ.get("KEYCLOAK_ISSUER_URL", "https://keycloak.rfq-showcase.localhost/realms/rfq")
+    return os.environ.get("KEYCLOAK_ISSUER_URL", "https://keycloak.eaop-logistics.localhost/realms/rfq")
 
 
 def keycloak_client_id() -> str:

@@ -77,7 +77,7 @@ def test_oidc_issuer_mismatch_is_warn_not_pass(monkeypatch):
         httpx, "get",
         lambda url, timeout=None, verify=True: _FakeResponse(200, {"issuer": "http://keycloak:8080/realms/rfq"}),
     )
-    result = probe_oidc_issuer("keycloak", "https://keycloak.rfq-showcase.localhost/realms/rfq")
+    result = probe_oidc_issuer("keycloak", "https://keycloak.eaop-logistics.localhost/realms/rfq")
     assert result.reachable is True
     assert result.status == "warn"
 

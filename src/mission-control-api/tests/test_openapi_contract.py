@@ -17,7 +17,7 @@ def _canonical(spec: dict) -> str:
 
 
 def test_committed_contract_matches_the_live_app():
-    app = build_app(instance_id="contract-test", public_url="https://mission-control.rfq-showcase.localhost")
+    app = build_app(instance_id="contract-test", public_url="https://mission-control.eaop-logistics.localhost")
     live_spec = app.openapi()
     committed_spec = json.loads(CONTRACT_PATH.read_text(encoding="utf-8"))
     assert _canonical(live_spec) == _canonical(committed_spec), (

@@ -56,7 +56,7 @@ def test_build_descriptor_accepts_control_plane_kind_and_rest_protocol():
     a2a-agent/mcp-server descriptor does."""
     descriptor = build_descriptor(
         canonical_id="workload.mission-control", kind="control-plane", instance_id="test-instance-1",
-        base_url="https://mission-control.rfq-showcase.localhost", protocol_type="rest",
+        base_url="https://mission-control.eaop-logistics.localhost", protocol_type="rest",
         capability_source="openapi:/api/v1/openapi.json",
     )
     assert descriptor.schema_version == DESCRIPTOR_SCHEMA_VERSION
@@ -72,7 +72,7 @@ def test_build_descriptor_accepts_platform_kind():
     so kind="platform" must build cleanly, same as every other kind."""
     descriptor = build_descriptor(
         canonical_id="workload.geo-api", kind="platform", instance_id="test-instance-1",
-        base_url="https://geo.rfq-showcase.localhost", protocol_type="rest",
+        base_url="https://geo.eaop-logistics.localhost", protocol_type="rest",
         capability_source="static:route.geometry.compute", skills=["route.geometry.compute"],
     )
     assert descriptor.schema_version == DESCRIPTOR_SCHEMA_VERSION

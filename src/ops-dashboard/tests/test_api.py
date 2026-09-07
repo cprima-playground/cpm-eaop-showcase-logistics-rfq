@@ -332,7 +332,7 @@ def test_check_identity_provider_fail_when_unreachable(monkeypatch):
 def test_check_identity_provider_warn_on_issuer_mismatch(monkeypatch):
     """A hostname mismatch here breaks every login silently -- Keycloak
     derives its `iss` claim from whatever Host header reached it."""
-    configured = "https://keycloak.rfq-showcase.localhost/realms/rfq"
+    configured = "https://keycloak.eaop-logistics.localhost/realms/rfq"
 
     def _fake_get(url, *a, **k):
         return httpx.Response(200, json={"issuer": "https://wrong-host/realms/rfq"}, request=httpx.Request("GET", url))
