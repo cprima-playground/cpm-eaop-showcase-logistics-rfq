@@ -1,0 +1,6 @@
+# *.tf files embed bash local-exec provisioner commands (infra/keycloak/terraform/keycloak.tf) --
+# a CRLF checkout on Windows breaks those at runtime (found live: bash
+# reads `\<CR><LF>` as NOT a line continuation, and even without
+# continuations, embedded \r before a closing quote corrupts the command
+# string). Force LF regardless of core.autocrlf.
+*.tf text eol=lf
