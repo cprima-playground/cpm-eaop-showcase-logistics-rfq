@@ -169,7 +169,7 @@ Seven real, tested codebases exist today, all green:
   concept. Three-tier fallback (live → manually-cached feed copy → committed
   fixtures) if the live feed can't be reached. 59 tests.
 - **`infra/vault/` + `rfq_common.secrets`** — ADR-009's Vault-dev credential store,
-  standing and seeded (`rfq-showcase-vault`, :8200); every mock system's API key
+  standing and seeded (`eaop-infra-vault-1`, :8200); every mock system's API key
   comes from Vault, no hardcoded fallback.
 - **`src/mock-masterdata/`** (ADR-010) — the masterdata source: 9 reference
   domains (Party/Location/Currency/Incoterm/Commodity/Equipment/UoM/DG-class/

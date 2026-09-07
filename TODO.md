@@ -50,7 +50,7 @@ packs + determinism (`RUNNING.md`).
 - [ ] **Scenario-runner interface** — the concrete CLI surface (`rfq scenario apply
       <pack>`) implementing `RUNNING.md` behavior (reset · apply · pin clock · re-PUT PDP · run_id).
 - [x] **`rfq_common.secrets` client + `infra/vault/seed.py`** — **built**: Vault
-      stood up live (`rfq-showcase-vault`, :8200), `rfq_common.secrets`
+      stood up live (`eaop-infra-vault-1`, :8200), `rfq_common.secrets`
       (`VaultAdmin`/`VaultReader`/`SecretsClient`/`CredentialsInventory`) + seed
       script, 10 tests (offline + live). `mock-fx` migrated off its hardcoded
       default onto Vault, proven live (KNOWN-ISSUES.md F6). test/prod (Secret
@@ -82,7 +82,7 @@ packs + determinism (`RUNNING.md`).
       already does). Read-only, same role-gated pattern as the rest of the
       dashboard.
 - [ ] **HITL notification-list system** — a standalone system (own subdomain
-      reserved, `hitl.rfq-showcase.localhost`), complementing (not replacing)
+      reserved, `hitl.eaop-logistics.localhost`), complementing (not replacing)
       the planned QMS. Initially just a notification list: surfaces pending
       human-decision points as they arise from Cedar `permit+notify`/obligation
       outcomes (D3b lane-deviation review, D4a FX-move notify, D5 margin-floor
