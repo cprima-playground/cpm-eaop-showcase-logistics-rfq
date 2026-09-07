@@ -1,0 +1,7 @@
+# Author/copyright/license metadata applied to every generated .docx
+# (tools/docs/export_docx.py). Separate from docs/story/markdown-metadata.yaml,
+# which classifies content (audience/tone/channel), not publishing rights.
+author: Christian Prior-Mamulyan
+copyright: "© 2026 Christian Prior-Mamulyan"
+license: CC-BY-4.0
+license_url: https://creativecommons.org/licenses/by/4.0/

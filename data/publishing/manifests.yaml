@@ -1,0 +1,36 @@
+# Publishing manifest -- single source of truth for both exporters:
+# tools/docs/export_docx.py (documents:) and tools/slides/export-pdf.ps1
+# (slides:). Each entry's key becomes the output filename stem.
+
+# reveal.js decks (web/slides/*.html) exported to PDF via decktape.
+# `file` is repo-root-relative.
+slides:
+  transport-planner-job:
+    title: "Transport Planner — an agentically enhanced job"
+    file: web/slides/agentically-enhanced-job.html
+
+  logistics-overview:
+    title: "Logistics Multi-Agent Showcase"
+    file: web/slides/index.html
+
+# Combined Markdown -> .docx documents (tools/docs/export_docx.py). `files`
+# lists Markdown sources in combination order. The same source file may
+# appear in more than one document (e.g. a chapter reused in both its own
+# standalone export and a larger compiled document). Optional `target:`
+# (repo-root-relative dir) copies the .docx there too, alongside the
+# canonical data/publishing/docx/ copy; defaults to web/downloads/ when
+# omitted (gateway-served, matches how slide PDFs are published).
+documents:
+  transport-planner-story:
+    title: "Transport Planner — an agentically enhanced job"
+    files:
+      - docs/story/agentically-enhanced-job-example.md
+
+  full-story:
+    title: "Enterprise Agentic Platform — Logistics Showcase: Full Story"
+    files:
+      - docs/story/exposition.md
+      - docs/story/architecture.md
+      - docs/story/roles.md
+      - docs/story/governance.md
+      - docs/story/agentically-enhanced-job-example.md
