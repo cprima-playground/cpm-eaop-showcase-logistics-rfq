@@ -138,7 +138,7 @@ agent/MCP peer traffic    → compose DNS (service name:port) directly, no Caddy
 
 Add the service to `infra/compose.yaml` with:
 - `build: {context: ., dockerfile: src/<service>/Dockerfile}`
-- `environment:` — at minimum `SERVICE_PUBLIC_URL: https://<service>.rfq-showcase.localhost`
+- `environment:` — at minimum `SERVICE_PUBLIC_URL: https://<service>.eaop-logistics.localhost`
   so `ServiceSettings.public_url` (and therefore `/descriptor` and any A2A
   Agent Card) advertises the Caddy-facing hostname, not a raw container
   DNS name or bind port.
@@ -160,7 +160,7 @@ the compose-topology file routes to compose service DNS names instead of
 `host.docker.internal`):
 
 ```
-https://<service>.rfq-showcase.localhost {
+https://<service>.eaop-logistics.localhost {
     import friendly_errors
     reverse_proxy <service>:<port>
 }
@@ -175,7 +175,7 @@ particular expects exactly this shape (a container listening on a port it
 reads from its own env, here `SERVICE_PORT`/`PORT`-compatible). The
 Dockerfile written in Step 3 should need zero changes to deploy to Cloud
 Run; only `infra/compose.yaml`'s local-only concerns (the shared bridge
-network, `SERVICE_PUBLIC_URL` pointing at `*.rfq-showcase.localhost`) are
+network, `SERVICE_PUBLIC_URL` pointing at `*.eaop-logistics.localhost`) are
 dev-specific and get replaced by Cloud Run's own URL / Apigee routing at
 that layer, not the container image.
 
@@ -189,7 +189,7 @@ curl http://localhost:18080/healthz   # expect 200
 
 # inside the full topology
 docker compose -f infra/compose.yaml --profile <bucket> up --build
-curl -k https://<service>.rfq-showcase.localhost/healthz   # through Caddy
+curl -k https://<service>.eaop-logistics.localhost/healthz   # through Caddy
 ```
 
 Also re-run the service's own `uv run pytest` — containerizing should
